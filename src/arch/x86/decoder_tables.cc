@@ -144,6 +144,8 @@ namespace X86ISA
 /*  F */ 1 , 1 , 0 , 0 , 0 , 0 , 0 , 0 , 0 , 0 , 0 , 0 , 0 , 0 , 0 , 0
     };
 
+    // Editor: K16DIABLO (Sungjun Jung)
+    // Append Programmable Streaming Prefetch (PSP) instructions on GemForge impl
     const Decoder::ByteTable Decoder::UsesModRMThreeByte0F38GemForge =
     {    //LSB
 // MSB   0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | A | B | C | D | E | F
@@ -284,6 +286,8 @@ namespace X86ISA
 /*  F */ 0 , 0 , 0 , 0 , 0 , 0 , 0 , 0 , 0 , 0 , 0 , 0 , 0 , 0 , 0 , 0
     };
 
+    // Editor: K16DIABLO (Sungjun Jung)
+    // Append Programmable Streaming Prefetch (PSP) instructions on GemForge impl
     const Decoder::ByteTable Decoder::ImmediateTypeThreeByte0F38GemForge =
     {    //LSB
 // MSB   0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | A | B | C | D | E | F
@@ -293,7 +297,7 @@ namespace X86ISA
 /*  3 */ BY, BY, 0 , BY, BY, BY, BY, BY, BY, BY, BY, BY, BY, BY, 0 , BY,
 /*  4 */ BY, BY, BY, 0 , 0 , 0 , 0 , 0 , 0 , 0 , 0 , 0 , 0 , 0 , 0 , 0 ,
 /*  5 */ 0 , 0 , 0 , 0 , 0 , 0 , 0 , 0 , 0 , 0 , 0 , 0 , 0 , 0 , 0 , 0 ,
-/*  6 */ 0 , 0 , 0 , 0 , 0 , 0 , 0 , 0 , 0 , 0 , 0 , 0 , 0 , 0 , 0 , 0 ,
+/*  6 */ BY, BY, BY, BY, BY, BY, BY, 0 , 0 , 0 , 0 , 0 , 0 , 0 , 0 , 0 ,
 /*  7 */ 0 , 0 , 0 , 0 , 0 , 0 , 0 , 0 , 0 , 0 , 0 , 0 , 0 , 0 , 0 , 0 ,
 /*  8 */ 0 , 0 , 0 , 0 , 0 , 0 , 0 , 0 , 0 , 0 , 0 , 0 , 0 , 0 , 0 , 0 ,
 /*  9 */ 0 , 0 , 0 , 0 , 0 , 0 , 0 , 0 , 0 , 0 , 0 , 0 , 0 , 0 , 0 , 0 ,
