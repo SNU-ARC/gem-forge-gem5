@@ -120,6 +120,15 @@
                 0x40: SSP_STREAM_ATOMIC(Ev, Ib);
                 0x41: SSP_STREAM_ATOMIC(WSSPd, Ib);
                 0x42: SSP_STREAM_ATOMIC(WSSPq, Ib);
+                // Editor: K16DIABLO (Sungjun Jung)
+                // TODO: Reformat instructions below
+                0x60: STREAM_CFG_IDX_BASE(Ev, Ib);
+                0x61: STREAM_CFG_IDX_GRAN(Ev, Ib);
+                0x62: STREAM_CFG_VAL_BASE(Ev, Ib);
+                0x63: STREAM_CFG_VAL_GRAN(Ev, Ib);
+                0x64: STREAM_INPUT_OFFSET_BEGIN(Ev, Ib);
+                0x65: STREAM_INPUT_OFFSET_END(Ev, Ib);
+                0x66: STREAM_TERMINATE(Ib);
             }
             default: Inst::UD2();
         }
