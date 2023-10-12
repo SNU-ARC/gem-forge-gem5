@@ -1,0 +1,497 @@
+// Copyright (c) 2007 The Hewlett-Packard Development Company
+// All rights reserved.
+//
+// The license below extends only to copyright in the software and shall
+// not be construed as granting a license to any other intellectual
+// property including but not limited to intellectual property relating
+// to a hardware implementation of the functionality of the software
+// licensed hereunder.  You may use the software subject to the license
+// terms below provided that you ensure that this notice is replicated
+// unmodified and in its entirety in all distributions of the software,
+// modified or unmodified, in source code or in binary form.
+//
+// Redistribution and use in source and binary forms, with or without
+// modification, are permitted provided that the following conditions are
+// met: redistributions of source code must retain the above copyright
+// notice, this list of conditions and the following disclaimer;
+// redistributions in binary form must reproduce the above copyright
+// notice, this list of conditions and the following disclaimer in the
+// documentation and/or other materials provided with the distribution;
+// neither the name of the copyright holders nor the names of its
+// contributors may be used to endorse or promote products derived from
+// this software without specific prior written permission.
+//
+// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+// "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+// LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+// A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+// OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+// SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+// LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+// DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+// THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+// (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+// OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+//
+// Authors: Gabe Black
+
+//////////////////////////////////////////////////////////////////////////
+//
+// Programmable Streaming Prefetcher Microop templates
+// Editor: K16DIABLO (Sungjun Jung)
+//
+//////////////////////////////////////////////////////////////////////////
+
+//////////////////////////////////////////////////////////////////////////
+//
+// Micro ops that uses one source register and one immediate.
+// TODO: Update these micro ops to use two source registers
+//
+//////////////////////////////////////////////////////////////////////////
+
+def template MicroPSPRegImmOpExecute {{
+        Fault %(class_name)s::execute(ExecContext *xc,
+                Trace::InstRecord *traceData) const
+        {
+            %(op_decl)s;
+            %(op_rd)s;
+            %(code)s;
+            %(op_wb)s;
+            return NoFault;
+        }
+}};
+
+def template MicroPSPRegImmOpDeclare {{
+    class %(class_name)s : public X86ISA::X86MicroopBase
+    {
+      protected:
+        const RegIndex src1;
+        const uint64_t imm;
+        const uint8_t dataSize;
+        RegIndex foldOBit;
+
+        std::string generateDisassembly(Addr pc,
+            const ::Loader::SymbolTable *symtab) const;
+
+      public:
+        %(class_name)s(ExtMachInst _machInst,
+                const char * instMnem,
+                uint64_t setFlags, InstRegIndex _src1,
+                uint64_t _imm, uint8_t _dataSize);
+
+        Fault execute(ExecContext *, Trace::InstRecord *) const;
+    };
+}};
+
+def template MicroPSPRegImmOpDisassembly {{
+    std::string %(class_name)s::generateDisassembly(Addr pc,
+            const ::Loader::SymbolTable *symtab) const
+    {
+        std::stringstream response;
+
+        printMnemonic(response, instMnem, mnemonic);
+        printSrcReg(response, 0, dataSize);
+        response << ", ";
+        ccprintf(response, "%#x", imm);
+        return response.str();
+    }
+}};
+
+def template MicroPSPRegImmOpConstructor {{
+    %(class_name)s::%(class_name)s(
+            ExtMachInst machInst, const char * instMnem, uint64_t setFlags,
+            InstRegIndex _src1, uint64_t _imm, uint8_t _dataSize) :
+        %(base_class)s(machInst, "%(mnemonic)s", instMnem,
+                setFlags, %(op_class)s),
+                src1(_src1.index()), imm(_imm), dataSize(_dataSize)
+    {
+        foldOBit = (dataSize == 1 && !machInst.rex.present) ? 1 << 6 : 0;
+        _srcRegIdx[_numSrcRegs++] = RegId(IntRegClass, INTREG_FOLDED(src1, foldOBit));
+        %(constructor)s;
+    }
+}};
+
+let {{
+    class PSPStreamConfigIdxBaseOp(X86Microop):
+        op_class = "No_OpClass"
+        def __init__(self, src, imm, dataSize="env.dataSize"):
+            self.className = "PSPStreamConfigIdxBase"
+            self.mnemonic = "stream.cfg.idx.base"
+            self.src = src
+            if isinstance(imm, (int, long)):
+                imm = "ULL(%d)" % imm
+            self.imm = imm
+            self.dataSize = dataSize
+
+        def getAllocator(self, microFlags):
+            allocString = '''
+                (StaticInstPtr)(new %(class_name)s(machInst,
+                    macrocodeBlock, %(flags)s, %(src)s, %(imm)s,
+                    %(dataSize)s))
+            '''
+            allocator = allocString % {
+                "class_name" : self.className,
+                "mnemonic" : self.mnemonic,
+                "flags" : self.microFlagsText(microFlags),
+                "src" : self.src,
+                "imm" : self.imm,
+                "dataSize" : self.dataSize
+            }
+            return allocator
+
+    microopClasses["stream_cfg_idx_base"] = PSPStreamConfigIdxBaseOp
+
+    class PSPStreamConfigIdxGranOp(X86Microop):
+        op_class = "No_OpClass"
+        def __init__(self, src, imm, dataSize="env.dataSize"):
+            self.className = "PSPStreamConfigIdxGran"
+            self.mnemonic = "stream.cfg.idx.gran"
+            self.src = src
+            if isinstance(imm, (int, long)):
+                imm = "ULL(%d)" % imm
+            self.imm = imm
+            self.dataSize = dataSize
+
+        def getAllocator(self, microFlags):
+            allocString = '''
+                (StaticInstPtr)(new %(class_name)s(machInst,
+                    macrocodeBlock, %(flags)s, %(src)s, %(imm)s,
+                    %(dataSize)s))
+            '''
+            allocator = allocString % {
+                "class_name" : self.className,
+                "mnemonic" : self.mnemonic,
+                "flags" : self.microFlagsText(microFlags),
+                "src" : self.src,
+                "imm" : self.imm,
+                "dataSize" : self.dataSize
+            }
+            return allocator
+
+    microopClasses["stream_cfg_idx_gran"] = PSPStreamConfigIdxGranOp
+
+    class PSPStreamConfigValBaseOp(X86Microop):
+        op_class = "No_OpClass"
+        def __init__(self, src, imm, dataSize="env.dataSize"):
+            self.className = "PSPStreamConfigValBase"
+            self.mnemonic = "stream.cfg.val.base"
+            self.src = src
+            if isinstance(imm, (int, long)):
+                imm = "ULL(%d)" % imm
+            self.imm = imm
+            self.dataSize = dataSize
+
+        def getAllocator(self, microFlags):
+            allocString = '''
+                (StaticInstPtr)(new %(class_name)s(machInst,
+                    macrocodeBlock, %(flags)s, %(src)s, %(imm)s,
+                    %(dataSize)s))
+            '''
+            allocator = allocString % {
+                "class_name" : self.className,
+                "mnemonic" : self.mnemonic,
+                "flags" : self.microFlagsText(microFlags),
+                "src" : self.src,
+                "imm" : self.imm,
+                "dataSize" : self.dataSize
+            }
+            return allocator
+
+    microopClasses["stream_cfg_val_base"] = PSPStreamConfigValBaseOp
+
+    class PSPStreamConfigValGranOp(X86Microop):
+        op_class = "No_OpClass"
+        def __init__(self, src, imm, dataSize="env.dataSize"):
+            self.className = "PSPStreamConfigValGran"
+            self.mnemonic = "stream.cfg.val.gran"
+            self.src = src
+            if isinstance(imm, (int, long)):
+                imm = "ULL(%d)" % imm
+            self.imm = imm
+            self.dataSize = dataSize
+
+        def getAllocator(self, microFlags):
+            allocString = '''
+                (StaticInstPtr)(new %(class_name)s(machInst,
+                    macrocodeBlock, %(flags)s, %(src)s, %(imm)s,
+                    %(dataSize)s))
+            '''
+            allocator = allocString % {
+                "class_name" : self.className,
+                "mnemonic" : self.mnemonic,
+                "flags" : self.microFlagsText(microFlags),
+                "src" : self.src,
+                "imm" : self.imm,
+                "dataSize" : self.dataSize
+            }
+            return allocator
+
+    microopClasses["stream_cfg_val_gran"] = PSPStreamConfigValGranOp
+
+    class PSPStreamInputOffsetBeginOp(X86Microop):
+        op_class = "No_OpClass"
+        def __init__(self, src, imm, dataSize="env.dataSize"):
+            self.className = "PSPStreamInputOffsetBegin"
+            self.mnemonic = "stream.input.offset.begin"
+            self.src = src
+            if isinstance(imm, (int, long)):
+                imm = "ULL(%d)" % imm
+            self.imm = imm
+            self.dataSize = dataSize
+
+        def getAllocator(self, microFlags):
+            allocString = '''
+                (StaticInstPtr)(new %(class_name)s(machInst,
+                    macrocodeBlock, %(flags)s, %(src)s, %(imm)s,
+                    %(dataSize)s))
+            '''
+            allocator = allocString % {
+                "class_name" : self.className,
+                "mnemonic" : self.mnemonic,
+                "flags" : self.microFlagsText(microFlags),
+                "src" : self.src,
+                "imm" : self.imm,
+                "dataSize" : self.dataSize
+            }
+            return allocator
+
+    microopClasses["stream_input_offset_begin"] = PSPStreamInputOffsetBeginOp
+
+    class PSPStreamInputOffsetEndOp(X86Microop):
+        op_class = "No_OpClass"
+        def __init__(self, src, imm, dataSize="env.dataSize"):
+            self.className = "PSPStreamInputOffsetEnd"
+            self.mnemonic = "stream.input.offset.end"
+            self.src = src
+            if isinstance(imm, (int, long)):
+                imm = "ULL(%d)" % imm
+            self.imm = imm
+            self.dataSize = dataSize
+
+        def getAllocator(self, microFlags):
+            allocString = '''
+                (StaticInstPtr)(new %(class_name)s(machInst,
+                    macrocodeBlock, %(flags)s, %(src)s, %(imm)s,
+                    %(dataSize)s))
+            '''
+            allocator = allocString % {
+                "class_name" : self.className,
+                "mnemonic" : self.mnemonic,
+                "flags" : self.microFlagsText(microFlags),
+                "src" : self.src,
+                "imm" : self.imm,
+                "dataSize" : self.dataSize
+            }
+            return allocator
+
+    microopClasses["stream_input_offset_end"] = PSPStreamInputOffsetEndOp
+
+}};
+
+let {{
+    iops = [
+        InstObjParams(
+            "stream_cfg_idx_base",
+            "PSPStreamConfigIdxBase",
+            'X86MicroopBase',
+            {
+                'code' : '',
+            },
+            ['No_OpClass', 'IsGemForge']
+        ),
+        InstObjParams(
+            "stream_cfg_idx_gran",
+            "PSPStreamConfigIdxGran",
+            'X86MicroopBase',
+            {
+                'code' : '',
+            },
+            ['No_OpClass', 'IsGemForge']
+        ),
+        InstObjParams(
+            "stream_cfg_val_base",
+            "PSPStreamConfigValBase",
+            'X86MicroopBase',
+            {
+                'code' : '',
+            },
+            ['No_OpClass', 'IsGemForge']
+        ),
+        InstObjParams(
+            "stream_cfg_val_gran",
+            "PSPStreamConfigValGran",
+            'X86MicroopBase',
+            {
+                'code' : '',
+            },
+            ['No_OpClass', 'IsGemForge']
+        ),
+        InstObjParams(
+            "stream_input_offset_begin",
+            "PSPStreamInputOffsetBegin",
+            'X86MicroopBase',
+            {
+                'code' : '',
+            },
+            ['No_OpClass', 'IsGemForge']
+        ),
+        InstObjParams(
+            "stream_input_offset_end",
+            "PSPStreamInputOffsetEnd",
+            'X86MicroopBase',
+            {
+                'code' : '',
+            },
+            ['No_OpClass', 'IsGemForge']
+        ),
+    ]
+    for iop in iops:
+        header_output += MicroPSPRegImmOpDeclare.subst(iop)
+        decoder_output += MicroPSPRegImmOpConstructor.subst(iop)
+        decoder_output += MicroPSPRegImmOpDisassembly.subst(iop)
+        exec_output += MicroPSPRegImmOpExecute.subst(iop)
+}};
+
+//////////////////////////////////////////////////////////////////////////
+//
+// Microops that only use one immediate.
+// TODO: Update these micro ops to use one source register 
+//
+//////////////////////////////////////////////////////////////////////////
+def template MicroPSPImmOpExecute {{
+        Fault %(class_name)s::execute(ExecContext *xc,
+                Trace::InstRecord *traceData) const
+        {
+            %(op_decl)s;
+            %(op_rd)s;
+            %(code)s;
+            %(op_wb)s;
+            return NoFault;
+        }
+
+        Fault
+        %(class_name)s::initiateAcc(
+            ExecContext *xc, Trace::InstRecord *traceData) const {
+            assert(this->isMemRef() && "InitiateAcc on NonMemRef Inst.");
+            Fault fault = NoFault;
+            return fault;
+        }
+
+        Fault
+        %(class_name)s::completeAcc(
+            PacketPtr pkt, ExecContext *xc, Trace::InstRecord *traceData) const {
+            assert(this->isMemRef() && "CompleteAcc on NonMemRef Inst.");
+            Fault fault = NoFault;
+            return fault;
+        }
+}};
+
+def template MicroPSPImmOpDeclare {{
+    class %(class_name)s : public X86ISA::X86MicroopBase
+    {
+      protected:
+        const uint64_t imm;
+        const uint8_t dataSize;
+        RegIndex foldOBit;
+
+        std::string generateDisassembly(Addr pc,
+            const ::Loader::SymbolTable *symtab) const;
+
+      public:
+        %(class_name)s(ExtMachInst _machInst,
+                const char * instMnem,
+                uint64_t setFlags,
+                uint64_t _imm,
+                uint8_t _dataSize);
+
+        Fault execute(ExecContext *, Trace::InstRecord *) const;
+        Fault initiateAcc(ExecContext *, Trace::InstRecord *) const override;
+        Fault completeAcc(
+            PacketPtr, ExecContext *, Trace::InstRecord *) const override;
+    };
+}};
+
+def template MicroPSPImmOpDisassembly {{
+    std::string %(class_name)s::generateDisassembly(Addr pc,
+            const ::Loader::SymbolTable *symtab) const
+    {
+        std::stringstream response;
+
+        printMnemonic(response, instMnem, mnemonic);
+        response << ", ";
+        ccprintf(response, "%#x", imm);
+        return response.str();
+    }
+}};
+
+def template MicroPSPImmOpConstructor {{
+    %(class_name)s::%(class_name)s(
+            ExtMachInst machInst, const char * instMnem, uint64_t setFlags,
+            uint64_t _imm, uint8_t _dataSize) :
+        %(base_class)s(machInst, "%(mnemonic)s", instMnem,
+                setFlags, %(op_class)s),
+                imm(_imm), dataSize(_dataSize)
+    {
+        foldOBit = (dataSize == 1 && !machInst.rex.present) ? 1 << 6 : 0;
+        %(constructor)s;
+    }
+}};
+
+
+let {{
+    class PSPStreamTerminateOp(X86Microop):
+        op_class = "No_OpClass"
+        def __init__(self, imm, dataSize="env.dataSize"):
+            self.className = "PSPStreamTerminate"
+            self.mnemonic = "stream.terminate"
+            if isinstance(imm, (int, long)):
+                imm = "ULL(%d)" % imm
+            self.imm = imm
+            self.dataSize = dataSize
+
+        def getAllocator(self, microFlags):
+            allocString = '''
+                (StaticInstPtr)(new %(class_name)s(
+                    machInst,
+                    macrocodeBlock,
+                    %(flags)s,
+                    %(imm)s,
+                    %(dataSize)s)
+                )
+            '''
+            allocator = allocString % {
+                "class_name" : self.className,
+                "mnemonic" : self.mnemonic,
+                "flags" : self.microFlagsText(microFlags),
+                "imm" : self.imm,
+                "dataSize" : self.dataSize}
+            return allocator
+
+    microopClasses["stream_terminate"] = PSPStreamTerminateOp
+
+}};
+
+
+let {{
+    iops = [
+        InstObjParams(
+            # parse
+            "stream_terminate",
+            # classname
+            "PSPStreamTerminate",
+            # base_class
+            'X86MicroopBase',
+            # snippets
+            {
+                'code' : '',
+            },
+            # flags
+            ['No_OpClass', 'IsGemForge']
+        ),
+    ]
+    for iop in iops:
+        header_output += MicroPSPImmOpDeclare.subst(iop)
+        decoder_output += MicroPSPImmOpConstructor.subst(iop)
+        decoder_output += MicroPSPImmOpDisassembly.subst(iop)
+        exec_output += MicroPSPImmOpExecute.subst(iop)
+}};

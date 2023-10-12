@@ -92,6 +92,8 @@ if env['TARGET_ISA'] == 'x86':
         '__init__.py',
         'gem_forge/__init__.py',
         'gem_forge/ssp.py',
+        'psp/__init__.py',
+        'psp/psp.py',
         'general_purpose/__init__.py',
         'general_purpose/arithmetic/__init__.py',
         'general_purpose/arithmetic/add_and_subtract.py',

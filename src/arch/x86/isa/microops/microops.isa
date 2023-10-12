@@ -65,3 +65,6 @@
 
 //Microops for stream-specialized processor
 ##include "gem_forge/sspop.isa"
+
+//Microops for programmable streaming prefetcher
+##include "pspop.isa"
