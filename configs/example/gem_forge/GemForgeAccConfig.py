@@ -89,6 +89,12 @@ def initializeStreamEngine(options):
 
     return se
 
+def initializeProgrammableStreamPrefetcher(options):
+    psp = ProgrammableStreamPrefetcher()
+    # Pass parameters
+
+    return psp
+
 def initializeEmptyGemForgeAcceleratorManager(options):
     has_accelerator = False
     if options.gem_forge_adfa_enable:
@@ -117,6 +123,8 @@ def initializeGemForgeAcceleratorManager(options):
     # accelerators.append(SpeculativePrecomputationManager(options))
     if options.gem_forge_stream_engine_enable:
         accelerators.append(initializeStreamEngine(options))
+#    if options.programmable_stream_prefetcher_enable:
+#        accelerators.append(initializeProgrammableStreamPrefetcher(options))
     if accelerators:
         return GemForgeAcceleratorManager(accelerators=accelerators)
     elif options.gem_forge_idea_inorder_cpu:
