@@ -53,6 +53,15 @@ private:
     STREAM_FLOAD,
     STREAM_STEP,
     STREAM_STORE,
+    // Editor: Sungjun Jung (miguel92@snu.ac.kr)
+    // Description: Instruction names of PSP
+    STREAM_CFG_IDX_BASE,
+    STREAM_CFG_IDX_GRAN,
+    STREAM_CFG_VAL_BASE,
+    STREAM_CFG_VAL_GRAN,
+    STREAM_INPUT_OFFSET_BEGIN,
+    STREAM_INPUT_OFFSET_END,
+    STREAM_TERMINATE
   };
   struct GemForgeStaticInstInfo {
     GemForgeStaticInstOpE op;
@@ -73,6 +82,10 @@ private:
   GemForgeStaticInstInfo &getStaticInstInfo(const GemForgeDynInstInfo &dynInfo);
 
   ISAStreamEngine se;
+
+  // Editor: Sungjun Jung (miguel92@snu.ac.kr)
+  // Description: Add Programmable Stream Prefetcher Frontend
+  // ISAPSPFrontend psp;
 };
 
 #endif

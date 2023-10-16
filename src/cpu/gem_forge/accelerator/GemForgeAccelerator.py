@@ -39,6 +39,11 @@ class SpeculativePrecomputationManager(GemForgeAccelerator):
     cxx_header = \
         'cpu/gem_forge/accelerator/speculative_precomputation/speculative_precomputation_manager.hh'
 
+class ProgrammableStreamPrefetcher(GemForgeAccelerator):
+    type = "ProgrammableStreamPrefetcher"
+    cxx_header = \
+            'cpu/gem_forge/accelerator/programmable_stream_prefetcher/programmable_stream_prefetcher.hh'
+
 class StreamEngine(GemForgeAccelerator):
     type = "StreamEngine"
     cxx_header = 'cpu/gem_forge/accelerator/stream/stream_engine.hh'

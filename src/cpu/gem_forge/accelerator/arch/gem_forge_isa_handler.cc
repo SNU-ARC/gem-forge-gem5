@@ -3,6 +3,8 @@
 #include "cpu/base.hh"
 #include "cpu/exec_context.hh"
 
+// Editor: Sungjun Jung (miguel92@snu.ac.kr)
+// Description: Append Programmable Stream Prefetcher instructions 
 #define StreamInstCase(stage, xc...)                                           \
   case GemForgeStaticInstOpE::STREAM_CONFIG: {                                 \
     se.stage##StreamConfig(dynInfo, ##xc);                                     \
@@ -32,6 +34,34 @@
   case GemForgeStaticInstOpE::STREAM_STORE: {                                  \
     se.stage##StreamStore(dynInfo, ##xc);                                      \
     break;                                                                     \
+  }                                                                            \
+  case GemForgeStaticInstOpE::STREAM_CFG_IDX_BASE: {                           \
+    psp.stage##StreamConfigIndexBase(dynInfo, ##xc);                            \
+    break;                                                                     \
+  }                                                                            \
+  case GemForgeStaticInstOpE::STREAM_CFG_IDX_GRAN: {                           \
+    psp.stage##StreamConfigIndexGranularity(dynInfo, ##xc);                     \
+    break;                                                                     \
+  }                                                                            \
+  case GemForgeStaticInstOpE::STREAM_CFG_VAL_BASE: {                           \
+    psp.stage##StreamConfigValueBase(dynInfo, ##xc);                            \
+    break;                                                                     \
+  }                                                                            \
+  case GemForgeStaticInstOpE::STREAM_CFG_VAL_GRAN: {                           \
+    psp.stage##StreamConfigValueGranularity(dynInfo, ##xc);                     \
+    break;                                                                     \
+  }                                                                            \
+  case GemForgeStaticInstOpE::STREAM_INPUT_OFFSET_BEGIN: {                     \
+    psp.stage##StreamInputOffsetBegin(dynInfo, ##xc);                           \
+    break;                                                                     \
+  }                                                                            \
+  case GemForgeStaticInstOpE::STREAM_INPUT_OFFSET_END: {                       \
+    psp.stage##StreamInputOffsetEnd(dynInfo, ##xc);                             \
+    break;                                                                     \
+  }                                                                            \
+  case GemForgeStaticInstOpE::STREAM_TERMINATE: {                              \
+    psp.stage##StreamTerminate(dynInfo, ##xc);                                  \
+    break;                                                                     \
   }
 
 #define StreamInstRetCase(stage, xc...)                                        \
@@ -56,6 +86,20 @@
   }                                                                            \
   case GemForgeStaticInstOpE::STREAM_STORE: {                                  \
     return se.stage##StreamStore(dynInfo, ##xc);                               \
+  case GemForgeStaticInstOpE::STREAM_CFG_IDX_BASE: {                           \
+    return psp.stage##StreamConfigIndexBase(dynInfo, ##xc);                     \
+  case GemForgeStaticInstOpE::STREAM_CFG_IDX_GRAN: {                           \
+    return psp.stage##StreamConfigIndexGranularity(dynInfo, ##xc);              \
+  case GemForgeStaticInstOpE::STREAM_CFG_VAL_BASE: {                           \
+    return psp.stage##StreamConfigValueBase(dynInfo, ##xc);                     \
+  case GemForgeStaticInstOpE::STREAM_CFG_VAL_GRAN: {                           \
+    return psp.stage##StreamConfigValueGranularity(dynInfo, ##xc);              \
+  case GemForgeStaticInstOpE::STREAM_INPUT_OFFSET_BEGIN: {                     \
+    return psp.stage##StreamInputOffsetBegin(dynInfo, ##xc);                    \
+  case GemForgeStaticInstOpE::STREAM_INPUT_OFFSET_END: {                       \
+    return psp.stage##StreamInputOffsetEnd(dynInfo, ##xc);                      \
+  case GemForgeStaticInstOpE::STREAM_TERMINATE: {                              \
+    return psp.stage##StreamTerminate(dynInfo, ##xc);                           \
   }
 
 bool GemForgeISAHandler::shouldCountInPipeline(
@@ -194,6 +238,8 @@ GemForgeISAHandler::getStaticInstInfo(const GemForgeDynInstInfo &dynInfo) {
     auto instName = dynInfo.staticInst->getName();
     auto &staticInstInfo = emplaceRet.first->second;
 
+    // Editor: Sungjun Jung (miguel92@snu.ac.kr)
+    // Description: Append Programmable Stream Prefetch instructions
     if (instName == "ssp_stream_config") {
       staticInstInfo.op = GemForgeStaticInstOpE::STREAM_CONFIG;
     } else if (instName == "ssp_stream_end") {
@@ -214,6 +260,20 @@ GemForgeISAHandler::getStaticInstInfo(const GemForgeDynInstInfo &dynInfo) {
       staticInstInfo.op = GemForgeStaticInstOpE::STREAM_LOAD;
     } else if (instName == "ssp_stream_store") {
       staticInstInfo.op = GemForgeStaticInstOpE::STREAM_STORE;
+    } else if (instName == "stream_cfg_idx_base") { // From here, PSP instructions
+      staticInstInfo.op = GemForgeStaticInstOpE::STREAM_CFG_IDX_BASE;
+    } else if (instName == "stream_cfg_idx_gran") {
+      staticInstInfo.op = GemForgeStaticInstOpE::STREAM_CFG_IDX_GRAN;
+    } else if (instName == "stream_cfg_val_base") {
+      staticInstInfo.op = GemForgeStaticInstOpE::STREAM_CFG_VAL_BASE;
+    } else if (instName == "stream_cfg_val_gran") {
+      staticInstInfo.op = GemForgeStaticInstOpE::STREAM_CFG_VAL_GRAN;
+    } else if (instName == "stream_input_offset_begin") {
+      staticInstInfo.op = GemForgeStaticInstOpE::STREAM_INPUT_OFFSET_BEGIN;
+    } else if (instName == "stream_input_offset_end") {
+      staticInstInfo.op = GemForgeStaticInstOpE::STREAM_INPUT_OFFSET_END;
+    } else if (instName == "stream_terminate") {
+      staticInstInfo.op = GemForgeStaticInstOpE::STREAM_TERMINATE;
     }
   }
   return emplaceRet.first->second;
