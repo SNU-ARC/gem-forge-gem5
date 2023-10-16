@@ -1,0 +1,4 @@
+Import('*')
+
+DebugFlag('ISAPSP')
+Source('isa_psp_frontend.cc')

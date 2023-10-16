@@ -85,7 +85,7 @@ private:
 
   // Editor: Sungjun Jung (miguel92@snu.ac.kr)
   // Description: Add Programmable Stream Prefetcher Frontend
-  // PSPFrontend psp;
+  // ISAPSPFrontend psp;
 };
 
 #endif
