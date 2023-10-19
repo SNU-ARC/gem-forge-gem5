@@ -469,6 +469,66 @@ let {{
 
     microopClasses["stream_terminate"] = PSPStreamTerminateOp
 
+    class PSPStreamConfigReadyOp(X86Microop):
+        op_class = "No_OpClass"
+        def __init__(self, imm, dataSize="env.dataSize"):
+            self.className = "PSPStreamConfigReady"
+            self.mnemonic = "stream.cfg.ready"
+            if isinstance(imm, (int, long)):
+                imm = "ULL(%d)" % imm
+            self.imm = imm
+            self.dataSize = dataSize
+
+        def getAllocator(self, microFlags):
+            allocString = '''
+                (StaticInstPtr)(new %(class_name)s(
+                    machInst,
+                    macrocodeBlock,
+                    %(flags)s,
+                    %(imm)s,
+                    %(dataSize)s)
+                )
+            '''
+            allocator = allocString % {
+                "class_name" : self.className,
+                "mnemonic" : self.mnemonic,
+                "flags" : self.microFlagsText(microFlags),
+                "imm" : self.imm,
+                "dataSize" : self.dataSize}
+            return allocator
+
+    microopClasses["stream_cfg_ready"] = PSPStreamConfigReadyOp
+
+    class PSPStreamInputReadyOp(X86Microop):
+        op_class = "No_OpClass"
+        def __init__(self, imm, dataSize="env.dataSize"):
+            self.className = "PSPStreamInputReady"
+            self.mnemonic = "stream.input.ready"
+            if isinstance(imm, (int, long)):
+                imm = "ULL(%d)" % imm
+            self.imm = imm
+            self.dataSize = dataSize
+
+        def getAllocator(self, microFlags):
+            allocString = '''
+                (StaticInstPtr)(new %(class_name)s(
+                    machInst,
+                    macrocodeBlock,
+                    %(flags)s,
+                    %(imm)s,
+                    %(dataSize)s)
+                )
+            '''
+            allocator = allocString % {
+                "class_name" : self.className,
+                "mnemonic" : self.mnemonic,
+                "flags" : self.microFlagsText(microFlags),
+                "imm" : self.imm,
+                "dataSize" : self.dataSize}
+            return allocator
+
+    microopClasses["stream_input_ready"] = PSPStreamInputReadyOp
+
 }};
 
 
@@ -479,6 +539,34 @@ let {{
             "stream_terminate",
             # classname
             "PSPStreamTerminate",
+            # base_class
+            'X86MicroopBase',
+            # snippets
+            {
+                'code' : '',
+            },
+            # flags
+            ['No_OpClass', 'IsGemForge']
+        ),
+        InstObjParams(
+            # parse
+            "stream_cfg_ready",
+            # classname
+            "PSPStreamConfigReady",
+            # base_class
+            'X86MicroopBase',
+            # snippets
+            {
+                'code' : '',
+            },
+            # flags
+            ['No_OpClass', 'IsGemForge']
+        ),
+        InstObjParams(
+            # parse
+            "stream_input_ready",
+            # classname
+            "PSPStreamInputReady",
             # base_class
             'X86MicroopBase',
             # snippets

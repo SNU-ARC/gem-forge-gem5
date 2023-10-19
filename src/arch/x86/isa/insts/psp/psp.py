@@ -95,4 +95,14 @@ def macroop STREAM_TERMINATE_I
     stream_terminate imm
 };
 
+def macroop STREAM_CFG_READY_I
+{
+    stream_cfg_ready imm
+};
+
+def macroop STREAM_INPUT_READY_I
+{
+    stream_input_ready imm
+};
+
 '''
