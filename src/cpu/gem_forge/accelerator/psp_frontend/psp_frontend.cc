@@ -6,6 +6,7 @@ PSPFrontend::PSPFrontend(Params* params)
   : GemForgeAccelerator(params) {
     this->totalPatternTableEntries = params->totalPatternTableEntries;
     patternTable = new PatternTable(params->totalPatternTableEntries);
+    patternTableArbiter = new PatternTableRRArbiter(params->totalPatternTableEntries);
 }
 
 PSPFrontend::~PSPFrontend() {
@@ -13,6 +14,9 @@ PSPFrontend::~PSPFrontend() {
 }
 
 void PSPFrontend::tick() {
+  this->patternTableArbiter->getValidEntry(validPatternTableEntry);
+  if (validPatternTableEntry != nullptr) {
+  }
 }
 
 void PSPFrontend::dump() {

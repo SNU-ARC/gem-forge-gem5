@@ -87,6 +87,10 @@ struct PatternTableEntry {
 //    else
 //      this->idxTableInputEntry.inputOffsetEnd(_inputOffset);
 //  }
+  bool isValid(const bool _isInput) {
+    if (_isInput) return idxTableInputEntry.valid;
+    else return idxTableConfigEntry.valid && valTableConfigEntry.valid;
+  }
   bool getConfigInfo(uint64_t _idxBaseAddr, uint64_t _idxAccessGranularity, uint64_t _valBaseAddr, uint64_t _valAccessGranularity) {
     bool idxValid = idxTableConfigEntry.getConfigInfo(_idxBaseAddr, _idxAccessGranularity);
     bool valValid = valTableConfigEntry.getConfigInfo(_valBaseAddr, _valAccessGranularity);
@@ -110,6 +114,7 @@ class PatternTable {
 //    void configBaseAddr(uint32_t streamId, uint64_t baseAddr, bool isIdx);
 //    void configAccessGran(uint32_t streamId, uint64_t accessGranularity, bool isIdx);
 //    void inputOffset(uint32_t streamId, uint64_t inputOffset, bool isBegin);
+    bool isValid(const uint32_t _streamId, const bool _isInput);
     bool getConfigInfo(const uint32_t _streamId, uint64_t _idxBaseAddr, uint64_t _idxAccessGranularity, uint64_t _valBaseAddr, uint64_t _valAccessGranularity);
     bool getInputInfo(const uint32_t _streamId, uint64_t _offsetBegin, uint64_t _offsetEnd);
     void reset(uint32_t streamId);

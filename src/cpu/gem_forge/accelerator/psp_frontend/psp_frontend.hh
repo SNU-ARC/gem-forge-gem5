@@ -11,6 +11,7 @@
 #include "cpu/gem_forge/accelerator/gem_forge_accelerator.hh"
 #include "cpu/gem_forge/gem_forge_packet_handler.hh"
 #include "cpu/gem_forge/accelerator/psp_frontend/pattern_table.hh"
+#include "cpu/gem_forge/accelerator/psp_frontend/arbiter.hh"
 
 #include "params/PSPFrontend.hh"
 
@@ -26,6 +27,11 @@ public:
   void resetStats() override;
 
   PatternTable* patternTable;
+  PatternTable* validPatternTableEntry;
+  PatternTableRRArbiter* patternTableArbiter;
+//  IndexLoadUnit* indexLoadUnit;
+//  RRArbiter* indexArbiter;
+//  AddrTransUnit* addrTransUnit;
 
   // TODO: Define PSP instructions below
 

@@ -29,6 +29,9 @@ PatternTable::~PatternTable() {
 //void PatternTable::inputOffset(uint32_t streamId, uint64_t inputOffset, bool isIdx) {
 //  patternTable[streamId]->inputOffset(inputOffset, isIdx);
 //}
+bool PatternTable::isValid(const uint32_t _streamId, const bool _isInput) {
+  return patternTable[_streamId].isValid(_isInput);
+}
 bool PatternTable::getConfigInfo(const uint32_t _streamId, uint64_t _idxBaseAddr, uint64_t _idxAccessGranularity, uint64_t _valBaseAddr, uint64_t _valAccessGranularity) {
   return patternTable[_streamId].getConfigInfo(_idxBaseAddr, _idxAccessGranularity, _valBaseAddr, _valAccessGranularity);
 }
