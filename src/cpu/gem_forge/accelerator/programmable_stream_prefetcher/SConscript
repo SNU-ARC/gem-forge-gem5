@@ -1,5 +1,0 @@
-Import('*')
-
-DebugFlag('ProgrammableStreamPrefetcher')
-
-Source('programmable_stream_prefetcher.cc')

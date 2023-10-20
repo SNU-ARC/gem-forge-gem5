@@ -89,8 +89,8 @@ def initializeStreamEngine(options):
 
     return se
 
-def initializeProgrammableStreamPrefetcher(options):
-    psp = ProgrammableStreamPrefetcher()
+def initializePSPFrontend(options):
+    psp = PSPFrontend()
     # Pass parameters
 
     return psp
@@ -124,7 +124,7 @@ def initializeGemForgeAcceleratorManager(options):
     if options.gem_forge_stream_engine_enable:
         accelerators.append(initializeStreamEngine(options))
 #    if options.programmable_stream_prefetcher_enable:
-#        accelerators.append(initializeProgrammableStreamPrefetcher(options))
+#        accelerators.append(initializePSPFrontend(options))
     if accelerators:
         return GemForgeAcceleratorManager(accelerators=accelerators)
     elif options.gem_forge_idea_inorder_cpu:
