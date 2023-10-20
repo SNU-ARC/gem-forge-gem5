@@ -1,0 +1,6 @@
+Import('*')
+
+DebugFlag('PSPFrontend')
+
+Source('psp_frontend.cc')
+Source('pattern_table.cc')

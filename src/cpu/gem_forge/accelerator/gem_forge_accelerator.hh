@@ -59,6 +59,9 @@ protected:
   GemForgeAcceleratorManager *manager;
 };
 
+// Editor: Sungjun Jung (miguel92@snu.ac.kr)
+// Description: Add PSPFrontend on the list
+class PSPFrontend;
 class StreamEngine;
 class SpeculativePrecomputationManager;
 class GemForgeAcceleratorManager : public SimObject {
@@ -92,6 +95,9 @@ public:
   SpeculativePrecomputationManager *getSpeculativePrecomputationManager();
 
   void regStats() override;
+
+  // Editor: Sungjun Jung (miguel92@snu.ac.kr)
+  PSPFrontend* getPSPFrontend();
 
 private:
   std::vector<GemForgeAccelerator *> &accelerators;

@@ -8,6 +8,7 @@
 // Include the accelerators.
 #include "speculative_precomputation/speculative_precomputation_manager.hh"
 #include "stream/stream_engine.hh"
+#include "psp_frontend/psp_frontend.hh"
 
 void GemForgeAccelerator::handshake(GemForgeCPUDelegator *_cpuDelegator,
                                     GemForgeAcceleratorManager *_manager) {
@@ -85,6 +86,15 @@ StreamEngine *GemForgeAcceleratorManager::getStreamEngine() {
   for (auto accelerator : this->accelerators) {
     if (auto se = dynamic_cast<StreamEngine *>(accelerator)) {
       return se;
+    }
+  }
+  return nullptr;
+}
+
+PSPFrontend* GemForgeAcceleratorManager::getPSPFrontend() {
+  for (auto accelerator : this->accelerators) {
+    if (auto psp = dynamic_cast<PSPFrontend *>(accelerator)) {
+      return psp;
     }
   }
   return nullptr;
