@@ -47,12 +47,16 @@ public:
   void commitStream##Inst(const GemForgeDynInstInfo &dynInfo);                 \
   void rewindStream##Inst(const GemForgeDynInstInfo &dynInfo);
 
-  DeclareStreamInstHandler(Config);
-  DeclareStreamInstHandler(Ready);
+  DeclareStreamInstHandler(ConfigIndexBase);
+  DeclareStreamInstHandler(ConfigIndexGranularity);
+  DeclareStreamInstHandler(ConfigValueBase);
+  DeclareStreamInstHandler(ConfigValueGranularity);
+  DeclareStreamInstHandler(InputBegin);
+  DeclareStreamInstHandler(InputEnd);
+  DeclareStreamInstHandler(ConfigReady);
+  DeclareStreamInstHandler(InputReady);
   DeclareStreamInstHandler(Terminate);
 #undef DeclareStreamInstHandler
-
-  void storeTo(InstSeqNum seqNum, Addr vaddr, int size);
 
 private:
   ::GemForgeCPUDelegator *cpuDelegator;
@@ -63,20 +67,17 @@ private:
 
   template <typename T> T extractImm(const StaticInst *staticInst) const;
 
-  /**
-   * Remembers the mustBeMisspeculatedReason.
-   */
-  enum MustBeMisspeculatedReason {
-    CONFIG_HAS_PREV_REGION = 0,
-    CONFIG_RECURSIVE,
-    CONFIG_CANNOT_SET_REGION_ID,
-    STEP_INVALID_REGION_ID,
-    USER_INVALID_REGION_ID,
-    USER_USING_LAST_ELEMENT,
-    USER_SE_CANNOT_DISPATCH,
+  struct StreamConfig {
+    std::vector<bool> dispatched = std::vector<bool>(4);
+    std::vector<bool> executed = std::vector<bool>(4);
+    std::vector<RegVal> inputContents = std::vector<RegVal>(4);
   };
 
-  static std::string mustBeMisspeculatedString(MustBeMisspeculatedReason reason);
+  struct StreamInput {
+    std::vector<bool> dispatched = std::vector<bool>(2);
+    std::vector<bool> executed = std::vector<bool>(2);
+    std::vector<RegVal> inputContents = std::vector<RegVal>(2);
+  };
 
   /**
    * StreamEngine is configured through a sequence of instructions:
@@ -95,64 +96,15 @@ private:
    * 2. When all the instructions are executed, we call StreamEngine::executeStreamConfig.
    * 3. When ssp.stream.ready commits, we call StreamEngine::commitStreamConfig.
    */
-  struct DynStreamRegionInfo {
-    bool streamConfigReadyDispatched = false;
-    bool streamInputReadyDispatched = false;
-    uint64_t streamReadySeqNum = 0;
-    int numDispatchedInsts = 0;
-    int numExecutedInsts = 0;
-    bool mustBeMisspeculated = false;
-    int stage = 0;
-    std::vector<RegVal> inputMap;
-
-    // Mainly used for misspeculation recover.
-    std::shared_ptr<DynStreamRegionInfo> prevRegion = nullptr;
-    DynStreamRegionInfo(std::shared_ptr<DynStreamRegionInfo> _prevRegion) : prevRegion(_prevRegion) {}
-
-    std::vector<RegVal> &getInputVec();
-    std::string &getStageName();
-    bool isConfigStage();
-    void incrementStage();
-    void decrementStage();
+  struct StreamRegionInfo {
+    StreamConfig configInfo;
+    StreamInput inputInfo;
   };
 
-  /**
-   * Store the current stream region info being used at dispatch stage.
-   * We need a shared_ptr as it will be stored in DynStreamInstInfo and used
-   * later in execution stage, etc.
-   */
-  std::shared_ptr<DynStreamRegionInfo> curStreamRegionInfo;
+  std::unordered_map<uint64_t, StreamRegionInfo> streamNumToStreamRegionMap;
 
-  struct DynStreamInstInfo {
-    /**
-     * Maybe we can use a union to save the storage, but union is
-     * painful to use when the member is not POD and I don't care.
-     */
-    std::shared_ptr<DynStreamRegionInfo> dynStreamRegionInfo;
-
-    /**
-     * Sometimes it is for sure this instruction is misspeculated.
-     */
-    bool mustBeMisspeculated = false;
-    /**
-     * Whether this instruction has been executed.
-     * Only valid if mustBeMisspeculated is false.
-     */
-    bool executed = false;
-    MustBeMisspeculatedReason mustBeMisspeculatedReason;
-  };
-  std::unordered_map<uint64_t, DynStreamInstInfo> seqNumToDynInfoMap;
-
-  DynStreamInstInfo &createDynStreamInstInfo(uint64_t seqNum);
-  DynStreamInstInfo &getOrCreateDynStreamInstInfo(uint64_t seqNum);
-  DynStreamInstInfo &getDynStreamInstInfo(uint64_t seqNum);
-
-  /**
-   * Mark one stream config inst executed.
-   * If all executed, will call StreamEngine::executeStreamConfig.
-   */
-  void increamentStreamRegionInfoNumExecutedInsts(
-      DynStreamRegionInfo &dynStreamRegionInfo);
+  StreamRegionInfo &createStreamRegionInfo(uint64_t streamNum);
+  StreamRegionInfo &getStreamRegionInfo(uint64_t streamNum);
 };
 
 #endif

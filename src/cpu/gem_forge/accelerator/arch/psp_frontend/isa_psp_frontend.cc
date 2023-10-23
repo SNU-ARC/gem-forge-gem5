@@ -22,326 +22,595 @@
   ISA_PSP_FE_PANIC("%llu %s " format, dynInfo.seqNum, dynInfo.pc, ##args)
 
 //constexpr uint64_t ISAPSPFrontend::InvalidStreamId;
+// dispatch in-order, execute not
+// canExecuteStreamReady fails if all configurations are not executed
+// order of config or input does not matter
+// termiante ?
 
 /********************************************************************************
- * StreamConfig Handlers.
+ * StreamConfig/Input Handlers : canDispatch
  *******************************************************************************/
-
-bool ISAPSPFrontend::canDispatchStreamConfig(
+bool ISAPSPFrontend::canDispatchStreamConfigIndexBase(
     const GemForgeDynInstInfo &dynInfo) {
+  warn("canDispatchStreamConfigIndexBase");
   return true;
 }
 
-void ISAPSPFrontend::dispatchStreamConfig(
+bool ISAPSPFrontend::canDispatchStreamConfigIndexGranularity(
+    const GemForgeDynInstInfo &dynInfo) {
+  warn("canDispatchStreamConfigIndexGranularity");
+  return true;
+}
+
+bool ISAPSPFrontend::canDispatchStreamConfigValueBase(
+    const GemForgeDynInstInfo &dynInfo) {
+  warn("canDispatchStreamConfigValueBase");
+  return true;
+}
+
+bool ISAPSPFrontend::canDispatchStreamConfigValueGranularity(
+    const GemForgeDynInstInfo &dynInfo) {
+  warn("canDispatchStreamConfigValueGranularity");
+  return true;
+}
+
+bool ISAPSPFrontend::canDispatchStreamInputBegin(
+    const GemForgeDynInstInfo &dynInfo) {
+  warn("canDispatchStreamInputBegin");
+  return true;
+}
+
+bool ISAPSPFrontend::canDispatchStreamInputEnd(
+    const GemForgeDynInstInfo &dynInfo) {
+  warn("canDispatchStreamInputEnd");
+  return true;
+}
+
+/********************************************************************************
+ * StreamConfig/Input Handlers : dispatch
+ *******************************************************************************/
+void ISAPSPFrontend::dispatchStreamConfigIndexBase(
     const GemForgeDynInstInfo &dynInfo,
     GemForgeLSQCallbackList &extraLSQCallbacks) {
+  warn("dispatchStreamConfigIndexBase");
 
-  auto streamId = this->extractImm<uint64_t>(dynInfo.staticInst);
-  auto &instInfo = this->createDynStreamInstInfo(dynInfo.seqNum);
-  auto &regionInfo = this->curStreamRegionInfo;
+  auto streamNum = this->extractImm<uint64_t>(dynInfo.staticInst);
+  auto &regionInfo = this->createStreamRegionInfo(streamNum);
   
-  if (regionInfo == NULL) {
-    // _prevRegion as input to DynStreamRegionInfo constructor
-    regionInfo = instInfo.dynStreamRegionInfo = this->curStreamRegionInfo = std::make_shared<DynStreamRegionInfo>(regionInfo);
+  regionInfo.configInfo.dispatched[0] = 1;
 
-    DYN_INST_DPRINTF("[dispatch] %s %llu\n", regionInfo->getStageName(), streamId);
-
-    this->curStreamRegionInfo->numDispatchedInsts++;
-
-    if (regionInfo->prevRegion) {
-      DYN_INST_DPRINTF("[dispatch] MustMisspeculated StreamConfig %llu : Has previous region.\n", streamId);
-      instInfo.mustBeMisspeculated = true;
-      instInfo.mustBeMisspeculatedReason = CONFIG_HAS_PREV_REGION;
-      regionInfo->mustBeMisspeculated = true;
-      return;
-    }
-  } else {
-    instInfo.dynStreamRegionInfo = regionInfo;
-
-    DYN_INST_DPRINTF("[dispatch] %s %llu.\n", regionInfo->getStageName(), streamId);
-
-    this->curStreamRegionInfo->numDispatchedInsts++;
-
-    // Check if the previous instruction is misspeculated.
-    if (regionInfo->mustBeMisspeculated) {
-      DYN_INST_DPRINTF("[dispatch] MustMisspeculated %s.\n", regionInfo->getStageName());
-      instInfo.mustBeMisspeculated = true;
-      return;
-    }
-  }
+  DYN_INST_DPRINTF("[dispatch] StreamConfigIndexBase %llu\n", streamNum);
 }
 
-bool ISAPSPFrontend::canExecuteStreamConfig(
-    const GemForgeDynInstInfo &dynInfo) {
-  return true;
+void ISAPSPFrontend::dispatchStreamConfigIndexGranularity(    
+    const GemForgeDynInstInfo &dynInfo,
+    GemForgeLSQCallbackList &extraLSQCallbacks) {
+  warn("dispatchStreamConfigIndexGranularity");  
+  
+  auto streamNum = this->extractImm<uint64_t>(dynInfo.staticInst);
+  auto &regionInfo = this->getStreamRegionInfo(streamNum);
+  
+  regionInfo.configInfo.dispatched[1] = 1;
+
+  DYN_INST_DPRINTF("[dispatch] StreamConfigIndexGranularity %llu\n", streamNum);
 }
 
-void ISAPSPFrontend::executeStreamConfig(const GemForgeDynInstInfo &dynInfo,
-                                         ExecContext &xc) {
-  auto &instInfo = this->getDynStreamInstInfo(dynInfo.seqNum);
-  auto &regionInfo = this->curStreamRegionInfo;
-  std::string stageName = regionInfo->getStageName();
+void ISAPSPFrontend::dispatchStreamConfigValueBase(    
+    const GemForgeDynInstInfo &dynInfo,
+    GemForgeLSQCallbackList &extraLSQCallbacks) {
+  warn("dispatchStreamConfigValueBase");
 
-  if (instInfo.mustBeMisspeculated) {
-    DYN_INST_DPRINTF("[execute] MustMisspeculated %s.\n", stageName);
-    return;
-  }
+  auto streamNum = this->extractImm<uint64_t>(dynInfo.staticInst);
+  auto &regionInfo = this->getStreamRegionInfo(streamNum);
+  
+  regionInfo.configInfo.dispatched[2] = 1;
 
-  auto streamId = this->extractImm<uint64_t>(dynInfo.staticInst);
-  auto &inputVec = regionInfo->getInputVec();
-
-  for (int srcIdx = 0; srcIdx < dynInfo.staticInst->numSrcRegs(); ++srcIdx) {
-    const auto &regId = dynInfo.staticInst->srcRegIdx(srcIdx);
-    assert(regId.isIntReg());
-    RegVal regValue = xc.readIntRegOperand(dynInfo.staticInst, srcIdx);
-    inputVec.push_back(regValue);
-  }
-
-  DYN_INST_DPRINTF(
-      "[execute] %s StreamId %llu Dispatched %d Executed %d.\n",
-      stageName, streamId, 
-      regionInfo->numDispatchedInsts,
-      regionInfo->numExecutedInsts + 1);
-  instInfo.executed = true;
-
-  this->increamentStreamRegionInfoNumExecutedInsts(*regionInfo);
+  DYN_INST_DPRINTF("[dispatch] StreamConfigValueBase %llu\n", streamNum);
 }
 
-bool ISAPSPFrontend::canCommitStreamConfig(const GemForgeDynInstInfo &dynInfo) {
-  return true;
+void ISAPSPFrontend::dispatchStreamConfigValueGranularity(    
+    const GemForgeDynInstInfo &dynInfo,
+    GemForgeLSQCallbackList &extraLSQCallbacks) {
+  warn("dispatchStreamConfigValueGranularity");
+
+  auto streamNum = this->extractImm<uint64_t>(dynInfo.staticInst);
+  auto &regionInfo = this->getStreamRegionInfo(streamNum);
+  
+  regionInfo.configInfo.dispatched[3] = 1;
+
+  DYN_INST_DPRINTF("[dispatch] StreamConfigValueGranularity %llu\n", streamNum);
 }
 
-void ISAPSPFrontend::commitStreamConfig(const GemForgeDynInstInfo &dynInfo) {
-  // Release the InstInfo.
-  auto &instInfo = this->getDynStreamInstInfo(dynInfo.seqNum);
-  auto &regionInfo = this->curStreamRegionInfo;
-  std::string stageName = regionInfo->getStageName();
+void ISAPSPFrontend::dispatchStreamInputBegin(    
+    const GemForgeDynInstInfo &dynInfo,
+    GemForgeLSQCallbackList &extraLSQCallbacks) {
+  warn("dispatchStreamInputBegin");
 
-  if (instInfo.mustBeMisspeculated) {
-    panic("[commit] MustMisspeculated %s.\n", stageName);
-  }
-  this->seqNumToDynInfoMap.erase(dynInfo.seqNum);
-  regionInfo->incrementStage();
+  auto streamNum = this->extractImm<uint64_t>(dynInfo.staticInst);
+  auto &regionInfo = this->getStreamRegionInfo(streamNum);
+  
+  regionInfo.inputInfo.dispatched[0] = 1;
+
+  DYN_INST_DPRINTF("[dispatch] StreamInputBegin %llu\n", streamNum);
 }
 
-void ISAPSPFrontend::rewindStreamConfig(const GemForgeDynInstInfo &dynInfo) {
-  auto &instInfo = this->getDynStreamInstInfo(dynInfo.seqNum);
-  auto &regionInfo = this->curStreamRegionInfo;
-  std::string stageName = regionInfo->getStageName();
+void ISAPSPFrontend::dispatchStreamInputEnd(    
+    const GemForgeDynInstInfo &dynInfo,
+    GemForgeLSQCallbackList &extraLSQCallbacks) {
+  warn("dispatchStreamInputEnd");
 
-  if (instInfo.mustBeMisspeculated) {
-    DYN_INST_DPRINTF("[rewind] MustMisspeculated %s.\n", stageName);
-    this->seqNumToDynInfoMap.erase(dynInfo.seqNum);
+  auto streamNum = this->extractImm<uint64_t>(dynInfo.staticInst);
+  auto &regionInfo = this->getStreamRegionInfo(streamNum);
 
-    if (regionInfo->stage == 0) {
-      this->curStreamRegionInfo = regionInfo->prevRegion;  
-      assert(!this->curStreamRegionInfo && "Has previous stream region?");
-    }
-    return;
-  }
+  regionInfo.inputInfo.dispatched[1] = 1;
 
-  // Check if I executed.
-  if (instInfo.executed) {
-    regionInfo->numExecutedInsts--;
-  }
-
-  // Decrease numDispatchedInst.
-  regionInfo->numDispatchedInsts--;
-
-  // Rollback to previous region. 
-  if (regionInfo->stage == 0) {
-    this->curStreamRegionInfo = regionInfo->prevRegion;  
-    assert(!this->curStreamRegionInfo && "Has previous stream region?");
-  } else {
-    regionInfo->inputMap.pop_back();
-  }
-
-  // Release the InstInfo.
-  this->seqNumToDynInfoMap.erase(dynInfo.seqNum);
-  regionInfo->decrementStage();
+  DYN_INST_DPRINTF("[dispatch] StreamInputEnd %llu\n", streamNum);
 }
 
 /********************************************************************************
- * StreamReady Handlers.
+ * StreamConfig/Input Handlers : canExecute
+ *******************************************************************************/
+bool ISAPSPFrontend::canExecuteStreamConfigIndexBase(
+    const GemForgeDynInstInfo &dynInfo) {
+  warn("canExecuteStreamConfigIndexBase");
+  return true;
+}
+
+bool ISAPSPFrontend::canExecuteStreamConfigIndexGranularity(
+    const GemForgeDynInstInfo &dynInfo) {
+  warn("canExecuteStreamConfigIndexGranularity");
+  return true;
+}
+
+bool ISAPSPFrontend::canExecuteStreamConfigValueBase(
+    const GemForgeDynInstInfo &dynInfo) {
+  warn("canExecuteStreamConfigValueBase");
+  return true;
+}
+
+bool ISAPSPFrontend::canExecuteStreamConfigValueGranularity(
+    const GemForgeDynInstInfo &dynInfo) {
+  warn("canExecuteStreamConfigValueGranularity");
+  return true;
+}
+
+bool ISAPSPFrontend::canExecuteStreamInputBegin(
+    const GemForgeDynInstInfo &dynInfo) {
+  warn("canExecuteStreamInputBegin");
+  return true;
+}
+
+bool ISAPSPFrontend::canExecuteStreamInputEnd(
+    const GemForgeDynInstInfo &dynInfo) {
+  warn("canExecuteStreamInputEnd");
+  return true;
+}
+
+/********************************************************************************
+ * StreamConfig/Input Handlers : execute
+ *******************************************************************************/
+void ISAPSPFrontend::executeStreamConfigIndexBase(const GemForgeDynInstInfo &dynInfo, ExecContext &xc) {
+  warn("executeStreamConfigIndexBase");
+
+  auto streamNum = this->extractImm<uint64_t>(dynInfo.staticInst);
+  auto &regionInfo = this->getStreamRegionInfo(streamNum);
+  auto &configInfo = regionInfo.configInfo;
+
+  const auto &regId = dynInfo.staticInst->srcRegIdx(0);
+  assert(regId.isIntReg());
+  RegVal regValue = xc.readIntRegOperand(dynInfo.staticInst, 0);
+  configInfo.inputContents[0] = regValue;
+  configInfo.executed[0] = 1;
+
+  DYN_INST_DPRINTF("[execute] executeStreamConfigIndexBase, StreamNum %llu\n", streamNum);
+}
+
+void ISAPSPFrontend::executeStreamConfigIndexGranularity(const GemForgeDynInstInfo &dynInfo, ExecContext &xc) {
+  warn("executeStreamConfigIndexGranularity");
+
+  auto streamNum = this->extractImm<uint64_t>(dynInfo.staticInst);
+  auto &regionInfo = this->getStreamRegionInfo(streamNum);
+  auto &configInfo = regionInfo.configInfo;
+
+  const auto &regId = dynInfo.staticInst->srcRegIdx(0);
+  assert(regId.isIntReg());
+  RegVal regValue = xc.readIntRegOperand(dynInfo.staticInst, 0);
+  configInfo.inputContents[1] = regValue;
+  configInfo.executed[1] = 1;
+
+  DYN_INST_DPRINTF("[execute] executeStreamConfigIndexGranularity, StreamNum %llu\n", streamNum);
+}
+
+void ISAPSPFrontend::executeStreamConfigValueBase(const GemForgeDynInstInfo &dynInfo, ExecContext &xc) {
+  warn("executeStreamConfigValueBase");
+
+  auto streamNum = this->extractImm<uint64_t>(dynInfo.staticInst);
+  auto &regionInfo = this->getStreamRegionInfo(streamNum);
+  auto &configInfo = regionInfo.configInfo;
+
+  const auto &regId = dynInfo.staticInst->srcRegIdx(0);
+  assert(regId.isIntReg());
+  RegVal regValue = xc.readIntRegOperand(dynInfo.staticInst, 0);
+  configInfo.inputContents[2] = regValue;
+  configInfo.executed[2] = 1;
+
+  DYN_INST_DPRINTF("[execute] executeStreamConfigValueBase, StreamNum %llu\n", streamNum);
+}
+
+void ISAPSPFrontend::executeStreamConfigValueGranularity(const GemForgeDynInstInfo &dynInfo, ExecContext &xc) {
+  warn("executeStreamConfigValueGranularity");
+
+  auto streamNum = this->extractImm<uint64_t>(dynInfo.staticInst);
+  auto &regionInfo = this->getStreamRegionInfo(streamNum);
+  auto &configInfo = regionInfo.configInfo;
+
+  const auto &regId = dynInfo.staticInst->srcRegIdx(0);
+  assert(regId.isIntReg());
+  RegVal regValue = xc.readIntRegOperand(dynInfo.staticInst, 0);
+  configInfo.inputContents[3] = regValue;
+  configInfo.executed[3] = 1;
+
+  DYN_INST_DPRINTF("[execute] executeStreamConfigValueGranularity, StreamNum %llu\n", streamNum);
+}
+
+void ISAPSPFrontend::executeStreamInputBegin(const GemForgeDynInstInfo &dynInfo, ExecContext &xc) {
+  warn("executeStreamInputBegin");
+
+  auto streamNum = this->extractImm<uint64_t>(dynInfo.staticInst);
+  auto &regionInfo = this->getStreamRegionInfo(streamNum);
+  auto &inputInfo = regionInfo.inputInfo;
+
+  const auto &regId = dynInfo.staticInst->srcRegIdx(0);
+  assert(regId.isIntReg());
+  RegVal regValue = xc.readIntRegOperand(dynInfo.staticInst, 0);
+  inputInfo.inputContents[0] = regValue;
+  inputInfo.executed[0] = 1;
+
+  DYN_INST_DPRINTF("[execute] executeStreamInputBegin, StreamNum %llu\n", streamNum);
+}
+
+void ISAPSPFrontend::executeStreamInputEnd(const GemForgeDynInstInfo &dynInfo, ExecContext &xc) {
+  warn("executeStreamInputEnd");
+
+  auto streamNum = this->extractImm<uint64_t>(dynInfo.staticInst);
+  auto &regionInfo = this->getStreamRegionInfo(streamNum);
+  auto &inputInfo = regionInfo.inputInfo;
+
+  const auto &regId = dynInfo.staticInst->srcRegIdx(0);
+  assert(regId.isIntReg());
+  RegVal regValue = xc.readIntRegOperand(dynInfo.staticInst, 0);
+  inputInfo.inputContents[1] = regValue;
+  inputInfo.executed[1] = 1;
+
+  DYN_INST_DPRINTF("[execute] executeStreamInputEnd, StreamNum %llu\n", streamNum);
+}
+
+/********************************************************************************
+ * StreamConfig/Input Handlers : canCommit
  *******************************************************************************/
 
-bool ISAPSPFrontend::canDispatchStreamReady(const GemForgeDynInstInfo &dynInfo) {
-  assert(this->curStreamRegionInfo && "Missing DynStreamRegionInfo.");
+bool ISAPSPFrontend::canCommitStreamConfigIndexBase(const GemForgeDynInstInfo &dynInfo) {
+  return true;
+}
 
-  auto &regionInfo = this->curStreamRegionInfo;
-  std::string stageName = regionInfo->getStageName();
+bool ISAPSPFrontend::canCommitStreamConfigIndexGranularity(const GemForgeDynInstInfo &dynInfo) {
+  return true;
+}
 
-  if (this->curStreamRegionInfo->mustBeMisspeculated) {
-    DYN_INST_DPRINTF("[canDispatch] MustMisspeculated %s.\n", stageName);
-    return true;
-  }
+bool ISAPSPFrontend::canCommitStreamConfigValueBase(const GemForgeDynInstInfo &dynInfo) {
+  return true;
+}
+
+bool ISAPSPFrontend::canCommitStreamConfigValueGranularity(const GemForgeDynInstInfo &dynInfo) {
+  return true;
+}
+
+bool ISAPSPFrontend::canCommitStreamInputBegin(const GemForgeDynInstInfo &dynInfo) {
+  return true;
+}
+
+bool ISAPSPFrontend::canCommitStreamInputEnd(const GemForgeDynInstInfo &dynInfo) {
+  return true;
+}
+
+/********************************************************************************
+ * StreamConfig/Input Handlers : commit
+ *******************************************************************************/
+
+void ISAPSPFrontend::commitStreamConfigIndexBase(const GemForgeDynInstInfo &dynInfo) {
+  warn("commitStreamConfigIndexBase");
+}
+
+void ISAPSPFrontend::commitStreamConfigIndexGranularity(const GemForgeDynInstInfo &dynInfo) {
+  warn("commitStreamConfigIndexGranularity");
+}
+
+void ISAPSPFrontend::commitStreamConfigValueBase(const GemForgeDynInstInfo &dynInfo) {
+  warn("commitStreamConfigValueBase");
+}
+
+void ISAPSPFrontend::commitStreamConfigValueGranularity(const GemForgeDynInstInfo &dynInfo) {
+  warn("commitStreamConfigValueGranularity");
+}
+
+void ISAPSPFrontend::commitStreamInputBegin(const GemForgeDynInstInfo &dynInfo) {
+  warn("commitStreamInputBegin");
+}
+
+void ISAPSPFrontend::commitStreamInputEnd(const GemForgeDynInstInfo &dynInfo) {
+  warn("commitStreamInputEnd");
+}
+
+/********************************************************************************
+ * StreamConfig/Input Handlers : rewind
+ *******************************************************************************/
+
+void ISAPSPFrontend::rewindStreamConfigIndexBase(const GemForgeDynInstInfo &dynInfo) {
+  warn("rewindStreamConfigIndexBase");
+
+  auto streamNum = this->extractImm<uint64_t>(dynInfo.staticInst);
+  auto &regionInfo = this->getStreamRegionInfo(streamNum);
+
+  regionInfo.configInfo.dispatched[0] = 0;
+  regionInfo.configInfo.executed[0] = 0;
+}
+
+void ISAPSPFrontend::rewindStreamConfigIndexGranularity(const GemForgeDynInstInfo &dynInfo) {
+  warn("rewindStreamConfigIndexGranularity");
+
+  auto streamNum = this->extractImm<uint64_t>(dynInfo.staticInst);
+  auto &regionInfo = this->getStreamRegionInfo(streamNum);
+
+  regionInfo.configInfo.dispatched[1] = 0;
+  regionInfo.configInfo.executed[1] = 0;
+}
+
+void ISAPSPFrontend::rewindStreamConfigValueBase(const GemForgeDynInstInfo &dynInfo) {
+  warn("rewindStreamConfigValueBase");
+
+  auto streamNum = this->extractImm<uint64_t>(dynInfo.staticInst);
+  auto &regionInfo = this->getStreamRegionInfo(streamNum);
+
+  regionInfo.configInfo.dispatched[2] = 0;
+  regionInfo.configInfo.executed[2] = 0;
+}
+
+void ISAPSPFrontend::rewindStreamConfigValueGranularity(const GemForgeDynInstInfo &dynInfo) {
+  warn("rewindStreamConfigValueGranularity");
+
+  auto streamNum = this->extractImm<uint64_t>(dynInfo.staticInst);
+  auto &regionInfo = this->getStreamRegionInfo(streamNum);
+
+  regionInfo.configInfo.dispatched[3] = 0;
+  regionInfo.configInfo.executed[3] = 0;
+}
+
+void ISAPSPFrontend::rewindStreamInputBegin(const GemForgeDynInstInfo &dynInfo) {
+  warn("rewindStreamInputBegin");
+
+  auto streamNum = this->extractImm<uint64_t>(dynInfo.staticInst);
+  auto &regionInfo = this->getStreamRegionInfo(streamNum);
+
+  regionInfo.inputInfo.dispatched[0] = 0;
+  regionInfo.inputInfo.executed[0] = 0;
+}
+
+void ISAPSPFrontend::rewindStreamInputEnd(const GemForgeDynInstInfo &dynInfo) {
+  warn("rewindStreamInputEnd");
+
+  auto streamNum = this->extractImm<uint64_t>(dynInfo.staticInst);
+  auto &regionInfo = this->getStreamRegionInfo(streamNum);
+
+  regionInfo.inputInfo.dispatched[1] = 0;
+  regionInfo.inputInfo.executed[1] = 0;
+}
+
+/********************************************************************************
+ * Stream[Config/Input]Ready Handlers : canDispatch
+ *******************************************************************************/
+
+bool ISAPSPFrontend::canDispatchStreamConfigReady(const GemForgeDynInstInfo &dynInfo) {
+  warn("canDispatchStreamConfigReady");
+
+  auto streamNum = this->extractImm<uint64_t>(dynInfo.staticInst);
+  auto &regionInfo = this->getStreamRegionInfo(streamNum);
 
   auto psp = this->getPSPFrontend();
-  bool canReady = false;
-  if (regionInfo->isConfigStage()) {
-    ::PSPFrontend::StreamConfigArgs args(dynInfo.seqNum, regionInfo->getInputVec());
-    canReady = psp->canDispatchStreamConfig(args);
-  } else {
-    ::PSPFrontend::StreamInputArgs args(dynInfo.seqNum, regionInfo->getInputVec());
-    canReady = psp->canDispatchStreamInput(args);
-  }
+  ::PSPFrontend::StreamConfigArgs args(dynInfo.seqNum, regionInfo.configInfo.inputContents);
+  bool canReady = psp->canDispatchStreamConfig(args);
 
   if (canReady) {
-    DYN_INST_DPRINTF("[canDispatch] %s\n", stageName);
+    DYN_INST_DPRINTF("[canDispatch] canDispatchStreamConfigReady\n");
     return true;
   } else {
-    DYN_INST_DPRINTF("[can X Dispatch] %s\n", stageName);
+    DYN_INST_DPRINTF("[canDispatch FAIL] canDispatchStreamConfigReady\n");
     return false;
   }
 }
 
-void ISAPSPFrontend::dispatchStreamReady(
+bool ISAPSPFrontend::canDispatchStreamInputReady(const GemForgeDynInstInfo &dynInfo) {
+  warn("canDispatchStreamInputReady");
+
+  auto streamNum = this->extractImm<uint64_t>(dynInfo.staticInst);
+  auto &regionInfo = this->getStreamRegionInfo(streamNum);
+
+  auto psp = this->getPSPFrontend();
+  ::PSPFrontend::StreamInputArgs args(dynInfo.seqNum, regionInfo.inputInfo.inputContents);
+  bool canReady = psp->canDispatchStreamInput(args);
+
+  if (canReady) {
+    DYN_INST_DPRINTF("[canDispatch] canDispatchStreamInputReady\n");
+    return true;
+  } else {
+    DYN_INST_DPRINTF("[canDispatch FAIL] canDispatchStreamInputReady\n");
+    return false;
+  }
+}
+
+/********************************************************************************
+ * Stream[Config/Input]Ready Handlers : dispatch
+ *******************************************************************************/
+
+void ISAPSPFrontend::dispatchStreamConfigReady(
     const GemForgeDynInstInfo &dynInfo,
     GemForgeLSQCallbackList &extraLSQCallbacks) {
-  assert(this->curStreamRegionInfo && "Missing DynStreamRegionInfo.");
+  warn("dispatchStreamConfigReady");
 
-  auto &instInfo = this->createDynStreamInstInfo(dynInfo.seqNum);
-  auto &regionInfo = instInfo.dynStreamRegionInfo = this->curStreamRegionInfo;
-  std::string stageName = regionInfo->getStageName();
-
-  if (regionInfo->mustBeMisspeculated) {
-    // Handle must be misspeculated.
-    DYN_INST_DPRINTF("[dispatch] MustMisspeculated %s.\n", stageName);
-    instInfo.mustBeMisspeculated = true;
-    // Release the current DynStreamRegionInfo.
-    instInfo.dynStreamRegionInfo = nullptr;
-    this->curStreamRegionInfo = nullptr;
-    return;
-  }
-
+  auto streamNum = this->extractImm<uint64_t>(dynInfo.staticInst);
+  auto &regionInfo = this->getStreamRegionInfo(streamNum);
+  
   auto psp = this->getPSPFrontend();
-  if (regionInfo->isConfigStage()) {
-    ::PSPFrontend::StreamConfigArgs args(dynInfo.seqNum, regionInfo->getInputVec(), dynInfo.tc);
-    psp->dispatchStreamConfig(args);
-    regionInfo->streamConfigReadyDispatched = true;
-  } else {
-    ::PSPFrontend::StreamInputArgs args(dynInfo.seqNum, regionInfo->getInputVec(), dynInfo.tc);
-    psp->dispatchStreamInput(args);
-    regionInfo->streamInputReadyDispatched = true;
-  }
+  ::PSPFrontend::StreamConfigArgs args(dynInfo.seqNum, regionInfo.configInfo.inputContents);
+  psp->dispatchStreamConfig(args);
 
-  regionInfo->numDispatchedInsts++;
-  regionInfo->streamReadySeqNum = dynInfo.seqNum;
-
-  DYN_INST_DPRINTF("[dispatch] %s Dispatched %d Executed %d.\n",
-                   stageName,
-                   this->curStreamRegionInfo->numDispatchedInsts,
-                   this->curStreamRegionInfo->numExecutedInsts);
-
-  // Release the current DynStreamRegionInfo.
-  this->curStreamRegionInfo = nullptr;
+  DYN_INST_DPRINTF("[dispatch] dispatchStreamConfigReady\n");
 }
 
-bool ISAPSPFrontend::canExecuteStreamReady(
+void ISAPSPFrontend::dispatchStreamInputReady(
+    const GemForgeDynInstInfo &dynInfo,
+    GemForgeLSQCallbackList &extraLSQCallbacks) {
+  warn("dispatchStreamInputReady");
+
+  auto streamNum = this->extractImm<uint64_t>(dynInfo.staticInst);
+  auto &regionInfo = this->getStreamRegionInfo(streamNum);
+  
+  auto psp = this->getPSPFrontend();
+  ::PSPFrontend::StreamInputArgs args(dynInfo.seqNum, regionInfo.inputInfo.inputContents);
+  psp->dispatchStreamInput(args);
+
+  DYN_INST_DPRINTF("[dispatch] dispatchStreamInputReady\n");
+}
+
+/********************************************************************************
+ * Stream[Config/Input]Ready Handlers : canExecute
+ *******************************************************************************/
+
+bool ISAPSPFrontend::canExecuteStreamConfigReady(
     const GemForgeDynInstInfo &dynInfo) {
-  return true;
+  warn("canExecuteStreamConfigReady");
+
+  auto streamNum = this->extractImm<uint64_t>(dynInfo.staticInst);
+  auto &regionInfo = this->getStreamRegionInfo(streamNum);
+
+  auto &v = regionInfo.configInfo.executed;
+  return std::find(std::begin(v), std::end(v), false) == std::end(v);
 }
 
-void ISAPSPFrontend::executeStreamReady(const GemForgeDynInstInfo &dynInfo,
+bool ISAPSPFrontend::canExecuteStreamInputReady(
+    const GemForgeDynInstInfo &dynInfo) {
+  warn("canExecuteStreamInputReady");
+
+  auto streamNum = this->extractImm<uint64_t>(dynInfo.staticInst);
+  auto &regionInfo = this->getStreamRegionInfo(streamNum);
+
+  auto &v = regionInfo.inputInfo.executed;
+  return std::find(std::begin(v), std::end(v), false) == std::end(v);
+}
+
+/********************************************************************************
+ * Stream[Config/Input]Ready Handlers : execute
+ *******************************************************************************/
+
+void ISAPSPFrontend::executeStreamConfigReady(const GemForgeDynInstInfo &dynInfo,
                                          ExecContext &xc) {
+  warn("executeStreamConfigReady");
 
-  auto &instInfo = this->getDynStreamInstInfo(dynInfo.seqNum);
-  auto &regionInfo = this->curStreamRegionInfo;
-  std::string stageName = regionInfo->getStageName();
-                                        
-  if (instInfo.mustBeMisspeculated) {
-    DYN_INST_DPRINTF("[execute] MustMisspeculated %s.\n", stageName);
-    return;
-  }
+  auto streamNum = this->extractImm<uint64_t>(dynInfo.staticInst);
+  auto &regionInfo = this->getStreamRegionInfo(streamNum);
 
-  DYN_INST_DPRINTF("[execute] %s Dispatched %d Executed %d.\n",
-                   stageName,
-                   regionInfo->numDispatchedInsts,
-                   regionInfo->numExecutedInsts + 1);
-  instInfo.executed = true;
+   auto psp = this->getPSPFrontend();
+  ::PSPFrontend::StreamConfigArgs args(dynInfo.seqNum, regionInfo.configInfo.inputContents);
+  psp->executeStreamConfig(args);
 
-  DYN_INST_DPRINTF("[execute] %s : ", stageName);
-  for (auto content : regionInfo->getInputVec()) {
-    DYN_INST_DPRINTF("%d ", content);
-  }
-  DYN_INST_DPRINTF("\n");
-
-  this->increamentStreamRegionInfoNumExecutedInsts(*regionInfo);
+  DYN_INST_DPRINTF("[execute] executeStreamConfigReady %d %d %d %d\n", \
+    regionInfo.configInfo.inputContents[0], regionInfo.configInfo.inputContents[1], regionInfo.configInfo.inputContents[2], regionInfo.configInfo.inputContents[3]);
 }
 
-bool ISAPSPFrontend::canCommitStreamReady(const GemForgeDynInstInfo &dynInfo) {
+void ISAPSPFrontend::executeStreamInputReady(const GemForgeDynInstInfo &dynInfo,
+                                         ExecContext &xc) {
+  warn("executeStreamInputReady");
+
+  auto streamNum = this->extractImm<uint64_t>(dynInfo.staticInst);
+  auto &regionInfo = this->getStreamRegionInfo(streamNum);
+
+   auto psp = this->getPSPFrontend();
+  ::PSPFrontend::StreamInputArgs args(dynInfo.seqNum, regionInfo.inputInfo.inputContents);
+  psp->executeStreamInput(args);
+
+  DYN_INST_DPRINTF("[execute] executeStreamInputReady %d %d\n", \
+    regionInfo.inputInfo.inputContents[0], regionInfo.inputInfo.inputContents[1]);
+}
+
+/********************************************************************************
+ * Stream[Config/Input]Ready Handlers : canCommit
+ *******************************************************************************/
+
+bool ISAPSPFrontend::canCommitStreamConfigReady(const GemForgeDynInstInfo &dynInfo) {
   return true;
 }
 
-void ISAPSPFrontend::commitStreamReady(const GemForgeDynInstInfo &dynInfo) {
-  auto &instInfo = this->getDynStreamInstInfo(dynInfo.seqNum);
-  auto &regionInfo = this->curStreamRegionInfo;
-  std::string stageName = regionInfo->getStageName();
-
-  if (instInfo.mustBeMisspeculated) {
-    panic("[commit] MustMisspeculated %s.\n", stageName);
-  }
-
-  auto psp = this->getPSPFrontend();
-  if (regionInfo->isConfigStage()) {
-    ::PSPFrontend::StreamConfigArgs args(dynInfo.seqNum, regionInfo->getInputVec());
-    psp->commitStreamConfig(args);
-  } else {
-    ::PSPFrontend::StreamInputArgs args(dynInfo.seqNum, regionInfo->getInputVec());
-    psp->commitStreamInput(args);
-  }
-
-  DYN_INST_DPRINTF("[commit] %s.\n", stageName);
-
-  // Release the InstInfo.
-  this->seqNumToDynInfoMap.erase(dynInfo.seqNum);
-  regionInfo->incrementStage();
+bool ISAPSPFrontend::canCommitStreamInputReady(const GemForgeDynInstInfo &dynInfo) {
+  return true;
 }
 
-void ISAPSPFrontend::rewindStreamReady(const GemForgeDynInstInfo &dynInfo) {
-  auto &instInfo = this->getDynStreamInstInfo(dynInfo.seqNum);
-  auto &regionInfo = this->curStreamRegionInfo;
-  std::string stageName = regionInfo->getStageName();
+/********************************************************************************
+ * Stream[Config/Input]Ready Handlers : commit
+ *******************************************************************************/
 
-  if (instInfo.mustBeMisspeculated) {
-    DYN_INST_DPRINTF("[rewind] MustMisspeculated %s.\n", stageName);
+void ISAPSPFrontend::commitStreamConfigReady(const GemForgeDynInstInfo &dynInfo) {
+  warn("commitStreamConfigReady");
 
-    // Restore the currentStreamRegion.
-    this->curStreamRegionInfo = instInfo.dynStreamRegionInfo;
-    // Release the InstInfo.
-    this->seqNumToDynInfoMap.erase(dynInfo.seqNum);
-    return;
-  }
-
-  assert((regionInfo->streamConfigReadyDispatched || regionInfo->streamInputReadyDispatched) && "StreamReady must be dispatched.");
-
-  // Check if the StreamReady is actually executed.
-  if (instInfo.executed) {
-    regionInfo->numExecutedInsts--;
-  }
+  auto streamNum = this->extractImm<uint64_t>(dynInfo.staticInst);
+  auto &regionInfo = this->getStreamRegionInfo(streamNum);
 
   auto psp = this->getPSPFrontend();
-  if (regionInfo->isConfigStage()) {
-    ::PSPFrontend::StreamConfigArgs args(dynInfo.seqNum, regionInfo->getInputVec(), dynInfo.tc);
-    psp->rewindStreamConfig(args);
-    regionInfo->streamConfigReadyDispatched = false;
-  } else {
-    ::PSPFrontend::StreamInputArgs args(dynInfo.seqNum, regionInfo->getInputVec(), dynInfo.tc);
-    psp->rewindStreamInput(args);
-    regionInfo->streamInputReadyDispatched = false;
-  }
+  ::PSPFrontend::StreamConfigArgs args(dynInfo.seqNum, regionInfo.configInfo.inputContents);
+  psp->commitStreamConfig(args);
 
-  // Decrease numDispatchedInst.
-  regionInfo->numDispatchedInsts--;
+  DYN_INST_DPRINTF("[commit] commitStreamConfigReady\n");
+}
 
-  DYN_INST_DPRINTF("[rewind] %s Dispatched %d Executed %d %s.\n",
-                   stageName, regionInfo->numDispatchedInsts, regionInfo->numExecutedInsts);
+void ISAPSPFrontend::commitStreamInputReady(const GemForgeDynInstInfo &dynInfo) {
+  warn("commitStreamInputReady");
 
-  // Restore the currentStreamRegion.
-  this->curStreamRegionInfo = instInfo.dynStreamRegionInfo;
-  // Release the InstInfo.
-  this->seqNumToDynInfoMap.erase(dynInfo.seqNum);
-  regionInfo->decrementStage();
+  auto streamNum = this->extractImm<uint64_t>(dynInfo.staticInst);
+  auto &regionInfo = this->getStreamRegionInfo(streamNum);
+
+  auto psp = this->getPSPFrontend();
+  ::PSPFrontend::StreamInputArgs args(dynInfo.seqNum, regionInfo.inputInfo.inputContents);
+  psp->commitStreamInput(args);
+
+  DYN_INST_DPRINTF("[commit] commitStreamInputReady\n");
+}
+
+/********************************************************************************
+ * Stream[Config/Input]Ready Handlers : rewind
+ *******************************************************************************/
+
+void ISAPSPFrontend::rewindStreamConfigReady(const GemForgeDynInstInfo &dynInfo) {
+  warn("rewindStreamConfigReady");
+
+  auto streamNum = this->extractImm<uint64_t>(dynInfo.staticInst);
+  auto &regionInfo = this->getStreamRegionInfo(streamNum);
+
+  auto psp = this->getPSPFrontend();
+  ::PSPFrontend::StreamConfigArgs args(dynInfo.seqNum, regionInfo.configInfo.inputContents);
+  psp->rewindStreamConfig(args);
+
+  DYN_INST_DPRINTF("[rewind] rewindStreamConfigReady\n");
+}
+
+void ISAPSPFrontend::rewindStreamInputReady(const GemForgeDynInstInfo &dynInfo) {
+  warn("rewindStreamInputReady");
+
+  auto streamNum = this->extractImm<uint64_t>(dynInfo.staticInst);
+  auto &regionInfo = this->getStreamRegionInfo(streamNum);
+
+  auto psp = this->getPSPFrontend();
+  ::PSPFrontend::StreamInputArgs args(dynInfo.seqNum, regionInfo.inputInfo.inputContents);
+  psp->rewindStreamInput(args);
+
+  DYN_INST_DPRINTF("[rewind] rewindStreamInputReady\n");
 }
 
 /********************************************************************************
@@ -349,15 +618,19 @@ void ISAPSPFrontend::rewindStreamReady(const GemForgeDynInstInfo &dynInfo) {
  *******************************************************************************/
 
 bool ISAPSPFrontend::canDispatchStreamTerminate(const GemForgeDynInstInfo &dynInfo) {
-  auto streamId = this->extractImm<uint64_t>(dynInfo.staticInst);
+  warn("canDispatchStreamTerminate");
 
-  ::PSPFrontend::StreamTerminateArgs args(dynInfo.seqNum);
+  auto streamNum = this->extractImm<uint64_t>(dynInfo.staticInst);
+  auto &regionInfo = this->getStreamRegionInfo(streamNum);
+
   auto psp = this->getPSPFrontend();
+  ::PSPFrontend::StreamTerminateArgs args(dynInfo.seqNum);
+  
   if (psp->canDispatchStreamTerminate(args)) {
-    DYN_INST_DPRINTF("[CanDispatch] StreamTerminate %llu, ..\n", streamId);
+    DYN_INST_DPRINTF("[canDispatch] StreamTerminate %llu\n", streamNum);
     return true;
   } else {
-    DYN_INST_DPRINTF("[Can X Dispatch] StreamTerminate %llu: No UnsteppedElement.\n", streamId);
+    DYN_INST_DPRINTF("[canDispatch FAIL] StreamTerminate %llu\n", streamNum);
     return false;
   }
 }
@@ -365,113 +638,93 @@ bool ISAPSPFrontend::canDispatchStreamTerminate(const GemForgeDynInstInfo &dynIn
 void ISAPSPFrontend::dispatchStreamTerminate(
     const GemForgeDynInstInfo &dynInfo,
     GemForgeLSQCallbackList &extraLSQCallbacks) {
-  auto streamId = this->extractImm<uint64_t>(dynInfo.staticInst);
+  warn("dispatchStreamTerminate");
 
-  DYN_INST_DPRINTF("[dispatch] StreamTerminate %llu.\n", streamId);
+  auto streamNum = this->extractImm<uint64_t>(dynInfo.staticInst);
+  auto &regionInfo = this->getStreamRegionInfo(streamNum);
 
-  this->createDynStreamInstInfo(dynInfo.seqNum);
-
-  ::PSPFrontend::StreamTerminateArgs args(dynInfo.seqNum);
   auto psp = this->getPSPFrontend();
-  assert(psp->canDispatchStreamTerminate(args) && "CanNot Dispatch StreamTerminate.");
-
+  ::PSPFrontend::StreamTerminateArgs args(dynInfo.seqNum);
   psp->dispatchStreamTerminate(args);
+
+  DYN_INST_DPRINTF("[dispatch] StreamTerminate %llu.\n", streamNum);
 }
 
 bool ISAPSPFrontend::canExecuteStreamTerminate(const GemForgeDynInstInfo &dynInfo) {
-  auto &instInfo = this->getDynStreamInstInfo(dynInfo.seqNum);
-  if (instInfo.mustBeMisspeculated) {
-    return true;
-  }
-  auto streamId = this->extractImm<uint64_t>(dynInfo.staticInst);
+  warn("canExecuteStreamTerminate");
 
-  DYN_INST_DPRINTF("[canExecute] StreamTerminate %llu.\n", streamId);
+  auto streamNum = this->extractImm<uint64_t>(dynInfo.staticInst);
+  auto &regionInfo = this->getStreamRegionInfo(streamNum);
 
   auto psp = this->getPSPFrontend();
   ::PSPFrontend::StreamTerminateArgs args(dynInfo.seqNum);
-  return psp->canExecuteStreamTerminate(args);
+  
+  if (psp->canExecuteStreamTerminate(args)) {
+    DYN_INST_DPRINTF("[canExecute] StreamTerminate %llu.\n", streamNum);
+    return true;
+  } else {
+    DYN_INST_DPRINTF("[canExecute FAIL] StreamTerminate %llu.\n", streamNum);
+    return false;
+  }
 }
 
 void ISAPSPFrontend::executeStreamTerminate(const GemForgeDynInstInfo &dynInfo,
                                        ExecContext &xc) {
-  auto &instInfo = this->getDynStreamInstInfo(dynInfo.seqNum);
+  warn("executeStreamTerminate");
 
-  if (instInfo.mustBeMisspeculated) {
-    DYN_INST_DPRINTF("[execute] MustMisspeculated StreamTerminate.\n");
-    return;
-  }
-
-  auto streamId = this->extractImm<uint64_t>(dynInfo.staticInst);
-  DYN_INST_DPRINTF("[execute] StreamTerminate %llu.\n", streamId);
-  instInfo.executed = true;
+  auto streamNum = this->extractImm<uint64_t>(dynInfo.staticInst);
+  auto &regionInfo = this->getStreamRegionInfo(streamNum);
 
   auto psp = this->getPSPFrontend();
   ::PSPFrontend::StreamTerminateArgs args(dynInfo.seqNum);
   psp->executeStreamTerminate(args);  
+
+  DYN_INST_DPRINTF("[execute] StreamTerminate %llu.\n", streamNum);
 }
 
 bool ISAPSPFrontend::canCommitStreamTerminate(const GemForgeDynInstInfo &dynInfo) {
-  auto &instInfo = this->getDynStreamInstInfo(dynInfo.seqNum);
-  if (instInfo.mustBeMisspeculated) {
-    return true;
-  }
+  warn("canCommitStreamTerminate");
 
-  auto streamId = this->extractImm<uint64_t>(dynInfo.staticInst);
+  auto streamNum = this->extractImm<uint64_t>(dynInfo.staticInst);
+  auto &regionInfo = this->getStreamRegionInfo(streamNum);
 
   auto psp = this->getPSPFrontend();
   ::PSPFrontend::StreamTerminateArgs args(dynInfo.seqNum);
-  auto canCommit = psp->canCommitStreamTerminate(args);
-  DYN_INST_DPRINTF("[canCommit] StreamTerminate %llu, CanCommit? %d.\n", streamId, canCommit);
 
-  // Release the info.
-  return canCommit;
+  if (psp->canCommitStreamTerminate(args)) {
+    DYN_INST_DPRINTF("[canCommit] StreamTerminate %llu.\n", streamNum);
+    return true;
+  } else {
+    DYN_INST_DPRINTF("[canCommit FAIL] StreamTerminate %llu.\n", streamNum);
+    return false;
+  }
 }
 
 void ISAPSPFrontend::commitStreamTerminate(const GemForgeDynInstInfo &dynInfo) {
-  auto &instInfo = this->getDynStreamInstInfo(dynInfo.seqNum);
-  assert(!instInfo.mustBeMisspeculated &&
-         "Try to commit a MustBeMisspeculated inst.");
+  warn("commitStreamTerminate");
 
-  auto streamId = this->extractImm<uint64_t>(dynInfo.staticInst);
-
-  DYN_INST_DPRINTF("[commit] StreamTerminate %llu.\n", streamId);
+  auto streamNum = this->extractImm<uint64_t>(dynInfo.staticInst);
+  auto &regionInfo = this->getStreamRegionInfo(streamNum);
 
   auto psp = this->getPSPFrontend();
   ::PSPFrontend::StreamTerminateArgs args(dynInfo.seqNum);
   psp->commitStreamTerminate(args);
 
-  // Release the info.
-  this->seqNumToDynInfoMap.erase(dynInfo.seqNum);
-  instInfo.dynStreamRegionInfo->incrementStage();
+  DYN_INST_DPRINTF("[commit] StreamTerminate %llu.\n", streamNum);
 }
 
 void ISAPSPFrontend::rewindStreamTerminate(const GemForgeDynInstInfo &dynInfo) {
-  auto &instInfo = this->getDynStreamInstInfo(dynInfo.seqNum);
-  if (!instInfo.mustBeMisspeculated) {
-    // Really rewind the StreamTerminate.
-    auto streamId = this->extractImm<uint64_t>(dynInfo.staticInst);
+  warn("rewindStreamTerminate");
+  
+  auto streamNum = this->extractImm<uint64_t>(dynInfo.staticInst);
+  auto &regionInfo = this->getStreamRegionInfo(streamNum);
 
-    auto psp = this->getPSPFrontend();
-    ::PSPFrontend::StreamTerminateArgs args(dynInfo.seqNum);
-    psp->rewindStreamTerminate(args);
-  }
-
-  // Release the info.
-  this->seqNumToDynInfoMap.erase(dynInfo.seqNum);
-  instInfo.dynStreamRegionInfo->decrementStage();
-}
-
-/********************************************************************************
- * APIs related to misspeculation handling.
- *******************************************************************************/
-/*
-void ISAPSPFrontend::storeTo(InstSeqNum seqNum, Addr vaddr, int size) {
   auto psp = this->getPSPFrontend();
-  if (psp) {
-    psp->cpuStoreTo(seqNum, vaddr, size);
-  }
+  ::PSPFrontend::StreamTerminateArgs args(dynInfo.seqNum);
+  psp->rewindStreamTerminate(args);
+  
+  DYN_INST_DPRINTF("[rewind] StreamTerminate %llu.\n", streamNum);
 }
-*/
 
 /********************************************************************************
  * StreamEngine Helpers.
@@ -500,121 +753,23 @@ T ISAPSPFrontend::extractImm(const StaticInst *staticInst) const {
 #endif
 }
 
-ISAPSPFrontend::DynStreamInstInfo &
-ISAPSPFrontend::createDynStreamInstInfo(uint64_t seqNum) {
-  auto emplaceRet = this->seqNumToDynInfoMap.emplace(
-      std::piecewise_construct, std::forward_as_tuple(seqNum),
+ISAPSPFrontend::StreamRegionInfo &
+ISAPSPFrontend::createStreamRegionInfo(uint64_t streamNum) {
+  auto emplaceRet = this->streamNumToStreamRegionMap.emplace(
+      std::piecewise_construct, std::forward_as_tuple(streamNum),
       std::forward_as_tuple());
-  assert(emplaceRet.second && "StreamInstInfo already there.");
+  assert(emplaceRet.second && "StreamRegionInfo already there.");
   return emplaceRet.first->second;
 }
 
-ISAPSPFrontend::DynStreamInstInfo &
-ISAPSPFrontend::getOrCreateDynStreamInstInfo(uint64_t seqNum) {
-  auto emplaceRet = this->seqNumToDynInfoMap.emplace(
-      std::piecewise_construct, std::forward_as_tuple(seqNum),
-      std::forward_as_tuple());
-  return emplaceRet.first->second;
-}
-
-ISAPSPFrontend::DynStreamInstInfo &
-ISAPSPFrontend::getDynStreamInstInfo(uint64_t seqNum) {
-  auto iter = this->seqNumToDynInfoMap.find(seqNum);
-  if (iter == this->seqNumToDynInfoMap.end()) {
-    inform("Failed to get DynStreamInstInfo for %llu.", seqNum);
-    assert(false && "Failed to get DynStreamInstInfo.");
+ISAPSPFrontend::StreamRegionInfo &
+ISAPSPFrontend::getStreamRegionInfo(uint64_t streamNum) {
+  auto iter = this->streamNumToStreamRegionMap.find(streamNum);
+  if (iter == this->streamNumToStreamRegionMap.end()) {
+    inform("Failed to get StreamRegionInfo for %llu.", streamNum);
+    assert(false && "Failed to get StreamRegionInfo.");
   }
   return iter->second;
-}
-
-void ISAPSPFrontend::increamentStreamRegionInfoNumExecutedInsts(DynStreamRegionInfo &dynStreamRegionInfo) {
-  dynStreamRegionInfo.numExecutedInsts++;
-
-  if (dynStreamRegionInfo.numExecutedInsts == dynStreamRegionInfo.numDispatchedInsts) {
-    if (dynStreamRegionInfo.streamConfigReadyDispatched) {
-      ::PSPFrontend::StreamConfigArgs args(dynStreamRegionInfo.streamReadySeqNum,
-                                            dynStreamRegionInfo.getInputVec());
-      auto psp = this->getPSPFrontend();
-      psp->executeStreamConfig(args);
-    } else if (dynStreamRegionInfo.streamInputReadyDispatched) {
-      ::PSPFrontend::StreamInputArgs args(dynStreamRegionInfo.streamReadySeqNum,
-                                            dynStreamRegionInfo.getInputVec());
-      auto psp = this->getPSPFrontend();
-      psp->executeStreamInput(args);
-    }
-  }
-}
-
-std::vector<RegVal>&
-ISAPSPFrontend::DynStreamRegionInfo::getInputVec() {
-  return this->inputMap;
-}
-
-std::string&
-ISAPSPFrontend::DynStreamRegionInfo::getStageName() {
-  std::string stageName;
-  switch(this->stage) {
-  case 0 :
-    stageName = "StreamConfigIndexBase";
-    break;
-  case 1 :
-    stageName = "StreamConfigIndexGranularity";
-    break;
-  case 2 :
-    stageName = "StreamConfigValueBase";
-    break;
-  case 3 :
-    stageName = "StreamConfigValueGranularity";
-    break;
-  case 4 :
-    stageName = "StageConfigReady";
-    break;
-  case 5 : 
-    stageName = "StreamInputBegin";
-    break;
-  case 6 : 
-    stageName = "StreamInputEnd";
-    break;
-  case 7 :
-    stageName = "StreamInput";
-    break;
-  case 8 : 
-    stageName = "StreamTerminate";
-    break;
-  default : 
-    stageName = "StreamStageNameError";
-  }
-}
-
-void ISAPSPFrontend::DynStreamRegionInfo::incrementStage() {
-  this->stage = (this->stage + 1) % 9;
-}
-
-void ISAPSPFrontend::DynStreamRegionInfo::decrementStage() {
-  this->stage = (this->stage - 1) % 9;
-}
-
-bool ISAPSPFrontend::DynStreamRegionInfo::isConfigStage() {
-  return this->stage <= 4;
-}
-
-std::string
-ISAPSPFrontend::mustBeMisspeculatedString(MustBeMisspeculatedReason reason) {
-#define CASE_REASON(reason)                                                    \
-  case reason:                                                                 \
-    return #reason
-  switch (reason) {
-    CASE_REASON(CONFIG_HAS_PREV_REGION);
-    CASE_REASON(CONFIG_RECURSIVE);
-    CASE_REASON(CONFIG_CANNOT_SET_REGION_ID);
-    CASE_REASON(STEP_INVALID_REGION_ID);
-    CASE_REASON(USER_INVALID_REGION_ID);
-    CASE_REASON(USER_USING_LAST_ELEMENT);
-    CASE_REASON(USER_SE_CANNOT_DISPATCH);
-  default:
-    return "UNKNOWN_REASON";
-  }
-#undef CASE_REASON
 }
 
 void ISAPSPFrontend::takeOverBy(GemForgeCPUDelegator *newDelegator) {
@@ -626,6 +781,5 @@ void ISAPSPFrontend::takeOverBy(GemForgeCPUDelegator *newDelegator) {
 }
 
 void ISAPSPFrontend::reset() {
-  this->seqNumToDynInfoMap.clear();
-  this->curStreamRegionInfo = nullptr;
+  this->streamNumToStreamRegionMap.clear();
 }
