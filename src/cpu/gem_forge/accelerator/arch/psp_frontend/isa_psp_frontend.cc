@@ -68,7 +68,7 @@ bool ISAPSPFrontend::canDispatchStreamInputEnd(
 
 /********************************************************************************
  * StreamConfig/Input Handlers : dispatch
- *******************************************************************************/
+ *************************7******************************************************/
 void ISAPSPFrontend::dispatchStreamConfigIndexBase(
     const GemForgeDynInstInfo &dynInfo,
     GemForgeLSQCallbackList &extraLSQCallbacks) {
@@ -353,6 +353,8 @@ void ISAPSPFrontend::rewindStreamConfigIndexBase(const GemForgeDynInstInfo &dynI
 
   regionInfo.configInfo.dispatched[0] = 0;
   regionInfo.configInfo.executed[0] = 0;
+
+  this->removeStreamRegionInfo(streamNum);
 }
 
 void ISAPSPFrontend::rewindStreamConfigIndexGranularity(const GemForgeDynInstInfo &dynInfo) {
@@ -710,6 +712,8 @@ void ISAPSPFrontend::commitStreamTerminate(const GemForgeDynInstInfo &dynInfo) {
   ::PSPFrontend::StreamTerminateArgs args(dynInfo.seqNum);
   psp->commitStreamTerminate(args);
 
+  this->removeStreamRegionInfo(streamNum);
+
   DYN_INST_DPRINTF("[commit] StreamTerminate %llu.\n", streamNum);
 }
 
@@ -770,6 +774,10 @@ ISAPSPFrontend::getStreamRegionInfo(uint64_t streamNum) {
     assert(false && "Failed to get StreamRegionInfo.");
   }
   return iter->second;
+}
+
+void ISAPSPFrontend::removeStreamRegionInfo(uint64_t streamNum) {
+  this->streamNumToStreamRegionMap.erase(streamNum);
 }
 
 void ISAPSPFrontend::takeOverBy(GemForgeCPUDelegator *newDelegator) {

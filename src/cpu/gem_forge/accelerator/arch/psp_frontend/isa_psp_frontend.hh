@@ -105,6 +105,7 @@ private:
 
   StreamRegionInfo &createStreamRegionInfo(uint64_t streamNum);
   StreamRegionInfo &getStreamRegionInfo(uint64_t streamNum);
+  void removeStreamRegionInfo(uint64_t streamNum);
 };
 
 #endif
