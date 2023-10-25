@@ -29,6 +29,11 @@ def parse_tdg_files(option, opt, value, parser):
     vs = value.split(',')
     setattr(parser.values, option.dest, vs)
 
+# Editor: Sungjun Jung (miguel92@snu.ac.kr)
+# Desciprtion: options for PSP
+parser.add_option("--gem-forge-psp-frontend-enable", action="store_true", default=True,
+                  help="""Enable PSP Frontend.""")
+
 parser.add_option("--gem-forge-work-mark-history", action="store", type="string",
                   help="""work mark history""")
 parser.add_option("--gem-forge-work-mark-switch-cpu", action="store", type="int", default=-1,

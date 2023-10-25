@@ -1,13 +1,27 @@
 #include "psp_frontend.hh"
 
+#include "debug/PSPFrontend.hh"
+
 PSPFrontend::PSPFrontend(Params* params)
   : GemForgeAccelerator(params) {
+    this->totalPatternTableEntries = params->totalPatternTableEntries;
+    patternTable = new PatternTable(params->totalPatternTableEntries);
+    patternTableArbiter = new PatternTableRRArbiter(params->totalPatternTableEntries);
 }
 
 PSPFrontend::~PSPFrontend() {
+  delete[] patternTable;
 }
 
-/*
+void PSPFrontend::tick() {
+  this->patternTableArbiter->getValidEntry(validPatternTableEntry);
+  if (validPatternTableEntry != nullptr) {
+  }
+}
+
+void PSPFrontend::dump() {
+}
+
 void PSPFrontend::regStats() {
   GemForgeAccelerator::regStats();
 
@@ -16,13 +30,17 @@ void PSPFrontend::regStats() {
       .desc(describe)                                                          \
       .prereq(this->stat)
 
-  //scalar(numConfigured, "Number of streams configured.");
+  scalar(numConfigured, "Number of streams configured.");
+#undef scalar
+}
+
+void PSPFrontend::resetStats() {
+}  //scalar(numConfigured, "Number of streams configured.");
 #undef scalar
 }
 
 void PSPFrontend::tick() {
 }
-*/
 
 /********************************************************************************
  * StreamConfig Handlers.
