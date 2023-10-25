@@ -2,6 +2,17 @@
 
 #include "debug/PSPFrontend.hh"
 
+#define PSP_FE_PANIC(format, args...)                                          \
+  panic("%llu-[PSP_FE%d] " format, cpuDelegator->curCycle(),                   \
+        cpuDelegator->cpuId(), ##args)
+#define PSP_FE_DPRINTF(format, args...)                                        \
+  DPRINTF(PSPFrontend, "%llu-[PSP_FE%d] " format,                          \
+          cpuDelegator->curCycle(), cpuDelegator->cpuId(), ##args)
+#define DYN_INST_DPRINTF(format, args...)                                      \
+  PSP_FE_DPRINTF("%llu %s " format, dynInfo.seqNum, dynInfo.pc, ##args)
+#define DYN_INST_PANIC(format, args...)                                        \
+  PSP_FE_PANIC("%llu %s " format, dynInfo.seqNum, dynInfo.pc, ##args)
+
 PSPFrontend::PSPFrontend(Params* params)
   : GemForgeAccelerator(params) {
     this->totalPatternTableEntries = params->totalPatternTableEntries;
@@ -13,6 +24,7 @@ PSPFrontend::~PSPFrontend() {
   delete[] patternTable;
 }
 
+// Take over PSP_Frontend from initial_cpu to future_cpu
 void PSPFrontend::takeOverBy(GemForgeCPUDelegator *newCpuDelegator,
                               GemForgeAcceleratorManager *newManager) {
   GemForgeAccelerator::takeOverBy(newCpuDelegator, newManager);

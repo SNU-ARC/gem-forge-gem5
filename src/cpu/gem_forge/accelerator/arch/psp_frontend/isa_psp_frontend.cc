@@ -32,37 +32,37 @@
  *******************************************************************************/
 bool ISAPSPFrontend::canDispatchStreamConfigIndexBase(
     const GemForgeDynInstInfo &dynInfo) {
-  warn("canDispatchStreamConfigIndexBase");
+  ISA_PSP_FE_DPRINTF("canDispatchStreamConfigIndexBase\n");
   return true;
 }
 
 bool ISAPSPFrontend::canDispatchStreamConfigIndexGranularity(
     const GemForgeDynInstInfo &dynInfo) {
-  warn("canDispatchStreamConfigIndexGranularity");
+  ISA_PSP_FE_DPRINTF("canDispatchStreamConfigIndexGranularity\n");
   return true;
 }
 
 bool ISAPSPFrontend::canDispatchStreamConfigValueBase(
     const GemForgeDynInstInfo &dynInfo) {
-  warn("canDispatchStreamConfigValueBase");
+  ISA_PSP_FE_DPRINTF("canDispatchStreamConfigValueBase\n");
   return true;
 }
 
 bool ISAPSPFrontend::canDispatchStreamConfigValueGranularity(
     const GemForgeDynInstInfo &dynInfo) {
-  warn("canDispatchStreamConfigValueGranularity");
+  ISA_PSP_FE_DPRINTF("canDispatchStreamConfigValueGranularity\n");
   return true;
 }
 
 bool ISAPSPFrontend::canDispatchStreamInputBegin(
     const GemForgeDynInstInfo &dynInfo) {
-  warn("canDispatchStreamInputBegin");
+  ISA_PSP_FE_DPRINTF("canDispatchStreamInputBegin\n");
   return true;
 }
 
 bool ISAPSPFrontend::canDispatchStreamInputEnd(
     const GemForgeDynInstInfo &dynInfo) {
-  warn("canDispatchStreamInputEnd");
+  ISA_PSP_FE_DPRINTF("canDispatchStreamInputEnd\n");
   return true;
 }
 
@@ -72,7 +72,7 @@ bool ISAPSPFrontend::canDispatchStreamInputEnd(
 void ISAPSPFrontend::dispatchStreamConfigIndexBase(
     const GemForgeDynInstInfo &dynInfo,
     GemForgeLSQCallbackList &extraLSQCallbacks) {
-  warn("dispatchStreamConfigIndexBase");
+  ISA_PSP_FE_DPRINTF("dispatchStreamConfigIndexBase\n");
 
   auto streamNum = this->extractImm<uint64_t>(dynInfo.staticInst);
   auto &regionInfo = this->createStreamRegionInfo(streamNum);
@@ -85,7 +85,7 @@ void ISAPSPFrontend::dispatchStreamConfigIndexBase(
 void ISAPSPFrontend::dispatchStreamConfigIndexGranularity(    
     const GemForgeDynInstInfo &dynInfo,
     GemForgeLSQCallbackList &extraLSQCallbacks) {
-  warn("dispatchStreamConfigIndexGranularity");  
+  ISA_PSP_FE_DPRINTF("dispatchStreamConfigIndexGranularity\n");  
   
   auto streamNum = this->extractImm<uint64_t>(dynInfo.staticInst);
   auto &regionInfo = this->getStreamRegionInfo(streamNum);
@@ -98,7 +98,7 @@ void ISAPSPFrontend::dispatchStreamConfigIndexGranularity(
 void ISAPSPFrontend::dispatchStreamConfigValueBase(    
     const GemForgeDynInstInfo &dynInfo,
     GemForgeLSQCallbackList &extraLSQCallbacks) {
-  warn("dispatchStreamConfigValueBase");
+  ISA_PSP_FE_DPRINTF("dispatchStreamConfigValueBase\n");
 
   auto streamNum = this->extractImm<uint64_t>(dynInfo.staticInst);
   auto &regionInfo = this->getStreamRegionInfo(streamNum);
@@ -111,7 +111,7 @@ void ISAPSPFrontend::dispatchStreamConfigValueBase(
 void ISAPSPFrontend::dispatchStreamConfigValueGranularity(    
     const GemForgeDynInstInfo &dynInfo,
     GemForgeLSQCallbackList &extraLSQCallbacks) {
-  warn("dispatchStreamConfigValueGranularity");
+  ISA_PSP_FE_DPRINTF("dispatchStreamConfigValueGranularity\n");
 
   auto streamNum = this->extractImm<uint64_t>(dynInfo.staticInst);
   auto &regionInfo = this->getStreamRegionInfo(streamNum);
@@ -124,7 +124,7 @@ void ISAPSPFrontend::dispatchStreamConfigValueGranularity(
 void ISAPSPFrontend::dispatchStreamInputBegin(    
     const GemForgeDynInstInfo &dynInfo,
     GemForgeLSQCallbackList &extraLSQCallbacks) {
-  warn("dispatchStreamInputBegin");
+  ISA_PSP_FE_DPRINTF("dispatchStreamInputBegin\n");
 
   auto streamNum = this->extractImm<uint64_t>(dynInfo.staticInst);
   auto &regionInfo = this->getStreamRegionInfo(streamNum);
@@ -137,7 +137,7 @@ void ISAPSPFrontend::dispatchStreamInputBegin(
 void ISAPSPFrontend::dispatchStreamInputEnd(    
     const GemForgeDynInstInfo &dynInfo,
     GemForgeLSQCallbackList &extraLSQCallbacks) {
-  warn("dispatchStreamInputEnd");
+  ISA_PSP_FE_DPRINTF("dispatchStreamInputEnd\n");
 
   auto streamNum = this->extractImm<uint64_t>(dynInfo.staticInst);
   auto &regionInfo = this->getStreamRegionInfo(streamNum);
@@ -152,37 +152,37 @@ void ISAPSPFrontend::dispatchStreamInputEnd(
  *******************************************************************************/
 bool ISAPSPFrontend::canExecuteStreamConfigIndexBase(
     const GemForgeDynInstInfo &dynInfo) {
-  warn("canExecuteStreamConfigIndexBase");
+  ISA_PSP_FE_DPRINTF("canExecuteStreamConfigIndexBase\n");
   return true;
 }
 
 bool ISAPSPFrontend::canExecuteStreamConfigIndexGranularity(
     const GemForgeDynInstInfo &dynInfo) {
-  warn("canExecuteStreamConfigIndexGranularity");
+  ISA_PSP_FE_DPRINTF("canExecuteStreamConfigIndexGranularity\n");
   return true;
 }
 
 bool ISAPSPFrontend::canExecuteStreamConfigValueBase(
     const GemForgeDynInstInfo &dynInfo) {
-  warn("canExecuteStreamConfigValueBase");
+  ISA_PSP_FE_DPRINTF("canExecuteStreamConfigValueBase\n");
   return true;
 }
 
 bool ISAPSPFrontend::canExecuteStreamConfigValueGranularity(
     const GemForgeDynInstInfo &dynInfo) {
-  warn("canExecuteStreamConfigValueGranularity");
+  ISA_PSP_FE_DPRINTF("canExecuteStreamConfigValueGranularity\n");
   return true;
 }
 
 bool ISAPSPFrontend::canExecuteStreamInputBegin(
     const GemForgeDynInstInfo &dynInfo) {
-  warn("canExecuteStreamInputBegin");
+  ISA_PSP_FE_DPRINTF("canExecuteStreamInputBegin\n");
   return true;
 }
 
 bool ISAPSPFrontend::canExecuteStreamInputEnd(
     const GemForgeDynInstInfo &dynInfo) {
-  warn("canExecuteStreamInputEnd");
+  ISA_PSP_FE_DPRINTF("canExecuteStreamInputEnd\n");
   return true;
 }
 
@@ -190,7 +190,7 @@ bool ISAPSPFrontend::canExecuteStreamInputEnd(
  * StreamConfig/Input Handlers : execute
  *******************************************************************************/
 void ISAPSPFrontend::executeStreamConfigIndexBase(const GemForgeDynInstInfo &dynInfo, ExecContext &xc) {
-  warn("executeStreamConfigIndexBase");
+  ISA_PSP_FE_DPRINTF("executeStreamConfigIndexBase\n");
 
   auto streamNum = this->extractImm<uint64_t>(dynInfo.staticInst);
   auto &regionInfo = this->getStreamRegionInfo(streamNum);
@@ -206,7 +206,7 @@ void ISAPSPFrontend::executeStreamConfigIndexBase(const GemForgeDynInstInfo &dyn
 }
 
 void ISAPSPFrontend::executeStreamConfigIndexGranularity(const GemForgeDynInstInfo &dynInfo, ExecContext &xc) {
-  warn("executeStreamConfigIndexGranularity");
+  ISA_PSP_FE_DPRINTF("executeStreamConfigIndexGranularity\n");
 
   auto streamNum = this->extractImm<uint64_t>(dynInfo.staticInst);
   auto &regionInfo = this->getStreamRegionInfo(streamNum);
@@ -222,7 +222,7 @@ void ISAPSPFrontend::executeStreamConfigIndexGranularity(const GemForgeDynInstIn
 }
 
 void ISAPSPFrontend::executeStreamConfigValueBase(const GemForgeDynInstInfo &dynInfo, ExecContext &xc) {
-  warn("executeStreamConfigValueBase");
+  ISA_PSP_FE_DPRINTF("executeStreamConfigValueBase\n");
 
   auto streamNum = this->extractImm<uint64_t>(dynInfo.staticInst);
   auto &regionInfo = this->getStreamRegionInfo(streamNum);
@@ -238,7 +238,7 @@ void ISAPSPFrontend::executeStreamConfigValueBase(const GemForgeDynInstInfo &dyn
 }
 
 void ISAPSPFrontend::executeStreamConfigValueGranularity(const GemForgeDynInstInfo &dynInfo, ExecContext &xc) {
-  warn("executeStreamConfigValueGranularity");
+  ISA_PSP_FE_DPRINTF("executeStreamConfigValueGranularity\n");
 
   auto streamNum = this->extractImm<uint64_t>(dynInfo.staticInst);
   auto &regionInfo = this->getStreamRegionInfo(streamNum);
@@ -254,7 +254,7 @@ void ISAPSPFrontend::executeStreamConfigValueGranularity(const GemForgeDynInstIn
 }
 
 void ISAPSPFrontend::executeStreamInputBegin(const GemForgeDynInstInfo &dynInfo, ExecContext &xc) {
-  warn("executeStreamInputBegin");
+  ISA_PSP_FE_DPRINTF("executeStreamInputBegin\n");
 
   auto streamNum = this->extractImm<uint64_t>(dynInfo.staticInst);
   auto &regionInfo = this->getStreamRegionInfo(streamNum);
@@ -270,7 +270,7 @@ void ISAPSPFrontend::executeStreamInputBegin(const GemForgeDynInstInfo &dynInfo,
 }
 
 void ISAPSPFrontend::executeStreamInputEnd(const GemForgeDynInstInfo &dynInfo, ExecContext &xc) {
-  warn("executeStreamInputEnd");
+  ISA_PSP_FE_DPRINTF("executeStreamInputEnd\n");
 
   auto streamNum = this->extractImm<uint64_t>(dynInfo.staticInst);
   auto &regionInfo = this->getStreamRegionInfo(streamNum);
@@ -318,27 +318,27 @@ bool ISAPSPFrontend::canCommitStreamInputEnd(const GemForgeDynInstInfo &dynInfo)
  *******************************************************************************/
 
 void ISAPSPFrontend::commitStreamConfigIndexBase(const GemForgeDynInstInfo &dynInfo) {
-  warn("commitStreamConfigIndexBase");
+  ISA_PSP_FE_DPRINTF("commitStreamConfigIndexBase\n");
 }
 
 void ISAPSPFrontend::commitStreamConfigIndexGranularity(const GemForgeDynInstInfo &dynInfo) {
-  warn("commitStreamConfigIndexGranularity");
+  ISA_PSP_FE_DPRINTF("commitStreamConfigIndexGranularity\n");
 }
 
 void ISAPSPFrontend::commitStreamConfigValueBase(const GemForgeDynInstInfo &dynInfo) {
-  warn("commitStreamConfigValueBase");
+  ISA_PSP_FE_DPRINTF("commitStreamConfigValueBase\n");
 }
 
 void ISAPSPFrontend::commitStreamConfigValueGranularity(const GemForgeDynInstInfo &dynInfo) {
-  warn("commitStreamConfigValueGranularity");
+  ISA_PSP_FE_DPRINTF("commitStreamConfigValueGranularity\n");
 }
 
 void ISAPSPFrontend::commitStreamInputBegin(const GemForgeDynInstInfo &dynInfo) {
-  warn("commitStreamInputBegin");
+  ISA_PSP_FE_DPRINTF("commitStreamInputBegin\n");
 }
 
 void ISAPSPFrontend::commitStreamInputEnd(const GemForgeDynInstInfo &dynInfo) {
-  warn("commitStreamInputEnd");
+  ISA_PSP_FE_DPRINTF("commitStreamInputEnd\n");
 }
 
 /********************************************************************************
@@ -346,7 +346,7 @@ void ISAPSPFrontend::commitStreamInputEnd(const GemForgeDynInstInfo &dynInfo) {
  *******************************************************************************/
 
 void ISAPSPFrontend::rewindStreamConfigIndexBase(const GemForgeDynInstInfo &dynInfo) {
-  warn("rewindStreamConfigIndexBase");
+  ISA_PSP_FE_DPRINTF("rewindStreamConfigIndexBase\n");
 
   auto streamNum = this->extractImm<uint64_t>(dynInfo.staticInst);
   auto &regionInfo = this->getStreamRegionInfo(streamNum);
@@ -358,7 +358,7 @@ void ISAPSPFrontend::rewindStreamConfigIndexBase(const GemForgeDynInstInfo &dynI
 }
 
 void ISAPSPFrontend::rewindStreamConfigIndexGranularity(const GemForgeDynInstInfo &dynInfo) {
-  warn("rewindStreamConfigIndexGranularity");
+  ISA_PSP_FE_DPRINTF("rewindStreamConfigIndexGranularity\n");
 
   auto streamNum = this->extractImm<uint64_t>(dynInfo.staticInst);
   auto &regionInfo = this->getStreamRegionInfo(streamNum);
@@ -368,7 +368,7 @@ void ISAPSPFrontend::rewindStreamConfigIndexGranularity(const GemForgeDynInstInf
 }
 
 void ISAPSPFrontend::rewindStreamConfigValueBase(const GemForgeDynInstInfo &dynInfo) {
-  warn("rewindStreamConfigValueBase");
+  ISA_PSP_FE_DPRINTF("rewindStreamConfigValueBase\n");
 
   auto streamNum = this->extractImm<uint64_t>(dynInfo.staticInst);
   auto &regionInfo = this->getStreamRegionInfo(streamNum);
@@ -378,7 +378,7 @@ void ISAPSPFrontend::rewindStreamConfigValueBase(const GemForgeDynInstInfo &dynI
 }
 
 void ISAPSPFrontend::rewindStreamConfigValueGranularity(const GemForgeDynInstInfo &dynInfo) {
-  warn("rewindStreamConfigValueGranularity");
+  ISA_PSP_FE_DPRINTF("rewindStreamConfigValueGranularity\n");
 
   auto streamNum = this->extractImm<uint64_t>(dynInfo.staticInst);
   auto &regionInfo = this->getStreamRegionInfo(streamNum);
@@ -388,7 +388,7 @@ void ISAPSPFrontend::rewindStreamConfigValueGranularity(const GemForgeDynInstInf
 }
 
 void ISAPSPFrontend::rewindStreamInputBegin(const GemForgeDynInstInfo &dynInfo) {
-  warn("rewindStreamInputBegin");
+  ISA_PSP_FE_DPRINTF("rewindStreamInputBegin\n");
 
   auto streamNum = this->extractImm<uint64_t>(dynInfo.staticInst);
   auto &regionInfo = this->getStreamRegionInfo(streamNum);
@@ -398,7 +398,7 @@ void ISAPSPFrontend::rewindStreamInputBegin(const GemForgeDynInstInfo &dynInfo) 
 }
 
 void ISAPSPFrontend::rewindStreamInputEnd(const GemForgeDynInstInfo &dynInfo) {
-  warn("rewindStreamInputEnd");
+  ISA_PSP_FE_DPRINTF("rewindStreamInputEnd\n");
 
   auto streamNum = this->extractImm<uint64_t>(dynInfo.staticInst);
   auto &regionInfo = this->getStreamRegionInfo(streamNum);
@@ -412,7 +412,7 @@ void ISAPSPFrontend::rewindStreamInputEnd(const GemForgeDynInstInfo &dynInfo) {
  *******************************************************************************/
 
 bool ISAPSPFrontend::canDispatchStreamConfigReady(const GemForgeDynInstInfo &dynInfo) {
-  warn("canDispatchStreamConfigReady");
+  ISA_PSP_FE_DPRINTF("canDispatchStreamConfigReady\n");
 
   auto streamNum = this->extractImm<uint64_t>(dynInfo.staticInst);
   auto &regionInfo = this->getStreamRegionInfo(streamNum);
@@ -431,7 +431,7 @@ bool ISAPSPFrontend::canDispatchStreamConfigReady(const GemForgeDynInstInfo &dyn
 }
 
 bool ISAPSPFrontend::canDispatchStreamInputReady(const GemForgeDynInstInfo &dynInfo) {
-  warn("canDispatchStreamInputReady");
+  ISA_PSP_FE_DPRINTF("canDispatchStreamInputReady\n");
 
   auto streamNum = this->extractImm<uint64_t>(dynInfo.staticInst);
   auto &regionInfo = this->getStreamRegionInfo(streamNum);
@@ -456,7 +456,7 @@ bool ISAPSPFrontend::canDispatchStreamInputReady(const GemForgeDynInstInfo &dynI
 void ISAPSPFrontend::dispatchStreamConfigReady(
     const GemForgeDynInstInfo &dynInfo,
     GemForgeLSQCallbackList &extraLSQCallbacks) {
-  warn("dispatchStreamConfigReady");
+  ISA_PSP_FE_DPRINTF("dispatchStreamConfigReady\n");
 
   auto streamNum = this->extractImm<uint64_t>(dynInfo.staticInst);
   auto &regionInfo = this->getStreamRegionInfo(streamNum);
@@ -471,7 +471,7 @@ void ISAPSPFrontend::dispatchStreamConfigReady(
 void ISAPSPFrontend::dispatchStreamInputReady(
     const GemForgeDynInstInfo &dynInfo,
     GemForgeLSQCallbackList &extraLSQCallbacks) {
-  warn("dispatchStreamInputReady");
+  ISA_PSP_FE_DPRINTF("dispatchStreamInputReady\n");
 
   auto streamNum = this->extractImm<uint64_t>(dynInfo.staticInst);
   auto &regionInfo = this->getStreamRegionInfo(streamNum);
@@ -489,7 +489,7 @@ void ISAPSPFrontend::dispatchStreamInputReady(
 
 bool ISAPSPFrontend::canExecuteStreamConfigReady(
     const GemForgeDynInstInfo &dynInfo) {
-  warn("canExecuteStreamConfigReady");
+  ISA_PSP_FE_DPRINTF("canExecuteStreamConfigReady\n");
 
   auto streamNum = this->extractImm<uint64_t>(dynInfo.staticInst);
   auto &regionInfo = this->getStreamRegionInfo(streamNum);
@@ -500,7 +500,7 @@ bool ISAPSPFrontend::canExecuteStreamConfigReady(
 
 bool ISAPSPFrontend::canExecuteStreamInputReady(
     const GemForgeDynInstInfo &dynInfo) {
-  warn("canExecuteStreamInputReady");
+  ISA_PSP_FE_DPRINTF("canExecuteStreamInputReady\n");
 
   auto streamNum = this->extractImm<uint64_t>(dynInfo.staticInst);
   auto &regionInfo = this->getStreamRegionInfo(streamNum);
@@ -515,7 +515,7 @@ bool ISAPSPFrontend::canExecuteStreamInputReady(
 
 void ISAPSPFrontend::executeStreamConfigReady(const GemForgeDynInstInfo &dynInfo,
                                          ExecContext &xc) {
-  warn("executeStreamConfigReady");
+  ISA_PSP_FE_DPRINTF("executeStreamConfigReady\n");
 
   auto streamNum = this->extractImm<uint64_t>(dynInfo.staticInst);
   auto &regionInfo = this->getStreamRegionInfo(streamNum);
@@ -530,7 +530,7 @@ void ISAPSPFrontend::executeStreamConfigReady(const GemForgeDynInstInfo &dynInfo
 
 void ISAPSPFrontend::executeStreamInputReady(const GemForgeDynInstInfo &dynInfo,
                                          ExecContext &xc) {
-  warn("executeStreamInputReady");
+  ISA_PSP_FE_DPRINTF("executeStreamInputReady\n");
 
   auto streamNum = this->extractImm<uint64_t>(dynInfo.staticInst);
   auto &regionInfo = this->getStreamRegionInfo(streamNum);
@@ -560,7 +560,7 @@ bool ISAPSPFrontend::canCommitStreamInputReady(const GemForgeDynInstInfo &dynInf
  *******************************************************************************/
 
 void ISAPSPFrontend::commitStreamConfigReady(const GemForgeDynInstInfo &dynInfo) {
-  warn("commitStreamConfigReady");
+  ISA_PSP_FE_DPRINTF("commitStreamConfigReady\n");
 
   auto streamNum = this->extractImm<uint64_t>(dynInfo.staticInst);
   auto &regionInfo = this->getStreamRegionInfo(streamNum);
@@ -573,7 +573,7 @@ void ISAPSPFrontend::commitStreamConfigReady(const GemForgeDynInstInfo &dynInfo)
 }
 
 void ISAPSPFrontend::commitStreamInputReady(const GemForgeDynInstInfo &dynInfo) {
-  warn("commitStreamInputReady");
+  ISA_PSP_FE_DPRINTF("commitStreamInputReady\n");
 
   auto streamNum = this->extractImm<uint64_t>(dynInfo.staticInst);
   auto &regionInfo = this->getStreamRegionInfo(streamNum);
@@ -590,7 +590,7 @@ void ISAPSPFrontend::commitStreamInputReady(const GemForgeDynInstInfo &dynInfo) 
  *******************************************************************************/
 
 void ISAPSPFrontend::rewindStreamConfigReady(const GemForgeDynInstInfo &dynInfo) {
-  warn("rewindStreamConfigReady");
+  ISA_PSP_FE_DPRINTF("rewindStreamConfigReady\n");
 
   auto streamNum = this->extractImm<uint64_t>(dynInfo.staticInst);
   auto &regionInfo = this->getStreamRegionInfo(streamNum);
@@ -603,7 +603,7 @@ void ISAPSPFrontend::rewindStreamConfigReady(const GemForgeDynInstInfo &dynInfo)
 }
 
 void ISAPSPFrontend::rewindStreamInputReady(const GemForgeDynInstInfo &dynInfo) {
-  warn("rewindStreamInputReady");
+  ISA_PSP_FE_DPRINTF("rewindStreamInputReady\n");
 
   auto streamNum = this->extractImm<uint64_t>(dynInfo.staticInst);
   auto &regionInfo = this->getStreamRegionInfo(streamNum);
@@ -620,7 +620,7 @@ void ISAPSPFrontend::rewindStreamInputReady(const GemForgeDynInstInfo &dynInfo) 
  *******************************************************************************/
 
 bool ISAPSPFrontend::canDispatchStreamTerminate(const GemForgeDynInstInfo &dynInfo) {
-  warn("canDispatchStreamTerminate");
+  ISA_PSP_FE_DPRINTF("canDispatchStreamTerminate\n");
 
   auto streamNum = this->extractImm<uint64_t>(dynInfo.staticInst);
   auto &regionInfo = this->getStreamRegionInfo(streamNum);
@@ -640,7 +640,7 @@ bool ISAPSPFrontend::canDispatchStreamTerminate(const GemForgeDynInstInfo &dynIn
 void ISAPSPFrontend::dispatchStreamTerminate(
     const GemForgeDynInstInfo &dynInfo,
     GemForgeLSQCallbackList &extraLSQCallbacks) {
-  warn("dispatchStreamTerminate");
+  ISA_PSP_FE_DPRINTF("dispatchStreamTerminate\n");
 
   auto streamNum = this->extractImm<uint64_t>(dynInfo.staticInst);
   auto &regionInfo = this->getStreamRegionInfo(streamNum);
@@ -653,7 +653,7 @@ void ISAPSPFrontend::dispatchStreamTerminate(
 }
 
 bool ISAPSPFrontend::canExecuteStreamTerminate(const GemForgeDynInstInfo &dynInfo) {
-  warn("canExecuteStreamTerminate");
+  ISA_PSP_FE_DPRINTF("canExecuteStreamTerminate\n");
 
   auto streamNum = this->extractImm<uint64_t>(dynInfo.staticInst);
   auto &regionInfo = this->getStreamRegionInfo(streamNum);
@@ -672,7 +672,7 @@ bool ISAPSPFrontend::canExecuteStreamTerminate(const GemForgeDynInstInfo &dynInf
 
 void ISAPSPFrontend::executeStreamTerminate(const GemForgeDynInstInfo &dynInfo,
                                        ExecContext &xc) {
-  warn("executeStreamTerminate");
+  ISA_PSP_FE_DPRINTF("executeStreamTerminate\n");
 
   auto streamNum = this->extractImm<uint64_t>(dynInfo.staticInst);
   auto &regionInfo = this->getStreamRegionInfo(streamNum);
@@ -685,7 +685,7 @@ void ISAPSPFrontend::executeStreamTerminate(const GemForgeDynInstInfo &dynInfo,
 }
 
 bool ISAPSPFrontend::canCommitStreamTerminate(const GemForgeDynInstInfo &dynInfo) {
-  warn("canCommitStreamTerminate");
+  ISA_PSP_FE_DPRINTF("canCommitStreamTerminate\n");
 
   auto streamNum = this->extractImm<uint64_t>(dynInfo.staticInst);
   auto &regionInfo = this->getStreamRegionInfo(streamNum);
@@ -703,7 +703,7 @@ bool ISAPSPFrontend::canCommitStreamTerminate(const GemForgeDynInstInfo &dynInfo
 }
 
 void ISAPSPFrontend::commitStreamTerminate(const GemForgeDynInstInfo &dynInfo) {
-  warn("commitStreamTerminate");
+  ISA_PSP_FE_DPRINTF("commitStreamTerminate\n");
 
   auto streamNum = this->extractImm<uint64_t>(dynInfo.staticInst);
   auto &regionInfo = this->getStreamRegionInfo(streamNum);
@@ -718,7 +718,7 @@ void ISAPSPFrontend::commitStreamTerminate(const GemForgeDynInstInfo &dynInfo) {
 }
 
 void ISAPSPFrontend::rewindStreamTerminate(const GemForgeDynInstInfo &dynInfo) {
-  warn("rewindStreamTerminate");
+  ISA_PSP_FE_DPRINTF("rewindStreamTerminate");
   
   auto streamNum = this->extractImm<uint64_t>(dynInfo.staticInst);
   auto &regionInfo = this->getStreamRegionInfo(streamNum);
