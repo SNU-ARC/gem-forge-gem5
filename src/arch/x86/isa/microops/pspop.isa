@@ -106,8 +106,8 @@ def template MicroPSPRegImmOpConstructor {{
                 src1(_src1.index()), imm(_imm), dataSize(_dataSize)
     {
         foldOBit = (dataSize == 1 && !machInst.rex.present) ? 1 << 6 : 0;
-        _srcRegIdx[_numSrcRegs++] = RegId(IntRegClass, INTREG_FOLDED(src1, foldOBit));
         %(constructor)s;
+        _srcRegIdx[_numSrcRegs++] = RegId(IntRegClass, INTREG_FOLDED(src1, foldOBit));
     }
 }};
 

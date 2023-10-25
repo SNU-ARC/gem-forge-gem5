@@ -91,10 +91,10 @@ StreamEngine *GemForgeAcceleratorManager::getStreamEngine() {
   return nullptr;
 }
 
-PSPFrontend* GemForgeAcceleratorManager::getPSPFrontend() {
+PSPFrontend *GemForgeAcceleratorManager::getPSPFrontend() {
   for (auto accelerator : this->accelerators) {
-    if (auto psp = dynamic_cast<PSPFrontend *>(accelerator)) {
-      return psp;
+    if (auto psp_fe = dynamic_cast<PSPFrontend *>(accelerator)) {
+      return psp_fe;
     }
   }
   return nullptr;
@@ -140,6 +140,12 @@ void GemForgeAcceleratorManager::exitDump() {
   if (auto se = this->getStreamEngine()) {
     se->exitDump();
   }
+
+  /*
+  if (auto psp = this->getPSPFrontend()) {
+    psp->exitDump();
+  }
+  */
 }
 
 void GemForgeAcceleratorManager::resetStats() {

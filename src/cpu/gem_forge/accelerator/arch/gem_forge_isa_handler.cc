@@ -34,35 +34,43 @@
   case GemForgeStaticInstOpE::STREAM_STORE: {                                  \
     se.stage##StreamStore(dynInfo, ##xc);                                      \
     break;                                                                     \
-  }                                                                            
-//  case GemForgeStaticInstOpE::STREAM_CFG_IDX_BASE: {                           \
-//    psp.stage##StreamConfigIndexBase(dynInfo, ##xc);                            \
-//    break;                                                                     \
-//  }                                                                            \
-//  case GemForgeStaticInstOpE::STREAM_CFG_IDX_GRAN: {                           \
-//    psp.stage##StreamConfigIndexGranularity(dynInfo, ##xc);                     \
-//    break;                                                                     \
-//  }                                                                            \
-//  case GemForgeStaticInstOpE::STREAM_CFG_VAL_BASE: {                           \
-//    psp.stage##StreamConfigValueBase(dynInfo, ##xc);                            \
-//    break;                                                                     \
-//  }                                                                            \
-//  case GemForgeStaticInstOpE::STREAM_CFG_VAL_GRAN: {                           \
-//    psp.stage##StreamConfigValueGranularity(dynInfo, ##xc);                     \
-//    break;                                                                     \
-//  }                                                                            \
-//  case GemForgeStaticInstOpE::STREAM_INPUT_OFFSET_BEGIN: {                     \
-//    psp.stage##StreamInputOffsetBegin(dynInfo, ##xc);                           \
-//    break;                                                                     \
-//  }                                                                            \
-//  case GemForgeStaticInstOpE::STREAM_INPUT_OFFSET_END: {                       \
-//    psp.stage##StreamInputOffsetEnd(dynInfo, ##xc);                             \
-//    break;                                                                     \
-//  }                                                                            \
-//  case GemForgeStaticInstOpE::STREAM_TERMINATE: {                              \
-//    psp.stage##StreamTerminate(dynInfo, ##xc);                                  \
-//    break;                                                                     \
-//  }
+  }                                                                            \
+  case GemForgeStaticInstOpE::STREAM_CFG_IDX_BASE: {                           \
+    psp.stage##StreamConfigIndexBase(dynInfo, ##xc);                           \
+    break;                                                                     \
+  }                                                                            \
+  case GemForgeStaticInstOpE::STREAM_CFG_IDX_GRAN: {                           \
+    psp.stage##StreamConfigIndexGranularity(dynInfo, ##xc);                    \
+    break;                                                                     \
+  }                                                                            \
+  case GemForgeStaticInstOpE::STREAM_CFG_VAL_BASE: {                           \
+    psp.stage##StreamConfigValueBase(dynInfo, ##xc);                           \
+    break;                                                                     \
+  }                                                                            \
+  case GemForgeStaticInstOpE::STREAM_CFG_VAL_GRAN: {                           \
+    psp.stage##StreamConfigValueGranularity(dynInfo, ##xc);                    \
+    break;                                                                     \
+  }                                                                            \
+  case GemForgeStaticInstOpE::STREAM_INPUT_OFFSET_BEGIN: {                     \
+    psp.stage##StreamInputBegin(dynInfo, ##xc);                                \
+    break;                                                                     \
+  }                                                                            \
+  case GemForgeStaticInstOpE::STREAM_INPUT_OFFSET_END: {                       \
+    psp.stage##StreamInputEnd(dynInfo, ##xc);                                  \
+    break;                                                                     \
+  }                                                                            \
+  case GemForgeStaticInstOpE::STREAM_CFG_READY: {                              \
+    psp.stage##StreamConfigReady(dynInfo, ##xc);                              \
+    break;                                                                     \
+  }                                                                            \
+  case GemForgeStaticInstOpE::STREAM_INPUT_READY: {                            \
+    psp.stage##StreamInputReady(dynInfo, ##xc);                                \
+    break;                                                                     \
+  }                                                                            \
+  case GemForgeStaticInstOpE::STREAM_TERMINATE: {                              \
+    psp.stage##StreamTerminate(dynInfo, ##xc);                                 \
+    break;                                                                     \
+  }
 
 #define StreamInstRetCase(stage, xc...)                                        \
   case GemForgeStaticInstOpE::STREAM_CONFIG: {                                 \
@@ -86,21 +94,33 @@
   }                                                                            \
   case GemForgeStaticInstOpE::STREAM_STORE: {                                  \
     return se.stage##StreamStore(dynInfo, ##xc);                               \
-  }
-//  case GemForgeStaticInstOpE::STREAM_CFG_IDX_BASE: {                           \
-//    return psp.stage##StreamConfigIndexBase(dynInfo, ##xc);                     \
-//  case GemForgeStaticInstOpE::STREAM_CFG_IDX_GRAN: {                           \
-//    return psp.stage##StreamConfigIndexGranularity(dynInfo, ##xc);              \
-//  case GemForgeStaticInstOpE::STREAM_CFG_VAL_BASE: {                           \
-//    return psp.stage##StreamConfigValueBase(dynInfo, ##xc);                     \
-//  case GemForgeStaticInstOpE::STREAM_CFG_VAL_GRAN: {                           \
-//    return psp.stage##StreamConfigValueGranularity(dynInfo, ##xc);              \
-//  case GemForgeStaticInstOpE::STREAM_INPUT_OFFSET_BEGIN: {                     \
-//    return psp.stage##StreamInputOffsetBegin(dynInfo, ##xc);                    \
-//  case GemForgeStaticInstOpE::STREAM_INPUT_OFFSET_END: {                       \
-//    return psp.stage##StreamInputOffsetEnd(dynInfo, ##xc);                      \
-//  case GemForgeStaticInstOpE::STREAM_TERMINATE: {                              \
-//    return psp.stage##StreamTerminate(dynInfo, ##xc);                           \
+  }                                                                            \
+  case GemForgeStaticInstOpE::STREAM_CFG_IDX_BASE: {                           \
+    return psp.stage##StreamConfigIndexBase(dynInfo, ##xc);                    \
+  }                                                                            \
+  case GemForgeStaticInstOpE::STREAM_CFG_IDX_GRAN: {                           \
+    return psp.stage##StreamConfigIndexGranularity(dynInfo, ##xc);             \
+  }                                                                            \
+  case GemForgeStaticInstOpE::STREAM_CFG_VAL_BASE: {                           \
+    return psp.stage##StreamConfigValueBase(dynInfo, ##xc);                    \
+  }                                                                            \
+  case GemForgeStaticInstOpE::STREAM_CFG_VAL_GRAN: {                           \
+    return psp.stage##StreamConfigValueGranularity(dynInfo, ##xc);             \
+  }                                                                            \
+  case GemForgeStaticInstOpE::STREAM_INPUT_OFFSET_BEGIN: {                     \
+    return psp.stage##StreamInputBegin(dynInfo, ##xc);                         \
+  }                                                                            \
+  case GemForgeStaticInstOpE::STREAM_INPUT_OFFSET_END: {                       \
+    return psp.stage##StreamInputEnd(dynInfo, ##xc);                           \
+  }                                                                            \
+  case GemForgeStaticInstOpE::STREAM_CFG_READY: {                              \
+    return psp.stage##StreamConfigReady(dynInfo, ##xc);                        \
+  }                                                                            \
+  case GemForgeStaticInstOpE::STREAM_INPUT_READY: {                            \
+    return psp.stage##StreamInputReady(dynInfo, ##xc);                         \
+  }                                                                            \
+  case GemForgeStaticInstOpE::STREAM_TERMINATE: {                              \
+    return psp.stage##StreamTerminate(dynInfo, ##xc);                          \
   }
 
 bool GemForgeISAHandler::shouldCountInPipeline(
@@ -275,6 +295,10 @@ GemForgeISAHandler::getStaticInstInfo(const GemForgeDynInstInfo &dynInfo) {
       staticInstInfo.op = GemForgeStaticInstOpE::STREAM_INPUT_OFFSET_END;
     } else if (instName == "stream_terminate") {
       staticInstInfo.op = GemForgeStaticInstOpE::STREAM_TERMINATE;
+    } else if (instName == "stream_cfg_ready") {
+      staticInstInfo.op = GemForgeStaticInstOpE::STREAM_CFG_READY;
+    } else if (instName == "stream_input_ready") {
+      staticInstInfo.op = GemForgeStaticInstOpE::STREAM_INPUT_READY;
     }
   }
   return emplaceRet.first->second;

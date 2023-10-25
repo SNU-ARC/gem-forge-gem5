@@ -851,6 +851,7 @@ InstructionQueue<Impl>::scheduleReadyInsts()
          * actually mark the FU busy if found available FU, and
          * we must issue.
          */
+
         if (cpu->cpuDelegator) {
             if (!cpu->cpuDelegator->canExecute(issuing_inst)) {
                 DPRINTF(IQ, "GemForge cannot execute: %s.\n", *issuing_inst);

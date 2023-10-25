@@ -63,6 +63,7 @@ protected:
 // Description: Add PSPFrontend on the list
 class PSPFrontend;
 class StreamEngine;
+class PSPFrontend;
 class SpeculativePrecomputationManager;
 class GemForgeAcceleratorManager : public SimObject {
 public:
@@ -92,6 +93,7 @@ public:
   void exitDump();
 
   StreamEngine *getStreamEngine();
+  PSPFrontend *getPSPFrontend();
   SpeculativePrecomputationManager *getSpeculativePrecomputationManager();
 
   void regStats() override;

@@ -6,6 +6,7 @@
  */
 #include "cpu/gem_forge/gem_forge_dyn_inst_info.hh"
 #include "stream/isa_stream_engine.hh"
+#include "psp_frontend/isa_psp_frontend.hh"
 
 #include <unordered_map>
 
@@ -14,7 +15,7 @@ class GemForgeCPUDelegator;
 class GemForgeISAHandler {
 public:
   GemForgeISAHandler(GemForgeCPUDelegator *_cpuDelegaor)
-      : cpuDelegator(_cpuDelegaor), se(_cpuDelegaor) {}
+      : cpuDelegator(_cpuDelegaor), se(_cpuDelegaor), psp(_cpuDelegaor) {}
 
   void takeOverBy(GemForgeCPUDelegator *newDelegator);
 
@@ -61,7 +62,9 @@ private:
     STREAM_CFG_VAL_GRAN,
     STREAM_INPUT_OFFSET_BEGIN,
     STREAM_INPUT_OFFSET_END,
-    STREAM_TERMINATE
+    STREAM_TERMINATE,
+    STREAM_CFG_READY,
+    STREAM_INPUT_READY
   };
   struct GemForgeStaticInstInfo {
     GemForgeStaticInstOpE op;
@@ -85,7 +88,7 @@ private:
 
   // Editor: Sungjun Jung (miguel92@snu.ac.kr)
   // Description: Add Programmable Stream Prefetcher Frontend
-  // ISAPSPFrontend psp;
+  ISAPSPFrontend psp;
 };
 
 #endif
