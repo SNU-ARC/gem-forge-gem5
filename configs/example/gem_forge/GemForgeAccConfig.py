@@ -92,7 +92,7 @@ def initializeStreamEngine(options):
 def initializePSPFrontend(options):
     psp = PSPFrontend()
     # Pass parameters
-    psp.totalPatternTableEntries = options.total_pattern_table_entries
+    psp.totalPatternTableEntries = options.gem_forge_psp_frontend_total_pattern_table_entries
 
     return psp
 
@@ -104,6 +104,8 @@ def initializeEmptyGemForgeAcceleratorManager(options):
         has_accelerator = True
     # accelerators.append(SpeculativePrecomputationManager(options))
     if options.gem_forge_stream_engine_enable:
+        has_accelerator = True
+    if options.gem_forge_psp_frontend_enable:
         has_accelerator = True
     if has_accelerator:
         return GemForgeAcceleratorManager(accelerators=list())

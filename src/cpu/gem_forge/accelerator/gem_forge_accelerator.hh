@@ -98,9 +98,6 @@ public:
 
   void regStats() override;
 
-  // Editor: Sungjun Jung (miguel92@snu.ac.kr)
-  PSPFrontend* getPSPFrontend();
-
 private:
   std::vector<GemForgeAccelerator *> &accelerators;
   GemForgeCPUDelegator *cpuDelegator;

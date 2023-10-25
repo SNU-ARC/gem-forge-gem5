@@ -13,10 +13,9 @@ PSPFrontend::~PSPFrontend() {
   delete[] patternTable;
 }
 
-void PSPFrontend::tick() {
-  this->patternTableArbiter->getValidEntry(validPatternTableEntry);
-  if (validPatternTableEntry != nullptr) {
-  }
+void PSPFrontend::takeOverBy(GemForgeCPUDelegator *newCpuDelegator,
+                              GemForgeAcceleratorManager *newManager) {
+  GemForgeAccelerator::takeOverBy(newCpuDelegator, newManager);
 }
 
 void PSPFrontend::dump() {
@@ -35,11 +34,12 @@ void PSPFrontend::regStats() {
 }
 
 void PSPFrontend::resetStats() {
-}  //scalar(numConfigured, "Number of streams configured.");
-#undef scalar
 }
 
 void PSPFrontend::tick() {
+//  this->patternTableArbiter->getValidEntry(validPatternTableEntry);
+//  if (validPatternTableEntry != nullptr) {
+//  }
 }
 
 /********************************************************************************
