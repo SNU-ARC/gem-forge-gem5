@@ -6,7 +6,6 @@
 
 class RRArbiter {
 public:
-//  RRArbiter();
   RRArbiter(uint32_t _totalPatternTableEntries)
     : totalPatternTableEntries(_totalPatternTableEntries), lastChosenEntryId(0) {};
   ~RRArbiter() {};

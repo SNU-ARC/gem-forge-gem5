@@ -2,7 +2,6 @@
 #define __CPU_GEM_FROGE_ACCELERATOR_PATTERN_TABLE_HH__
 
 #include <iostream>
-#include <unordered_map>
 
 struct TableConfigEntry {
   bool valid;

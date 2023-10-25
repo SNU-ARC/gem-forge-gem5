@@ -20,24 +20,24 @@ PatternTable::~PatternTable() {
   delete[] patternTable;
 }
 
-//void PatternTable::configBaseAddr(uint32_t streamId, uint64_t baseAddr, bool isIdx) {
-//  patternTable[streamId]->configBaseAddr(baseAddr, isIdx);
+//void PatternTable::configBaseAddr(uint32_t entryId, uint64_t baseAddr, bool isIdx) {
+//  patternTable[entryId]->configBaseAddr(baseAddr, isIdx);
 //}
-//void PatternTable::configAccessGran(uint32_t streamId, uint64_t accessGranularity, bool isIdx) {
-//  patternTable[streamId]->configAccessGran(accessGranularity, isIdx);
+//void PatternTable::configAccessGran(uint32_t entryId, uint64_t accessGranularity, bool isIdx) {
+//  patternTable[entryId]->configAccessGran(accessGranularity, isIdx);
 //}
-//void PatternTable::inputOffset(uint32_t streamId, uint64_t inputOffset, bool isIdx) {
-//  patternTable[streamId]->inputOffset(inputOffset, isIdx);
+//void PatternTable::inputOffset(uint32_t entryId, uint64_t inputOffset, bool isIdx) {
+//  patternTable[entryId]->inputOffset(inputOffset, isIdx);
 //}
-bool PatternTable::isValid(const uint32_t _streamId, const bool _isInput) {
-  return patternTable[_streamId].isValid(_isInput);
+bool PatternTable::isValid(const uint32_t _entryId, const bool _isInput) {
+  return patternTable[_entryId].isValid(_isInput);
 }
-bool PatternTable::getConfigInfo(const uint32_t _streamId, uint64_t _idxBaseAddr, uint64_t _idxAccessGranularity, uint64_t _valBaseAddr, uint64_t _valAccessGranularity) {
-  return patternTable[_streamId].getConfigInfo(_idxBaseAddr, _idxAccessGranularity, _valBaseAddr, _valAccessGranularity);
+bool PatternTable::getConfigInfo(const uint32_t _entryId, uint64_t _idxBaseAddr, uint64_t _idxAccessGranularity, uint64_t _valBaseAddr, uint64_t _valAccessGranularity) {
+  return patternTable[_entryId].getConfigInfo(_idxBaseAddr, _idxAccessGranularity, _valBaseAddr, _valAccessGranularity);
 }
-bool PatternTable::getInputInfo(const uint32_t _streamId, uint64_t _offsetBegin, uint64_t _offsetEnd) {
-  return patternTable[_streamId].getInputInfo(_offsetBegin, _offsetEnd);
+bool PatternTable::getInputInfo(const uint32_t _entryId, uint64_t _offsetBegin, uint64_t _offsetEnd) {
+  return patternTable[_entryId].getInputInfo(_offsetBegin, _offsetEnd);
 }
-void PatternTable::reset(uint32_t _streamId) {
-  patternTable[_streamId].reset();
+void PatternTable::reset(uint32_t _entryId) {
+  patternTable[_entryId].reset();
 }
