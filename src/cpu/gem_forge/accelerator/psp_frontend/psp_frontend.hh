@@ -21,7 +21,10 @@ public:
   PSPFrontend(Params* params);
   ~PSPFrontend(); // override;
 
-  void tick() { return; }
+  void takeOverBy(GemForgeCPUDelegator* _cpuDelegator,
+                  GemForgeAcceleratorManager* _manager) override;
+
+  void tick();
   void dump() override;
   void regStats() override;
   void resetStats() override;

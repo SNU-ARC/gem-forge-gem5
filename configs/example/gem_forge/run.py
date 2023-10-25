@@ -31,8 +31,10 @@ def parse_tdg_files(option, opt, value, parser):
 
 # Editor: Sungjun Jung (miguel92@snu.ac.kr)
 # Desciprtion: options for PSP
-parser.add_option("--gem-forge-psp-frontend-enable", action="store_true", default=True,
+parser.add_option("--gem-forge-psp-frontend-enable", action="store_true", default=False,
                   help="""Enable PSP Frontend.""")
+parser.add_option("--gem-forge-psp-frontend-total-pattern-table-entries", action="store", type="int", default="4",
+                  help="""number of pattern table entries for PSP Frontend.""")
 
 parser.add_option("--gem-forge-work-mark-history", action="store", type="string",
                   help="""work mark history""")
