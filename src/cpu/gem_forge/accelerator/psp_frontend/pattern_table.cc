@@ -13,31 +13,44 @@
 
 PatternTable::PatternTable(uint32_t _totalPatternTableEntries) {
     this->totalPatternTableEntries = _totalPatternTableEntries;
-    patternTable = new PatternTableEntry[this->totalPatternTableEntries];
+    for (uint32_t i = 0; i < _totalPatternTableEntries; i++) {
+      patternTable.emplace_back(PatternTableEntry());
+    }
 }
 
 PatternTable::~PatternTable() {
-  delete[] patternTable;
+  patternTable.clear();
 }
 
-//void PatternTable::configBaseAddr(uint32_t entryId, uint64_t baseAddr, bool isIdx) {
-//  patternTable[entryId]->configBaseAddr(baseAddr, isIdx);
-//}
-//void PatternTable::configAccessGran(uint32_t entryId, uint64_t accessGranularity, bool isIdx) {
-//  patternTable[entryId]->configAccessGran(accessGranularity, isIdx);
-//}
-//void PatternTable::inputOffset(uint32_t entryId, uint64_t inputOffset, bool isIdx) {
-//  patternTable[entryId]->inputOffset(inputOffset, isIdx);
-//}
-bool PatternTable::isValid(const uint32_t _entryId, const bool _isInput) {
-  return patternTable[_entryId].isValid(_isInput);
+uint32_t PatternTable::size() {
+  return patternTable.size();
 }
-bool PatternTable::getConfigInfo(const uint32_t _entryId, uint64_t _idxBaseAddr, uint64_t _idxAccessGranularity, uint64_t _valBaseAddr, uint64_t _valAccessGranularity) {
-  return patternTable[_entryId].getConfigInfo(_idxBaseAddr, _idxAccessGranularity, _valBaseAddr, _valAccessGranularity);
+
+bool PatternTable::isConfigInfoValid(const uint64_t _entryId) {
+  return patternTable[_entryId].isConfigInfoValid();
 }
-bool PatternTable::getInputInfo(const uint32_t _entryId, uint64_t _offsetBegin, uint64_t _offsetEnd) {
+bool PatternTable::isInputInfoValid(const uint64_t _entryId) {
+  return patternTable[_entryId].isInputInfoValid();
+}
+void PatternTable::setConfigInfo(const uint64_t _entryId,
+                                 const uint64_t _idxBaseAddr, const uint64_t _idxAccessGranularity,
+                                 const uint64_t _valBaseAddr, const uint64_t _valAccessGranularity) {
+  this->patternTable[_entryId].setConfigInfo(_idxBaseAddr, _idxAccessGranularity,
+                                             _valBaseAddr, _valAccessGranularity);
+}
+bool PatternTable::getConfigInfo(const uint64_t _entryId,
+                                 uint64_t _idxBaseAddr, uint64_t _idxAccessGranularity,
+                                 uint64_t _valBaseAddr, uint64_t _valAccessGranularity) {
+  return patternTable[_entryId].getConfigInfo(_idxBaseAddr, _idxAccessGranularity,
+                                              _valBaseAddr, _valAccessGranularity);
+}
+void PatternTable::setInputInfo(const uint64_t _entryId,
+                                const uint64_t _offsetBegin, const uint64_t _offsetEnd) {
+  this->patternTable[_entryId].setInputInfo(_offsetBegin, _offsetEnd);
+}
+bool PatternTable::getInputInfo(const uint64_t _entryId, uint64_t _offsetBegin, uint64_t _offsetEnd) {
   return patternTable[_entryId].getInputInfo(_offsetBegin, _offsetEnd);
 }
-void PatternTable::reset(uint32_t _entryId) {
+void PatternTable::reset(uint64_t _entryId) {
   patternTable[_entryId].reset();
 }
