@@ -61,7 +61,6 @@ protected:
 
 // Editor: Sungjun Jung (miguel92@snu.ac.kr)
 // Description: Add PSPFrontend on the list
-class PSPFrontend;
 class StreamEngine;
 class PSPFrontend;
 class SpeculativePrecomputationManager;

@@ -11,14 +11,11 @@
 
 PSPFrontend::PSPFrontend(Params* params)
   : GemForgeAccelerator(params) {
-    warn("Sipal!!");
     this->totalPatternTableEntries = params->totalPatternTableEntries;
-//    patternTable.reserve(params->totalPatternTableEntries);
     for (uint32_t i = 0; i < params->totalPatternTableEntries; i++) {
       PatternTableEntry* entry = new PatternTableEntry;
       patternTable.emplace_back(entry);
     }
-    warn("patternTable size: %d.", patternTable.size());
     patternTableArbiter = new PatternTableRRArbiter(params->totalPatternTableEntries);
 }
 
@@ -61,9 +58,9 @@ void PSPFrontend::tick() {
 
 bool PSPFrontend::canDispatchStreamConfig(const StreamConfigArgs &args) {
   uint64_t entryId = args.entryId;
-  warn("patternTable size: %d.", patternTable.size());
   bool value = patternTable[entryId]->isConfigInfoValid();
   warn("Return value: %d.", value);
+  return value;
 }
 
 void PSPFrontend::dispatchStreamConfig(const StreamConfigArgs &args) {

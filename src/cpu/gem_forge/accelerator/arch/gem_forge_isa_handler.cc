@@ -307,4 +307,5 @@ GemForgeISAHandler::getStaticInstInfo(const GemForgeDynInstInfo &dynInfo) {
 void GemForgeISAHandler::takeOverBy(GemForgeCPUDelegator *newDelegator) {
   this->cpuDelegator = newDelegator;
   this->se.takeOverBy(newDelegator);
+  this->psp.takeOverBy(newDelegator);
 }
