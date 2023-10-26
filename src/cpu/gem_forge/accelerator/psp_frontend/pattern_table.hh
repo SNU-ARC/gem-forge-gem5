@@ -1,30 +1,37 @@
 #ifndef __CPU_GEM_FORGE_ACCELERATOR_PATTERN_TABLE_HH__
 #define __CPU_GEM_FROGE_ACCELERATOR_PATTERN_TABLE_HH__
 
+#include "base/statistics.hh"
+
+#include <vector>
 #include <iostream>
 
 struct TableConfigEntry {
   bool valid;
-  uint64_t baseAddr;
-  uint64_t accessGranularity;
+  uint64_t idxBaseAddr;
+  uint64_t idxAccessGranularity;
+  uint64_t valBaseAddr;
+  uint64_t valAccessGranularity;
  
-  TableConfigEntry() : valid(false), baseAddr(0), accessGranularity(0) {}
+  TableConfigEntry() 
+    : valid(false), idxBaseAddr(0), idxAccessGranularity(0),
+      valBaseAddr(0), valAccessGranularity(0) {}
 
-//  void configBaseAddr(const uint64_t _baseAddr) {
-//    this->numConfigured++;
-//    this->baseAddr = _baseAddr;
-//    if (this->numConfigured == 2)
-//      this->valid = true;
-//  }
-//  void configAccessGran(const uint64_t _accessGranularity) {
-//    this->numConfigured++;
-//    this->accessGranularity = _accessGranularity;
-//    if (this->numConfigured == 2)
-//      this->valid = true;
-//  }
-  bool getConfigInfo(uint64_t _baseAddr, uint64_t _accessGranularity) {
-    _baseAddr = this->baseAddr;
-    _accessGranularity = this->accessGranularity;
+  bool isValid() { return this->valid; }
+  void setConfigInfo(const uint64_t _idxBaseAddr, const uint64_t _idxAccessGranularity,
+                     const uint64_t _valBaseAddr, const uint64_t _valAccessGranularity) {
+    this->valid = true;
+    this->idxBaseAddr = _idxBaseAddr;
+    this->idxAccessGranularity = _idxAccessGranularity;
+    this->valBaseAddr = _valBaseAddr;
+    this->valAccessGranularity = _valAccessGranularity;
+  }
+  bool getConfigInfo(uint64_t _idxBaseAddr, uint64_t _idxAccessGranularity,
+                     uint64_t _valBaseAddr, uint64_t _valAccessGranularity) {
+    _idxBaseAddr = this->idxBaseAddr;
+    _idxAccessGranularity = this->idxAccessGranularity;
+    _valBaseAddr = this->valBaseAddr;
+    _valAccessGranularity = this->valAccessGranularity;
     return this->valid;
   }
   void reset() {
@@ -39,18 +46,12 @@ struct TableInputEntry {
 
   TableInputEntry() : valid(false), offsetBegin(0), offsetEnd(0) {}
 
-//  void inputOffsetBegin(const uint64_t _inputOffset) {
-//    this->numInput++;
-//    this->offsetBegin = _inputOffset;
-//    if (this->numInput == 2)
-//      this->valid = true;
-//  }
-//  void inputOffsetEnd(const uint64_t _inputOffset) {
-//    this->numInput++;
-//    this->offsetEnd = _inputOffset;
-//    if (this->numInput == 2)
-//      this->valid = true;
-//  }
+  bool isValid() { return this->valid; }
+  void setInputInfo(const uint64_t _offsetBegin, const uint64_t _offsetEnd) {
+    this->valid = true;
+    this->offsetBegin = _offsetBegin;
+    this->offsetEnd = _offsetEnd;
+  }
   bool getInputInfo(uint64_t _offsetBegin, uint64_t _offsetEnd) {
     _offsetBegin = this->offsetBegin;
     _offsetEnd = this->offsetEnd;
@@ -62,46 +63,36 @@ struct TableInputEntry {
 };
 
 struct PatternTableEntry {
-  TableConfigEntry idxTableConfigEntry;
-  TableConfigEntry valTableConfigEntry;
-  TableInputEntry idxTableInputEntry;
+  TableConfigEntry tableConfigEntry;
+  TableInputEntry tableInputEntry;
 
-  PatternTableEntry() : idxTableConfigEntry(), valTableConfigEntry(), idxTableInputEntry() {}
+  PatternTableEntry() : tableConfigEntry(), tableInputEntry() {}
 
-//  void configBaseAddr(const uint64_t _baseAddr, bool isIdx) {
-//    if (isIdx) 
-//      this->idxTableConfigEntry.configBaseAddr(_baseAddr);
-//    else 
-//      this->valTableConfigEntry.configBaseAddr(_baseAddr);
-//  }
-//  void configAccessGran(const uint64_t _accessGranularity, bool isIdx) {
-//    if (isIdx) 
-//      this->idxTableConfigEntry.configAccessGran(_accessGranularity);
-//    else 
-//      this->valTableConfigEntry.configAccessGran(_accessGranularity);
-//  }
-//  void InputOffset(const uint64_t _inputOffset, bool isBegin) {
-//    if (isBegin)
-//      this->idxTableInputEntry.inputOffsetBegin(_inputOffset);
-//    else
-//      this->idxTableInputEntry.inputOffsetEnd(_inputOffset);
-//  }
-  bool isValid(const bool _isInput) {
-    if (_isInput) return idxTableInputEntry.valid;
-    else return idxTableConfigEntry.valid && valTableConfigEntry.valid;
+  bool isConfigInfoValid() {
+    return this->tableConfigEntry.isValid();
   }
-  bool getConfigInfo(uint64_t _idxBaseAddr, uint64_t _idxAccessGranularity, uint64_t _valBaseAddr, uint64_t _valAccessGranularity) {
-    bool idxValid = idxTableConfigEntry.getConfigInfo(_idxBaseAddr, _idxAccessGranularity);
-    bool valValid = valTableConfigEntry.getConfigInfo(_valBaseAddr, _valAccessGranularity);
-    return idxValid && valValid;
+  bool isInputInfoValid() {
+    return this->tableInputEntry.isValid();
+  }
+  void setConfigInfo(const uint64_t _idxBaseAddr, const uint64_t _idxAccessGranularity,
+                     const uint64_t _valBaseAddr, const uint64_t _valAccessGranularity) {
+    this->tableConfigEntry.setConfigInfo(_idxBaseAddr, _idxAccessGranularity,
+                                         _valBaseAddr, _valAccessGranularity);
+  }
+  bool getConfigInfo(uint64_t _idxBaseAddr, uint64_t _idxAccessGranularity, 
+                     uint64_t _valBaseAddr, uint64_t _valAccessGranularity) {
+    return tableConfigEntry.getConfigInfo(_idxBaseAddr, _idxAccessGranularity,
+                                          _valBaseAddr, _valAccessGranularity);
+  }
+  void setInputInfo(const uint64_t _offsetBegin, uint64_t _offsetEnd) {
+    this->tableInputEntry.setInputInfo(_offsetBegin, _offsetEnd);
   }
   bool getInputInfo(uint64_t _offsetBegin, uint64_t _offsetEnd) {
-    bool inputValid = idxTableInputEntry.getInputInfo(_offsetBegin, _offsetEnd);
-    return inputValid;
+    return tableInputEntry.getInputInfo(_offsetBegin, _offsetEnd);
   }
   void reset() {
-    this->idxTableConfigEntry.reset();
-    this->valTableConfigEntry.reset();
+    this->tableConfigEntry.reset();
+    this->tableInputEntry.reset();
   }
 };
 
@@ -110,17 +101,23 @@ class PatternTable {
     PatternTable(uint32_t _totalPatternTableEntries);
     ~PatternTable();
 
-//    void configBaseAddr(uint32_t streamId, uint64_t baseAddr, bool isIdx);
-//    void configAccessGran(uint32_t streamId, uint64_t accessGranularity, bool isIdx);
-//    void inputOffset(uint32_t streamId, uint64_t inputOffset, bool isBegin);
-    bool isValid(const uint32_t _streamId, const bool _isInput);
-    bool getConfigInfo(const uint32_t _streamId, uint64_t _idxBaseAddr, uint64_t _idxAccessGranularity, uint64_t _valBaseAddr, uint64_t _valAccessGranularity);
-    bool getInputInfo(const uint32_t _streamId, uint64_t _offsetBegin, uint64_t _offsetEnd);
-    void reset(uint32_t streamId);
+    uint32_t size();
+    bool isConfigInfoValid(const uint64_t _entryId);
+    bool isInputInfoValid(const uint64_t _entryId);
+    void setConfigInfo(const uint64_t _entryId, 
+                       const uint64_t _idxBaseAddr, const uint64_t _idxAccessGranularity,
+                       const uint64_t _valBaseAddr, const uint64_t _valAccessGranularity);
+    bool getConfigInfo(const uint64_t _entryId, 
+                       uint64_t _idxBaseAddr, uint64_t _idxAccessGranularity, 
+                       uint64_t _valBaseAddr, uint64_t _valAccessGranularity);
+    void setInputInfo(const uint64_t _entryId, 
+                      const uint64_t _offsetBegin, const uint64_t _offsetEnd);
+    bool getInputInfo(const uint64_t _entryId, uint64_t _offsetBegin, uint64_t _offsetEnd);
+    void reset(uint64_t entryId);
 
   private:
     uint32_t totalPatternTableEntries;
-    PatternTableEntry* patternTable;
+    std::vector<PatternTableEntry> patternTable;
 };
 
 #endif

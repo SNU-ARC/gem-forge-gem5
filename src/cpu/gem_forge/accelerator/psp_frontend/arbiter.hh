@@ -27,7 +27,7 @@ public:
   PatternTable* getValidEntry(PatternTable* _patternTable) {
     uint32_t patternTableIter = (this->getLastChosenEntryId() + 1) % this->getTotalPatternTableEntries();
     for (uint32_t i = 0; i < this->getTotalPatternTableEntries(); i++) {
-      if (_patternTable->isValid(patternTableIter, false)) {
+      if (_patternTable->isConfigInfoValid(patternTableIter)) {
         this->setLastChosenEntryId(patternTableIter);
         return &_patternTable[patternTableIter];
       }

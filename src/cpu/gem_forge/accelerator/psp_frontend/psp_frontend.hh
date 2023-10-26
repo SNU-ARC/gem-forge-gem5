@@ -29,7 +29,7 @@ public:
   void regStats() override;
   void resetStats() override;
 
-  PatternTable* patternTable;
+  std::vector<PatternTableEntry*> patternTable;
   PatternTable* validPatternTableEntry;
   PatternTableRRArbiter* patternTableArbiter;
 //  IndexLoadUnit* indexLoadUnit;
@@ -41,13 +41,14 @@ public:
   // Arguments from ISAStreamEngine
   struct StreamConfigArgs {
     uint64_t seqNum;
+    uint64_t entryId;
     std::vector<RegVal>& config;
     ThreadContext *const tc;
 
-    StreamConfigArgs(uint64_t _seqNum, 
+    StreamConfigArgs(uint64_t _seqNum, uint64_t _entryId, 
                      std::vector<RegVal>& _config,
                      ThreadContext *_tc = nullptr)
-        : seqNum(_seqNum), config(_config), tc(_tc) {}
+        : seqNum(_seqNum), entryId(_entryId), config(_config), tc(_tc) {}
   };
   bool canDispatchStreamConfig(const StreamConfigArgs &args);
   void dispatchStreamConfig(const StreamConfigArgs &args);
@@ -59,13 +60,14 @@ public:
 
   struct StreamInputArgs {
     uint64_t seqNum;
+    uint64_t entryId;
     std::vector<RegVal>& input;
     ThreadContext *const tc;
 
-    StreamInputArgs(uint64_t _seqNum, 
+    StreamInputArgs(uint64_t _seqNum, uint64_t _entryId, 
                      std::vector<RegVal>& _input,
                      ThreadContext *_tc = nullptr)
-        : seqNum(_seqNum), input(_input), tc(_tc) {}
+        : seqNum(_seqNum), entryId(_entryId), input(_input), tc(_tc) {}
   };
   bool canDispatchStreamInput(const StreamInputArgs &args);
   void dispatchStreamInput(const StreamInputArgs &args);
@@ -77,7 +79,9 @@ public:
 
   struct StreamTerminateArgs {
     uint64_t seqNum;
-    StreamTerminateArgs(uint64_t _seqNum) : seqNum(_seqNum) {}
+    uint64_t entryId;
+    StreamTerminateArgs(uint64_t _seqNum, uint64_t _entryId)
+      : seqNum(_seqNum), entryId(_entryId) {}
   };
   bool canDispatchStreamTerminate(const StreamTerminateArgs &args);
   void dispatchStreamTerminate(const StreamTerminateArgs &args);
