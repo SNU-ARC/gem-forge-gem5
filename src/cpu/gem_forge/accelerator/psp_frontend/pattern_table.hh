@@ -1,5 +1,5 @@
 #ifndef __CPU_GEM_FORGE_ACCELERATOR_PATTERN_TABLE_HH__
-#define __CPU_GEM_FROGE_ACCELERATOR_PATTERN_TABLE_HH__
+#define __CPU_GEM_FORGE_ACCELERATOR_PATTERN_TABLE_HH__
 
 #include "base/statistics.hh"
 
@@ -37,6 +37,9 @@ struct TableConfigEntry {
   void reset() {
     this->valid = false;
   }
+  void resetUndo() {
+    this->valid = true;
+  }
 };
 
 struct TableInputEntry {
@@ -59,6 +62,9 @@ struct TableInputEntry {
   }
   void reset() {
     this->valid = false;
+  }
+  void resetUndo() {
+    this->valid = true;
   }
 };
 
@@ -90,9 +96,25 @@ struct PatternTableEntry {
   bool getInputInfo(uint64_t _offsetBegin, uint64_t _offsetEnd) {
     return tableInputEntry.getInputInfo(_offsetBegin, _offsetEnd);
   }
-  void reset() {
+  void resetConfig() {
+    this->tableConfigEntry.reset();
+  }
+  void resetConfigUndo() {
+    this->tableConfigEntry.resetUndo();
+  }
+  void resetInput() {
+    this->tableInputEntry.reset();
+  }
+  void resetInputUndo() {
+    this->tableInputEntry.resetUndo();
+  }
+  void resetAll() {
     this->tableConfigEntry.reset();
     this->tableInputEntry.reset();
+  }
+  void resetUndoAll() {
+    this->tableConfigEntry.resetUndo();
+    this->tableInputEntry.resetUndo();
   }
 };
 
@@ -113,7 +135,10 @@ class PatternTable {
     void setInputInfo(const uint64_t _entryId, 
                       const uint64_t _offsetBegin, const uint64_t _offsetEnd);
     bool getInputInfo(const uint64_t _entryId, uint64_t _offsetBegin, uint64_t _offsetEnd);
-    void reset(uint64_t entryId);
+    void resetConfig(uint64_t entryId);
+    void resetConfigUndo(uint64_t entryId);
+    void resetInput(uint64_t entryId);
+    void resetInputUndo(uint64_t entryId);
 
   private:
     uint32_t totalPatternTableEntries;

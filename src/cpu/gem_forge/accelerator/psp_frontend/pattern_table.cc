@@ -51,6 +51,15 @@ void PatternTable::setInputInfo(const uint64_t _entryId,
 bool PatternTable::getInputInfo(const uint64_t _entryId, uint64_t _offsetBegin, uint64_t _offsetEnd) {
   return patternTable[_entryId].getInputInfo(_offsetBegin, _offsetEnd);
 }
-void PatternTable::reset(uint64_t _entryId) {
-  patternTable[_entryId].reset();
+void PatternTable::resetConfig(uint64_t _entryId) {
+  patternTable[_entryId].resetConfig();
+}
+void PatternTable::resetConfigUndo(uint64_t _entryId) {
+  patternTable[_entryId].resetConfigUndo();
+}
+void PatternTable::resetInput(uint64_t _entryId) {
+  patternTable[_entryId].resetInput();
+}
+void PatternTable::resetInputUndo(uint64_t _entryId) {
+  patternTable[_entryId].resetInputUndo();
 }

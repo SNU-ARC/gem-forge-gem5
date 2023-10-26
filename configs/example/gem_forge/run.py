@@ -35,6 +35,8 @@ parser.add_option("--gem-forge-psp-frontend-enable", action="store_true", defaul
                   help="""Enable PSP Frontend.""")
 parser.add_option("--gem-forge-psp-frontend-total-pattern-table-entries", action="store", type="int", default="4",
                   help="""number of pattern table entries for PSP Frontend.""")
+parser.add_option("--gem-forge-psp-frontend-index-queue-capacity", action="store", type="int", default="64",
+                  help="""Capacity per index queue for PSP Frontend.""")
 
 parser.add_option("--gem-forge-work-mark-history", action="store", type="string",
                   help="""work mark history""")

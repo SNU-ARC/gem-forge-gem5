@@ -10,8 +10,9 @@
 
 #include "cpu/gem_forge/accelerator/gem_forge_accelerator.hh"
 #include "cpu/gem_forge/gem_forge_packet_handler.hh"
-#include "cpu/gem_forge/accelerator/psp_frontend/pattern_table.hh"
-#include "cpu/gem_forge/accelerator/psp_frontend/arbiter.hh"
+#include "pattern_table.hh"
+#include "arbiter.hh"
+#include "index_queue.hh"
 
 #include "params/PSPFrontend.hh"
 
@@ -29,11 +30,11 @@ public:
   void regStats() override;
   void resetStats() override;
 
-  std::vector<PatternTableEntry*> patternTable;
-  PatternTable* validPatternTableEntry;
+  PatternTable* patternTable;
   PatternTableRRArbiter* patternTableArbiter;
 //  IndexLoadUnit* indexLoadUnit;
 //  RRArbiter* indexArbiter;
+  IndexQueueArray* indexQueueArray;
 //  AddrTransUnit* addrTransUnit;
 
   // TODO: Define PSP instructions below
@@ -95,6 +96,5 @@ public:
   mutable Stats::Scalar numConfigured;
 private:
   unsigned totalPatternTableEntries;
-  
 };
 #endif
