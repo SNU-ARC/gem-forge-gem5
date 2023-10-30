@@ -10,15 +10,21 @@
 #include <iostream>
 #include <vector>
 
+#include "pattern_table.hh"
+#include "index_queue.hh"
+
 class IndexLoadUnit {
   public:
     IndexLoadUnit(PatternTable* _patternTable,
-                  indexQueueArray* _indexQueueArray);
+                  IndexQueueArray* _indexQueueArray);
     ~IndexLoadUnit();
 
     void tick();
+    void setCacheLineSize(uint32_t _cacheLineSize);
+    bool issueLoadIndex(uint64_t _validEntryId);
     
   private:
+    uint32_t cacheLineSize;
     PatternTable* patternTable;
     IndexQueueArray* indexQueueArray;
 };

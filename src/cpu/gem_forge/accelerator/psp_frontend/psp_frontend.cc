@@ -17,17 +17,20 @@ PSPFrontend::PSPFrontend(Params* params)
                                           params->indexQueueCapacity);
     patternTableArbiter = new PatternTableRRArbiter(params->totalPatternTableEntries,
                                                     patternTable, indexQueueArray);
+    indexLoadUnit = new IndexLoadUnit(patternTable, indexQueueArray);
 }
 
 PSPFrontend::~PSPFrontend() {
   delete patternTable;
   delete indexQueueArray;
+  delete indexLoadUnit;
 }
 
 // Take over PSP_Frontend from initial_cpu to future_cpu
 void PSPFrontend::takeOverBy(GemForgeCPUDelegator *newCpuDelegator,
                               GemForgeAcceleratorManager *newManager) {
   GemForgeAccelerator::takeOverBy(newCpuDelegator, newManager);
+  this->indexLoadUnit->setCacheLineSize(newCpuDelegator->cacheLineSize());
 }
 
 void PSPFrontend::dump() {
@@ -49,9 +52,16 @@ void PSPFrontend::resetStats() {
 }
 
 void PSPFrontend::tick() {
-//  this->patternTableArbiter->getValidEntry(validPatternTableEntry);
-//  if (validPatternTableEntry != nullptr) {
-//  }
+  if (this->patternTable->size() > 0)
+    this->manager->scheduleTickNextCycle();
+  uint32_t validEntryId;
+  if (!this->patternTableArbiter->getValidEntryId(&validEntryId)) {
+    return;
+  }
+  PSP_FE_DPRINTF("ValidEntryId: %d\n", validEntryId);
+  if (!this->indexLoadUnit->issueLoadIndex(validEntryId)) {
+    return;
+  }
 }
 
 /********************************************************************************
@@ -65,7 +75,6 @@ bool PSPFrontend::canDispatchStreamConfig(const StreamConfigArgs &args) {
 }
 
 void PSPFrontend::dispatchStreamConfig(const StreamConfigArgs &args) {
-
 }
 
 bool PSPFrontend::canExecuteStreamConfig(const StreamConfigArgs &args) {
@@ -111,7 +120,6 @@ bool PSPFrontend::canDispatchStreamInput(const StreamInputArgs &args) {
 }
 
 void PSPFrontend::dispatchStreamInput(const StreamInputArgs &args) {
-
 }
 
 bool PSPFrontend::canExecuteStreamInput(const StreamInputArgs &args) {
@@ -132,8 +140,9 @@ bool PSPFrontend::canCommitStreamInput(const StreamInputArgs &args) {
 }
 
 void PSPFrontend::commitStreamInput(const StreamInputArgs &args) {
-  uint64_t entryId = args.entryId;
-  this->patternTable->resetInput(entryId);
+  this->manager->scheduleTickNextCycle();
+//  uint64_t entryId = args.entryId;
+//  this->patternTable->resetInput(entryId);
 }
 
 void PSPFrontend::rewindStreamInput(const StreamInputArgs &args) {
@@ -180,6 +189,7 @@ void PSPFrontend::commitStreamTerminate(const StreamTerminateArgs &args) {
 }
 
 void PSPFrontend::rewindStreamTerminate(const StreamTerminateArgs &args) {
+  this->manager->scheduleTickNextCycle();
   uint64_t entryId = args.entryId;
   this->patternTable->resetConfigUndo(entryId);
   this->indexQueueArray->setConfigured(entryId, true);

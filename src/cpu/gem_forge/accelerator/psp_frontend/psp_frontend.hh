@@ -13,6 +13,7 @@
 #include "pattern_table.hh"
 #include "arbiter.hh"
 #include "index_queue.hh"
+#include "index_loader.hh"
 
 #include "params/PSPFrontend.hh"
 
@@ -25,16 +26,16 @@ public:
   void takeOverBy(GemForgeCPUDelegator* _cpuDelegator,
                   GemForgeAcceleratorManager* _manager) override;
 
-  void tick();
+  void tick() override;
   void dump() override;
   void regStats() override;
   void resetStats() override;
 
   PatternTable* patternTable;
-  PatternTableRRArbiter* patternTableArbiter;
-//  IndexLoadUnit* indexLoadUnit;
-//  RRArbiter* indexArbiter;
   IndexQueueArray* indexQueueArray;
+  PatternTableRRArbiter* patternTableArbiter;
+  IndexLoadUnit* indexLoadUnit;
+//  RRArbiter* indexArbiter;
 //  AddrTransUnit* addrTransUnit;
 
   // TODO: Define PSP instructions below
