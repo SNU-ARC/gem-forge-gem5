@@ -31,16 +31,23 @@ bool IndexLoadUnit::issueLoadIndex(uint64_t _validEntryId) {
   assert(offsetBegin < offsetEnd);
 
   // Generate cacheline-aware memory requests
-  uint64_t currentAddr = idxBaseAddr + offsetBegin * idxAccessGranularity;
+  uint64_t currentVAddr = idxBaseAddr + offsetBegin * idxAccessGranularity;
   uint64_t currentSize = (offsetEnd - offsetBegin) * idxAccessGranularity;
 
-  if (((currentAddr % this->cacheLineSize) + currentSize) > this->cacheLineSize) {
-    currentSize = this->cacheLineSize - (currentAddr % this->cacheLineSize);
+  if (((currentVAddr % this->cacheLineSize) + currentSize) > this->cacheLineSize) {
+    currentSize = this->cacheLineSize - (currentVAddr % this->cacheLineSize);
   }
 
-  uint64_t cacheBlockAddr = currentAddr & (~(this->cacheLineSize - 1));
+  uint64_t cacheBlockVAddr = currentVAddr & (~(this->cacheLineSize - 1));
+
+  // Address Translation (Does not consume tick)
+  Addr cacheBlockPAddr;
+//  assert(this->cpuDelegator->translateVAddrOracle(cacheBlockVAddr, cacheBlockPAddr) && 
+//      "Page Fault is not we intend");
+  assert((cacheBlockPAddr % cacheLineSize != 0) && "Not cacheline aligned");
 
   // Send load index request
+//  PacketPtr pkt = nullptr;
   
   // Update PatternTable
   offsetBegin += (currentSize / idxAccessGranularity);

@@ -41,16 +41,17 @@ void IndexQueue::pop(void* _buffer) {
   this->front = (this->front + this->accessGranularity) % this->capacity;
 }
 
-void IndexQueue::insert(void* _buffer) {
+void IndexQueue::insert(void* _buffer, uint64_t _size) {
   uint64_t back = (this->front + this->size) % this->capacity;
-  if (this->capacity - back >= 64) {
-    memcpy(data + back, _buffer, 64);
+  if (this->capacity - back >= _size) {
+    memcpy(data + back, _buffer, _size);
   }
   else {
     uint64_t remainder = this->capacity - back;
     memcpy(data + back, _buffer, remainder);
-    memcpy(data, _buffer + remainder, 64 - remainder);
+    memcpy(data, _buffer + remainder, _size - remainder);
   }
+  this->size += _size;
 }
 
 IndexQueueArray::IndexQueueArray(uint32_t _totalIndexQueueEntries, uint32_t _capacity) 
@@ -58,12 +59,14 @@ IndexQueueArray::IndexQueueArray(uint32_t _totalIndexQueueEntries, uint32_t _cap
     for (uint32_t i = 0; i < _totalIndexQueueEntries; i++) {
       this->indexQueue.emplace_back(_capacity);
     }
-    this->numInflightRequests = new uint32_t[this->totalIndexQueueEntries];
+    this->numInflightBytes = new uint32_t[this->totalIndexQueueEntries];
+    for (uint64_t i = 0; i < _totalIndexQueueEntries; i++)
+      this->numInflightBytes[i] = 0;
 }
 
 IndexQueueArray::~IndexQueueArray() {
   this->indexQueue.erase(this->indexQueue.begin(), this->indexQueue.end());
-  delete[] this->numInflightRequests;
+  delete[] this->numInflightBytes;
 }
 
 void IndexQueueArray::setConfigured(const uint64_t _entryId, bool _isConfigured) {
@@ -99,10 +102,10 @@ void IndexQueueArray::pop(const uint64_t _entryId, void* _buffer) {
   return this->indexQueue[_entryId].pop(_buffer);
 }
 
-bool IndexQueueArray::canInsert(const uint64_t _entryId) {
-  return (this->indexQueue[_entryId].getSize() + this->numInflightRequests[_entryId]) > this->capacity; 
+bool IndexQueueArray::canInsert(const uint64_t _entryId, const uint64_t _cacheLineSize) {
+  return (this->indexQueue[_entryId].getSize() + this->numInflightBytes[_entryId]) + _cacheLineSize <= this->capacity; 
 }
 
-void IndexQueueArray::insert(const uint64_t _entryId, void* _buffer) {
-  this->indexQueue[_entryId].insert(_buffer);
+void IndexQueueArray::insert(const uint64_t _entryId, void* _buffer, uint64_t _size) {
+  this->indexQueue[_entryId].insert(_buffer, _size);
 }

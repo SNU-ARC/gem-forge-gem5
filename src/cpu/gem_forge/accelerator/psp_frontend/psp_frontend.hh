@@ -13,9 +13,51 @@
 #include "pattern_table.hh"
 #include "arbiter.hh"
 #include "index_queue.hh"
-#include "index_loader.hh"
+//#include "index_loader.hh"
+#include "translation_buffer.hh"
 
 #include "params/PSPFrontend.hh"
+
+// Editor: Sungjun Jung (miguel92@snu.ac.kr)
+// Description: Interface to handle memory access packets
+//              Connected to LSQ of core via GemForgePacketHandler
+class IndexPacketHandler final : public GemForgePacketHandler {
+public:
+  IndexPacketHandler(PSPFrontend* _pspFrontend, uint64_t _entryId,
+                     Addr _cacheBlockVAddr, Addr _vaddr,
+                     int _size);
+  virtual ~IndexPacketHandler() {}
+  void handlePacketResponse(GemForgeCPUDelegator* cpuDelegator,
+                            PacketPtr packet);
+  void issueToMemoryCallback(GemForgeCPUDelegator* cpuDelegator);
+
+  struct ResponseEvent : public Event {
+  public:
+    GemForgeCPUDelegator *cpuDelegator;
+    IndexPacketHandler *indexPacketHandler;
+    PacketPtr pkt;
+    std::string n;
+    ResponseEvent(GemForgeCPUDelegator *_cpuDelegator,
+                  IndexPacketHandler *_indexPacketHandler, PacketPtr _pkt)
+        : cpuDelegator(_cpuDelegator), indexPacketHandler(_indexPacketHandler), pkt(_pkt),
+          n("IndexPacketHandlerResponseEvent") {
+      this->setFlags(EventBase::AutoDelete);
+    }
+    void process() override {
+      this->indexPacketHandler->handlePacketResponse(this->cpuDelegator, this->pkt);
+    }
+
+    const char *description() const { return "IndexPacketHandlerResponseEvent"; }
+
+    const std::string name() const { return this->n; }
+  };
+
+  PSPFrontend* pspFrontend;
+  Addr cacheBlockVAddr;
+  Addr vaddr;
+  int size;
+  uint64_t entryId;
+};
 
 class PSPFrontend : public GemForgeAccelerator {
 public:
@@ -31,12 +73,9 @@ public:
   void regStats() override;
   void resetStats() override;
 
-  PatternTable* patternTable;
-  IndexQueueArray* indexQueueArray;
-  PatternTableRRArbiter* patternTableArbiter;
-  IndexLoadUnit* indexLoadUnit;
-//  RRArbiter* indexArbiter;
-//  AddrTransUnit* addrTransUnit;
+  void issueLoadIndex(uint64_t _validEntryId);
+  void handlePacketResponse(IndexPacketHandler* indexPacketHandler, 
+                            PacketPtr pkt);
 
   // TODO: Define PSP instructions below
 
@@ -97,5 +136,9 @@ public:
   mutable Stats::Scalar numConfigured;
 private:
   unsigned totalPatternTableEntries;
+  PatternTable* patternTable;
+  IndexQueueArray* indexQueueArray;
+  PatternTableRRArbiter* patternTableArbiter;
+  PSPTranslationBuffer<void*>* translationBuffer;
 };
 #endif

@@ -16,7 +16,7 @@
 
 class IndexPacketHandler final : public GemForgePacketHandler {
 public:
-  IndexPacketHandler(IndexQueueArray* _targetIndexQueue,
+  IndexPacketHandler(uint64_t _entryId,
                      Addr _cacheBlockVAddr, Addr _vaddr,
                      int _size);
   virtual ~IndexPacketHandler() {}
@@ -48,6 +48,6 @@ public:
   Addr cacheBlockVAddr;
   Addr vaddr;
   int size;
-  IndexQueueArray* targetIndexQueueEntry;
+  uint64_t entryId;
 };
 #endif

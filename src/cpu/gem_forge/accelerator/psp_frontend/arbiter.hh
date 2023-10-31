@@ -27,7 +27,7 @@ public:
                         PatternTable* _patternTable,
                         IndexQueueArray* _indexQueueArray);
   ~PatternTableRRArbiter();
-  bool getValidEntryId(uint32_t* _entryId);
+  bool getValidEntryId(uint32_t* _entryId, const uint64_t _cacheLineSize);
   void selectEntryId(uint32_t _entryId);
 
 private:

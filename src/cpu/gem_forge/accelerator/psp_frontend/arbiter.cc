@@ -26,12 +26,12 @@ PatternTableRRArbiter::PatternTableRRArbiter(uint32_t _totalPatternTableEntries,
 PatternTableRRArbiter::~PatternTableRRArbiter() {
 }
 
-bool PatternTableRRArbiter::getValidEntryId(uint32_t* _entryId) {
+bool PatternTableRRArbiter::getValidEntryId(uint32_t* _entryId, const uint64_t _cacheLineSize) {
   for (uint32_t i = 0; i < this->getTotalPatternTableEntries(); i++) {
     uint32_t entryId = (this->getLastChosenEntryId() + i) % this->getTotalPatternTableEntries();
     if (this->patternTable->isConfigInfoValid(entryId) &&
         this->patternTable->isInputInfoValid(entryId) &&
-        this->indexQueueArray->canInsert(entryId)) {
+        this->indexQueueArray->canInsert(entryId, _cacheLineSize)) {
       *_entryId = entryId;
       return true;
     }

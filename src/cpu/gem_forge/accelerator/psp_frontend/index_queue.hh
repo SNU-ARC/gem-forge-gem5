@@ -23,7 +23,7 @@ class IndexQueue {
     void setAccessGranularity(uint64_t _accessGranularity);
     uint64_t getAccessGranularity();
     void pop(void* _buffer);
-    void insert(void* _buffer);
+    void insert(void* _buffer, uint64_t _size);
 
   private:
     void* data;
@@ -39,7 +39,7 @@ class IndexQueueArray {
     IndexQueueArray(uint32_t _totalIndexQueueEntries, uint32_t _capacity);
     ~IndexQueueArray();
 
-    uint32_t* numInflightRequests;
+    uint32_t* numInflightBytes;
 
     void setConfigured(const uint64_t _entryId, bool _isConfigured);
     bool getConfigured(const uint64_t _entryId);
@@ -47,8 +47,8 @@ class IndexQueueArray {
     void setAccessGranularity(const uint64_t _entryId, uint64_t _accessGranularity);
     uint64_t getAccessGranularity(const uint64_t _entryId);
     void pop(const uint64_t _entryId, void* _buffer);
-    bool canInsert(const uint64_t _entryId);
-    void insert(const uint64_t _entryId, void* _buffer);
+    bool canInsert(const uint64_t _entryId, const uint64_t _cacheLineSize);
+    void insert(const uint64_t _entryId, void* _buffer, uint64_t _size);
     
   private:
     std::vector<IndexQueue> indexQueue;

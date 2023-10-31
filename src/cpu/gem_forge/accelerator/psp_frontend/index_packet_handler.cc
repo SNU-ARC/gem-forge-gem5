@@ -1,9 +1,9 @@
 #include "index_packet_handler.hh"
 
-IndexPacketHandler::IndexPacketHandler(IndexQueueArray* _targetIndexQueue,
+IndexPacketHandler::IndexPacketHandler(uint64_t _entryId,
                                        Addr _cacheBlockVaddr, Addr _vaddr,
                                        int _size)
-  : targetIndexQueue(_targetIndexQueue), cacheBlockVAddr(_cacheBlockVAddr),
+  : entryId(_entryId), cacheBlockVAddr(_cacheBlockVAddr),
     vaddr(_vaddr), size(_size) {
 }
 
