@@ -28,10 +28,20 @@ public:
                         IndexQueueArray* _indexQueueArray);
   ~PatternTableRRArbiter();
   bool getValidEntryId(uint32_t* _entryId, const uint64_t _cacheLineSize);
-  void selectEntryId(uint32_t _entryId);
 
 private:
   PatternTable* patternTable;
+  IndexQueueArray* indexQueueArray;
+};
+
+class IndexQueueArrayRRArbiter : public RRArbiter {
+public:
+  IndexQueueArrayRRArbiter(uint32_t _totalIndexQueueArrayEntries, 
+                           IndexQueueArray* _indexQueueArray);
+  ~IndexQueueArrayRRArbiter();
+  bool getValidEntryId(uint32_t* _entryId);
+
+private:
   IndexQueueArray* indexQueueArray;
 };
 #endif

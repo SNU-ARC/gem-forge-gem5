@@ -37,6 +37,7 @@ uint64_t IndexQueue::getAccessGranularity() {
 }
 
 void IndexQueue::pop(void* _buffer) {
+  memcpy(_buffer, data + this->front, this->accessGranularity);
   this->size -= this->accessGranularity;
   this->front = (this->front + this->accessGranularity) % this->capacity;
 }
@@ -96,6 +97,10 @@ void IndexQueueArray::setAccessGranularity(const uint64_t _entryId, uint64_t _ac
 
 uint64_t IndexQueueArray::getAccessGranularity(const uint64_t _entryId) {
   return this->indexQueue[_entryId].getAccessGranularity();
+}
+
+bool IndexQueueArray::canPop(const uint64_t _entryId) {
+  return this->indexQueue[_entryId].getSize() >= this->indexQueue[_entryId].getAccessGranularity();
 }
 
 void IndexQueueArray::pop(const uint64_t _entryId, void* _buffer) {

@@ -39,6 +39,23 @@ bool PatternTableRRArbiter::getValidEntryId(uint32_t* _entryId, const uint64_t _
   return false;
 }
 
-void PatternTableRRArbiter::selectEntryId(uint32_t _entryId) {
-  this->setLastChosenEntryId(_entryId);
+IndexQueueArrayRRArbiter::IndexQueueArrayRRArbiter(uint32_t _totalIndexQueueArrayEntries,
+    IndexQueueArray* _indexQueueArray)
+  : RRArbiter(_totalIndexQueueArrayEntries), indexQueueArray(_indexQueueArray) {
+}
+
+IndexQueueArrayRRArbiter::~IndexQueueArrayRRArbiter() {
+}
+
+bool IndexQueueArrayRRArbiter::getValidEntryId(uint32_t* _entryId) {
+  for (uint32_t i = 0; i < this->getTotalPatternTableEntries(); i++) {
+    uint32_t entryId = (this->getLastChosenEntryId() + i) % this->getTotalPatternTableEntries();
+    // TODO: Add BackendPacketQueue and implement status check code for queue
+    if (this->indexQueueArray->getConfigured(entryId) &&
+        this->indexQueueArray->canPop(entryId)) {
+      *_entryId = entryId;
+      return true;
+    }
+  }
+  return false;
 }

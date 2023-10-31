@@ -25,7 +25,7 @@ PatternTable::~PatternTable() {
 uint32_t PatternTable::size() {
   uint32_t real_size = 0;
   for (uint32_t i = 0; i < patternTable.size(); i++) {
-    real_size += this->isInputInfoValid(i);
+    real_size += this->isConfigInfoValid(i);
   }
   return real_size;
 }

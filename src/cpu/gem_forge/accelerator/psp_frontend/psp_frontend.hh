@@ -140,5 +140,6 @@ private:
   IndexQueueArray* indexQueueArray;
   PatternTableRRArbiter* patternTableArbiter;
   PSPTranslationBuffer<void*>* translationBuffer;
+  IndexQueueArrayRRArbiter* indexQueueArrayArbiter;
 };
 #endif

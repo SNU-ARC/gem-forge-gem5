@@ -34,6 +34,8 @@ PSPFrontend::PSPFrontend(Params* params)
                                           params->indexQueueCapacity);
     patternTableArbiter = new PatternTableRRArbiter(params->totalPatternTableEntries,
                                                     patternTable, indexQueueArray);
+    indexQueueArrayArbiter = new IndexQueueArrayRRArbiter(params->totalPatternTableEntries,
+                                                          indexQueueArray);
 }
 
 PSPFrontend::~PSPFrontend() {
@@ -73,13 +75,19 @@ void PSPFrontend::tick() {
   if (this->patternTable->size() > 0)
     this->manager->scheduleTickNextCycle();
 
+  uint32_t validIQEntryId;
+  if (this->indexQueueArrayArbiter->getValidEntryId(&validIQEntryId)) {
+    uint64_t popIndex;
+    this->indexQueueArray->pop(validIQEntryId, &popIndex);
+    PSP_FE_DPRINTF("IQEntryId: %lu, Data: %lu\n", validIQEntryId, popIndex);
+  }
+
   uint32_t validEntryId;
   uint64_t cacheLineSize = this->cpuDelegator->cacheLineSize();
-  if (!this->patternTableArbiter->getValidEntryId(&validEntryId, cacheLineSize)) {
-    return;
+  if (this->patternTableArbiter->getValidEntryId(&validEntryId, cacheLineSize)) {
+    PSP_FE_DPRINTF("ValidEntryId: %d\n", validEntryId);
+    this->issueLoadIndex(validEntryId);
   }
-  PSP_FE_DPRINTF("ValidEntryId: %d\n", validEntryId);
-  this->issueLoadIndex(validEntryId);
 }
 
 void PSPFrontend::issueLoadIndex(uint64_t _validEntryId) {
@@ -143,6 +151,7 @@ void PSPFrontend::issueLoadIndex(uint64_t _validEntryId) {
   else {
     this->patternTable->resetInput(_validEntryId);
   }
+  this->patternTableArbiter->setLastChosenEntryId(_validEntryId);
 
   // Update IndexQueueArray(num of inflight load requests)
   this->indexQueueArray->numInflightBytes[_validEntryId] += currentSize;
@@ -153,10 +162,14 @@ void PSPFrontend::issueLoadIndex(uint64_t _validEntryId) {
 void PSPFrontend::handlePacketResponse(IndexPacketHandler* indexPacketHandler,
                                        PacketPtr pkt) {
   uint64_t entryId = indexPacketHandler->entryId;
+  Addr cacheBlockVAddr = indexPacketHandler->cacheBlockVAddr;
+  Addr vaddr = indexPacketHandler->vaddr;
   void* data = pkt->getPtr<void>();
   uint64_t packetSize = pkt->getSize();
   uint64_t inputSize = indexPacketHandler->size;
-  data += (packetSize - inputSize);
+  if (cacheBlockVAddr < vaddr) { 
+    data += (packetSize - inputSize); 
+  }
   this->indexQueueArray->insert(entryId, data, inputSize);
   this->indexQueueArray->numInflightBytes[entryId] -= inputSize;
   PSP_FE_DPRINTF("%luth IndexQueue filled with %lu data size.\n", entryId, inputSize);
