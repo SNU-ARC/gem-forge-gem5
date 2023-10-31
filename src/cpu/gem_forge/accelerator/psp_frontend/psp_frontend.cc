@@ -50,6 +50,8 @@ void PSPFrontend::takeOverBy(GemForgeCPUDelegator *newCpuDelegator,
   translationBuffer = new PSPTranslationBuffer<void*>(this->cpuDelegator->getDataTLB(),
       [this](PacketPtr pkt, ThreadContext* tc, void* ) -> void {
       this->cpuDelegator->sendRequest(pkt); },
+      [this](PacketPtr pkt, ThreadContext* tc, void* ) -> void {
+      this->handleAddressTranslateResponse(pkt); },
       false /* AccessLastLevelTLBOnly */, true /* MustDoneInOrder */);
 }
 
@@ -173,13 +175,9 @@ void PSPFrontend::handlePacketResponse(IndexPacketHandler* indexPacketHandler,
   this->indexQueueArray->insert(entryId, data, inputSize);
   this->indexQueueArray->numInflightBytes[entryId] -= inputSize;
   PSP_FE_DPRINTF("%luth IndexQueue filled with %lu data size.\n", entryId, inputSize);
+}
 
-//  uint64_t elemSize = this->indexQueueArray->getAccessGranularity(entryId);
-//  uint64_t iterator = inputSize / elemSize;
-//  uint64_t* print_data = (uint64_t*)data;
-//  for (uint64_t i = 0; i < iterator; i++) {
-//    PSP_FE_DPRINTF("%lu\n", print_data[i]);
-//  }
+void PSPFrontend::handleAddressTranslateResponse(PacketPtr pkt) {
 }
 
 /********************************************************************************

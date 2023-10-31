@@ -17,14 +17,18 @@ public:
       std::function<void(PacketPtr, ThreadContext *, T)>;
 
   PSPTranslationBuffer(BaseTLB *_tlb, TranslationDoneCallback _doneCallback,
-                          bool _accessLastLevelTLBOnly,
-                          bool _mustDoneInOrder = false)
-      : tlb(_tlb), doneCallback(_doneCallback),
+                       TranslationDoneCallback _translateOnlyCallback,
+                       bool _accessLastLevelTLBOnly,
+                       bool _mustDoneInOrder = false)
+      : tlb(_tlb), doneCallback(_doneCallback), 
+        translateOnlyCallback(_translateOnlyCallback),
         accessLastLevelTLBOnly(_accessLastLevelTLBOnly),
         mustDoneInOrder(_mustDoneInOrder) {}
 
-  void addTranslation(PacketPtr pkt, ThreadContext *tc, T data) {
-    auto translation = new PSPTranslation(pkt, tc, data, this);
+  void addTranslation(PacketPtr pkt, ThreadContext *tc, T data,
+                      bool addressTranslationOnly = false) {
+    auto translation = new PSPTranslation(pkt, tc, data, this,
+        addressTranslationOnly);
     this->inflyTranslationQueue.push(translation);
 
     // Start translation.
@@ -34,6 +38,9 @@ public:
 private:
   BaseTLB *tlb;
   TranslationDoneCallback doneCallback;
+  
+  // Callback function for address translation only
+  TranslationDoneCallback translateOnlyCallback;
   /**
    * Whether we only go to last level TLB.
    */
@@ -69,7 +76,12 @@ private:
     auto pkt = translation->pkt;
     auto tc = translation->tc;
     auto data = translation->data;
-    this->doneCallback(pkt, tc, data);
+    if (translation->addressTranslationOnly) {
+      this->translateOnlyCallback(pkt, tc, data);
+    }
+    else {
+      this->doneCallback(pkt, tc, data);
+    }
     translation->state = PSPTranslation::State::DONE;
   }
   void releaseTranslationQueue() {
@@ -93,6 +105,7 @@ private:
     ThreadContext *tc;
     T data;
     PSPTranslationBuffer *buffer;
+    bool addressTranslationOnly;
     enum State {
       INITIATED,
       STARTED,
@@ -101,8 +114,10 @@ private:
     };
     State state = INITIATED;
     PSPTranslation(PacketPtr _pkt, ThreadContext *_tc, T _data,
-                      PSPTranslationBuffer *_buffer)
-        : pkt(_pkt), tc(_tc), data(_data), buffer(_buffer) {}
+                   PSPTranslationBuffer *_buffer,
+                   bool _addressTranslationOnly = false)
+        : pkt(_pkt), tc(_tc), data(_data), buffer(_buffer),
+          addressTranslationOnly(_addressTranslationOnly) {}
 
     /**
      * Implement translation interface.

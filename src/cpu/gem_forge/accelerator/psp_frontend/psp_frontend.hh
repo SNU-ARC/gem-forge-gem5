@@ -76,6 +76,7 @@ public:
   void issueLoadIndex(uint64_t _validEntryId);
   void handlePacketResponse(IndexPacketHandler* indexPacketHandler, 
                             PacketPtr pkt);
+  void handleAddressTranslateResponse(PacketPtr pkt);
 
   // TODO: Define PSP instructions below
 
