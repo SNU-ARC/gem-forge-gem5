@@ -22,7 +22,8 @@ class IndexQueue {
     uint32_t getSize();
     void setAccessGranularity(uint64_t _accessGranularity);
     uint64_t getAccessGranularity();
-    void pop(void* _buffer);
+    void read(void* _buffer);
+    void pop();
     void insert(void* _buffer, uint64_t _size);
 
   private:
@@ -46,8 +47,9 @@ class IndexQueueArray {
     uint32_t getSize(const uint64_t _entryId);
     void setAccessGranularity(const uint64_t _entryId, uint64_t _accessGranularity);
     uint64_t getAccessGranularity(const uint64_t _entryId);
-    bool canPop(const uint64_t _entryId);
-    void pop(const uint64_t _entryId, void* _buffer);
+    bool canRead(const uint64_t _entryId);
+    void read(const uint64_t _entryId, void* _buffer);
+    void pop(const uint64_t _entryId);
     bool canInsert(const uint64_t _entryId, const uint64_t _cacheLineSize);
     void insert(const uint64_t _entryId, void* _buffer, uint64_t _size);
     

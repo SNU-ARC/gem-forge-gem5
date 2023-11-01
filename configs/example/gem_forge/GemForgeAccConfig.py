@@ -94,6 +94,7 @@ def initializePSPFrontend(options):
     # Pass parameters
     psp.totalPatternTableEntries = options.gem_forge_psp_frontend_total_pattern_table_entries
     psp.indexQueueCapacity = options.gem_forge_psp_frontend_index_queue_capacity
+    psp.paQueueCapacity = options.gem_forge_psp_frontend_pa_queue_capacity
 
     return psp
 

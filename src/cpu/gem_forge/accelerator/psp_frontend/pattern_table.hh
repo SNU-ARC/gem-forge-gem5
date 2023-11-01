@@ -12,6 +12,7 @@ struct TableConfigEntry {
   uint64_t idxAccessGranularity;
   uint64_t valBaseAddr;
   uint64_t valAccessGranularity;
+  uint64_t valCurrentSize;
  
   TableConfigEntry() 
     : valid(false), idxBaseAddr(0), idxAccessGranularity(0),

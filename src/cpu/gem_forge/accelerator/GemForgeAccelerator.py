@@ -47,6 +47,8 @@ class PSPFrontend(GemForgeAccelerator):
         4, "Number of PatternTable entries.")
     indexQueueCapacity = Param.Unsigned(
         64, "Capacity per index queue. Unit is Byte")
+    paQueueCapacity = Param.Unsigned(
+        4, "Capacity per PA Queue.")
 
 class StreamEngine(GemForgeAccelerator):
     type = "StreamEngine"

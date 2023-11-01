@@ -2,7 +2,6 @@
 #define __CPU_TDG_ACCELERATOR_PSP_TRANSLATION_BUFFER_HH__
 
 #include "arch/generic/tlb.hh"
-//#include "cpu/gem_forge/accelerator/stream/stream.hh"
 
 #include <functional>
 #include <queue>

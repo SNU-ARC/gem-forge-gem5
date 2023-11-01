@@ -55,6 +55,7 @@ Cycles SEPageWalker::walk(Addr pageVAddr, Cycles curCycle) {
    */
   auto prevContextIter = this->inflyState.rbegin();
   auto prevContextEnd = this->inflyState.rend();
+  // TODO: Why you do not care of numContext?
   int i = 0;
   while (i < this->numContext && prevContextIter != prevContextEnd) {
     prevContextIter++;

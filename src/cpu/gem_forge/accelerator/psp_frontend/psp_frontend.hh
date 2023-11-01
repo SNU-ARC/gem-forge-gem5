@@ -15,6 +15,7 @@
 #include "index_queue.hh"
 //#include "index_loader.hh"
 #include "translation_buffer.hh"
+#include "pa_queue.hh"
 
 #include "params/PSPFrontend.hh"
 
@@ -65,6 +66,8 @@ public:
   PSPFrontend(Params* params);
   ~PSPFrontend(); // override;
 
+  uint64_t* valCurrentSize;
+
   void takeOverBy(GemForgeCPUDelegator* _cpuDelegator,
                   GemForgeAcceleratorManager* _manager) override;
 
@@ -74,9 +77,11 @@ public:
   void resetStats() override;
 
   void issueLoadIndex(uint64_t _validEntryId);
+  void issueTranslateValueAddress(uint64_t _validEntryId);
   void handlePacketResponse(IndexPacketHandler* indexPacketHandler, 
                             PacketPtr pkt);
-  void handleAddressTranslateResponse(PacketPtr pkt);
+  void handleAddressTranslateResponse(IndexPacketHandler* indexPacketHandler,
+                                      PacketPtr pkt);
 
   // TODO: Define PSP instructions below
 
@@ -142,5 +147,6 @@ private:
   PatternTableRRArbiter* patternTableArbiter;
   PSPTranslationBuffer<void*>* translationBuffer;
   IndexQueueArrayRRArbiter* indexQueueArrayArbiter;
+  PAQueueArray* paQueueArray;
 };
 #endif

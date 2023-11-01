@@ -6,6 +6,7 @@
 //#include "psp_frontend.hh"
 #include "pattern_table.hh"
 #include "index_queue.hh"
+#include "pa_queue.hh"
 
 class RRArbiter {
 public:
@@ -37,11 +38,13 @@ private:
 class IndexQueueArrayRRArbiter : public RRArbiter {
 public:
   IndexQueueArrayRRArbiter(uint32_t _totalIndexQueueArrayEntries, 
-                           IndexQueueArray* _indexQueueArray);
+                           IndexQueueArray* _indexQueueArray,
+                           PAQueueArray* _paQueueArray);
   ~IndexQueueArrayRRArbiter();
   bool getValidEntryId(uint32_t* _entryId);
 
 private:
   IndexQueueArray* indexQueueArray;
+  PAQueueArray* paQueueArray;
 };
 #endif

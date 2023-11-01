@@ -40,8 +40,9 @@ bool PatternTableRRArbiter::getValidEntryId(uint32_t* _entryId, const uint64_t _
 }
 
 IndexQueueArrayRRArbiter::IndexQueueArrayRRArbiter(uint32_t _totalIndexQueueArrayEntries,
-    IndexQueueArray* _indexQueueArray)
-  : RRArbiter(_totalIndexQueueArrayEntries), indexQueueArray(_indexQueueArray) {
+    IndexQueueArray* _indexQueueArray, PAQueueArray* _paQueueArray)
+  : RRArbiter(_totalIndexQueueArrayEntries), indexQueueArray(_indexQueueArray),
+    paQueueArray(_paQueueArray) {
 }
 
 IndexQueueArrayRRArbiter::~IndexQueueArrayRRArbiter() {
@@ -50,9 +51,9 @@ IndexQueueArrayRRArbiter::~IndexQueueArrayRRArbiter() {
 bool IndexQueueArrayRRArbiter::getValidEntryId(uint32_t* _entryId) {
   for (uint32_t i = 0; i < this->getTotalPatternTableEntries(); i++) {
     uint32_t entryId = (this->getLastChosenEntryId() + i) % this->getTotalPatternTableEntries();
-    // TODO: Add BackendPacketQueue and implement status check code for queue
     if (this->indexQueueArray->getConfigured(entryId) &&
-        this->indexQueueArray->canPop(entryId)) {
+        this->indexQueueArray->canRead(entryId) &&
+        this->paQueueArray->canInsert(entryId)) {
       *_entryId = entryId;
       return true;
     }
