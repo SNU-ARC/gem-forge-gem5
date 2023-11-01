@@ -1,7 +1,11 @@
 Import('*')
 
 DebugFlag('PSPFrontend')
+DebugFlag('IndexLoadUnit')
 
 Source('psp_frontend.cc')
 Source('pattern_table.cc')
 Source('index_queue.cc')
+Source('arbiter.cc')
+Source('index_loader.cc')
+Source('pa_queue.cc')

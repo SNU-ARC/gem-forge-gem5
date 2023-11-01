@@ -23,7 +23,11 @@ PatternTable::~PatternTable() {
 }
 
 uint32_t PatternTable::size() {
-  return patternTable.size();
+  uint32_t real_size = 0;
+  for (uint32_t i = 0; i < patternTable.size(); i++) {
+    real_size += this->isConfigInfoValid(i);
+  }
+  return real_size;
 }
 
 bool PatternTable::isConfigInfoValid(const uint64_t _entryId) {
@@ -39,8 +43,8 @@ void PatternTable::setConfigInfo(const uint64_t _entryId,
                                              _valBaseAddr, _valAccessGranularity);
 }
 bool PatternTable::getConfigInfo(const uint64_t _entryId,
-                                 uint64_t _idxBaseAddr, uint64_t _idxAccessGranularity,
-                                 uint64_t _valBaseAddr, uint64_t _valAccessGranularity) {
+                                 uint64_t* _idxBaseAddr, uint64_t* _idxAccessGranularity,
+                                 uint64_t* _valBaseAddr, uint64_t* _valAccessGranularity) {
   return patternTable[_entryId].getConfigInfo(_idxBaseAddr, _idxAccessGranularity,
                                               _valBaseAddr, _valAccessGranularity);
 }
@@ -48,9 +52,18 @@ void PatternTable::setInputInfo(const uint64_t _entryId,
                                 const uint64_t _offsetBegin, const uint64_t _offsetEnd) {
   this->patternTable[_entryId].setInputInfo(_offsetBegin, _offsetEnd);
 }
-bool PatternTable::getInputInfo(const uint64_t _entryId, uint64_t _offsetBegin, uint64_t _offsetEnd) {
+bool PatternTable::getInputInfo(const uint64_t _entryId, uint64_t* _offsetBegin, uint64_t* _offsetEnd) {
   return patternTable[_entryId].getInputInfo(_offsetBegin, _offsetEnd);
 }
-void PatternTable::reset(uint64_t _entryId) {
-  patternTable[_entryId].reset();
+void PatternTable::resetConfig(uint64_t _entryId) {
+  patternTable[_entryId].resetConfig();
+}
+void PatternTable::resetConfigUndo(uint64_t _entryId) {
+  patternTable[_entryId].resetConfigUndo();
+}
+void PatternTable::resetInput(uint64_t _entryId) {
+  patternTable[_entryId].resetInput();
+}
+void PatternTable::resetInputUndo(uint64_t _entryId) {
+  patternTable[_entryId].resetInputUndo();
 }

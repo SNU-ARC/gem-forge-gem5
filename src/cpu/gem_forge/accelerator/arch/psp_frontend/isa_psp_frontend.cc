@@ -521,7 +521,7 @@ void ISAPSPFrontend::executeStreamConfigReady(const GemForgeDynInstInfo &dynInfo
   ::PSPFrontend::StreamConfigArgs args(dynInfo.seqNum, streamNum, regionInfo.configInfo.inputContents);
   psp->executeStreamConfig(args);
 
-  DYN_INST_DPRINTF("[execute] executeStreamConfigReady %d %d %d %d\n", \
+  DYN_INST_DPRINTF("[execute] executeStreamConfigReady %x %lu %x %lu\n", \
     regionInfo.configInfo.inputContents[0], regionInfo.configInfo.inputContents[1], regionInfo.configInfo.inputContents[2], regionInfo.configInfo.inputContents[3]);
 }
 

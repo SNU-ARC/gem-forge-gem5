@@ -44,7 +44,11 @@ class PSPFrontend(GemForgeAccelerator):
     cxx_header = \
             'cpu/gem_forge/accelerator/psp_frontend/psp_frontend.hh'
     totalPatternTableEntries = Param.Unsigned(
-        9, "Number of PatternTable entries.")
+        4, "Number of PatternTable entries.")
+    indexQueueCapacity = Param.Unsigned(
+        64, "Capacity per index queue. Unit is Byte")
+    paQueueCapacity = Param.Unsigned(
+        4, "Capacity per PA Queue.")
 
 class StreamEngine(GemForgeAccelerator):
     type = "StreamEngine"
