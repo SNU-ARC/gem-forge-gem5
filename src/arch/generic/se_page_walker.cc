@@ -56,8 +56,7 @@ Cycles SEPageWalker::walk(Addr pageVAddr, Cycles curCycle) {
   auto prevContextIter = this->inflyState.rbegin();
   auto prevContextEnd = this->inflyState.rend();
   // TODO: Why you do not care of numContext?
-  int i = 0;
-  while (i < this->numContext && prevContextIter != prevContextEnd) {
+  while (prevContextIter != prevContextEnd) {
     prevContextIter++;
   }
 
@@ -67,6 +66,13 @@ Cycles SEPageWalker::walk(Addr pageVAddr, Cycles curCycle) {
     // serve this translation.
     allocateCycle = prevContextIter->readyCycle;
     this->waits++;
+  }
+  else if (this->numContext <= this->inflyState.size()) {
+    // We have to wait until previous translations are done
+    prevContextIter = this->inflyState.rbegin();
+    for (uint32_t i = 0; i < this->numContext - 1; i++)
+      prevContextIter++;
+    allocateCycle = prevContextIter->readyCycle;
   }
 
   // Allocate it.
