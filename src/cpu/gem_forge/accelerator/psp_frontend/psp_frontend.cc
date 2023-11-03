@@ -192,6 +192,7 @@ void PSPFrontend::issueTranslateValueAddress(uint64_t _validEntryId) {
   // Generate 4KB aligned address translation requests
   uint64_t currentVAddr = valBaseAddr + (index + 1) * valAccessGranularity - this->valCurrentSize[_validEntryId];
   uint64_t currentSize = this->valCurrentSize[_validEntryId];
+  uint64_t cacheLineSize = this->cpuDelegator->cacheLineSize();
   uint64_t pageSize = 1 << 12;
 
   if (((currentVAddr % pageSize) + currentSize) > pageSize) {
@@ -204,22 +205,24 @@ void PSPFrontend::issueTranslateValueAddress(uint64_t _validEntryId) {
     this->indexQueueArray->pop(_validEntryId);
     this->valCurrentSize[_validEntryId] = valAccessGranularity;
   }
+  uint64_t cacheBlockVAddr = currentVAddr & (~(cacheLineSize - 1));
+  uint64_t cacheBlockSize = (currentSize + cacheLineSize) & (~(cacheLineSize - 1));
 
   // Address translation (Does not consume tick)
-  Addr currentPAddr;
-  assert(this->cpuDelegator->translateVAddrOracle(currentVAddr, currentPAddr) && 
+  Addr cacheBlockPAddr;
+  assert(this->cpuDelegator->translateVAddrOracle(cacheBlockVAddr, cacheBlockPAddr) && 
       "Page Fault is not we intend");
 
   // VA to PA
   IndexPacketHandler* indexPacketHandler = new IndexPacketHandler(this, _validEntryId,
-      currentVAddr, currentVAddr, currentSize);
+      cacheBlockVAddr, currentVAddr, currentSize);
   Request::Flags flags;
   PacketPtr pkt = GemForgePacketHandler::createGemForgePacket(
-      currentPAddr, currentSize, indexPacketHandler, nullptr /* Data */,
+      cacheBlockPAddr, cacheLineSize, indexPacketHandler, nullptr /* Data */,
       cpuDelegator->dataMasterId(), 0 /* ContextId */, 0 /* PC */, flags);
-  pkt->req->setVirt(currentVAddr);
+  pkt->req->setVirt(cacheBlockVAddr);
   PSP_FE_DPRINTF("Address translation for %luth entryId. VA: %x PA: %x Size: %d.\n", _validEntryId,
-      currentVAddr, pkt->getAddr(), pkt->getSize());
+      cacheBlockVAddrVAddr, pkt->getAddr(), pkt->getSize());
  
   if (cpuDelegator->cpuType == GemForgeCPUDelegator::ATOMIC_SIMPLE) {
     // No requests sent to memory for atomic cpu.
