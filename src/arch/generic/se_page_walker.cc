@@ -57,29 +57,23 @@ Cycles SEPageWalker::walk(Addr pageVAddr, Cycles curCycle) {
    */
   auto prevContextIter = this->inflyState.rbegin();
   auto prevContextEnd = this->inflyState.rend();
-  // TODO: Why you do not care of numContext?
-  while (prevContextIter != prevContextEnd) {
-    prevContextIter++;
-  }
-
   Cycles allocateCycle = curCycle;
-  if (prevContextIter != prevContextEnd) {
-    // We have to wait until this state to be done before we can
-    // serve this translation.
-    allocateCycle = prevContextIter->readyCycle;
-    this->waits++;
-  }
-  else if (this->numContext <= this->inflyState.size()) {
+  if (this->numContext <= this->inflyState.size()) {
     // We have to wait until previous translations are done
+    this->waits++;
     prevContextIter = this->inflyState.rbegin();
     for (uint32_t i = 0; i < this->numContext - 1; i++)
       prevContextIter++;
     allocateCycle = prevContextIter->readyCycle;
 
-//    this->ptwCycles = this->latency + allocateCycle - this->inflyState.rbegin()->readyCycle;
+    this->ptwCycles += (this->latency + allocateCycle - this->inflyState.rbegin()->readyCycle);
+  }
+  else if (this->inflyState.size() == 0 || 
+      this->inflyState.rbegin()->readyCycle < allocateCycle) {
+    this->ptwCycles += this->latency;
   }
   else {
-//    this->ptwCycles = this->latency + allocateCycle - this->inflyState.rbegin()->readyCycle;
+    this->ptwCycles += (this->latency + allocateCycle - this->inflyState.rbegin()->readyCycle);
   }
 
   // Allocate it.
@@ -97,11 +91,14 @@ Cycles SEPageWalker::lookup(Addr pageVAddr, Cycles curCycle) {
   // Check if we have a parallel miss to the same page.
   auto iter = this->pageVAddrToStateMap.find(pageVAddr);
   if (iter != this->pageVAddrToStateMap.end()) {
+    this->accesses++;
+    this->hits++;
+    if (curCycle + this->latency < iter->second->readyCycle) {
+      this->waits++;
+    }
     /**
      * Just add one cycle latency for parallel miss.
      */
-    this->accesses++;
-    this->hits++;
     DPRINTF(TLB, "Hit %#x, Latency %s.\n", pageVAddr,
             iter->second->readyCycle - curCycle + Cycles(1));
     return iter->second->readyCycle - curCycle + Cycles(1);
