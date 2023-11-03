@@ -222,7 +222,7 @@ void PSPFrontend::issueTranslateValueAddress(uint64_t _validEntryId) {
       cpuDelegator->dataMasterId(), 0 /* ContextId */, 0 /* PC */, flags);
   pkt->req->setVirt(cacheBlockVAddr);
   PSP_FE_DPRINTF("Address translation for %luth entryId. VA: %x PA: %x Size: %d.\n", _validEntryId,
-      cacheBlockVAddrVAddr, pkt->getAddr(), pkt->getSize());
+      cacheBlockVAddr, pkt->getAddr(), pkt->getSize());
  
   if (cpuDelegator->cpuType == GemForgeCPUDelegator::ATOMIC_SIMPLE) {
     // No requests sent to memory for atomic cpu.
