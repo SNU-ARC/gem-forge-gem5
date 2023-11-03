@@ -76,10 +76,10 @@ Cycles SEPageWalker::walk(Addr pageVAddr, Cycles curCycle) {
       prevContextIter++;
     allocateCycle = prevContextIter->readyCycle;
 
-    this->ptwCycles = this->latency + allocateCycle - this->inflyState.rbegin()->readyCycle;
+//    this->ptwCycles = this->latency + allocateCycle - this->inflyState.rbegin()->readyCycle;
   }
   else {
-    this->ptwCycles = this->latency + allocateCycle - this->inflyState.rbegin()->readyCycle;
+//    this->ptwCycles = this->latency + allocateCycle - this->inflyState.rbegin()->readyCycle;
   }
 
   // Allocate it.
@@ -89,6 +89,25 @@ Cycles SEPageWalker::walk(Addr pageVAddr, Cycles curCycle) {
 
   // We should only return the difference.
   return readyCycle - curCycle;
+}
+
+Cycles SEPageWalker::lookup(Addr pageVAddr, Cycles curCycle) {
+  this->clearReadyStates(curCycle);
+
+  // Check if we have a parallel miss to the same page.
+  auto iter = this->pageVAddrToStateMap.find(pageVAddr);
+  if (iter != this->pageVAddrToStateMap.end()) {
+    /**
+     * Just add one cycle latency for parallel miss.
+     */
+    this->accesses++;
+    this->hits++;
+    DPRINTF(TLB, "Hit %#x, Latency %s.\n", pageVAddr,
+            iter->second->readyCycle - curCycle + Cycles(1));
+    return iter->second->readyCycle - curCycle + Cycles(1);
+  }
+  // If no match, it is L1 hit
+  return Cycles(0);
 }
 
 } // namespace X86ISA

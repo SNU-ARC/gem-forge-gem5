@@ -33,6 +33,8 @@ public:
    */
   Cycles walk(Addr pageVAddr, Cycles curCycle);
 
+  Cycles lookup(Addr pageVAddr, Cycles curCycle);
+
   Stats::Scalar accesses;
   Stats::Scalar hits;
   Stats::Scalar waits;
