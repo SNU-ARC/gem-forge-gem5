@@ -36,6 +36,7 @@ public:
   Stats::Scalar accesses;
   Stats::Scalar hits;
   Stats::Scalar waits;
+  Stats::Scalar ptwCycles;
 
 private:
   std::string myName;

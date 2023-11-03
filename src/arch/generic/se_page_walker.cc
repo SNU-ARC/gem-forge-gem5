@@ -15,6 +15,8 @@ void SEPageWalker::regStats() {
       .desc("PageWalker hits on infly walks");
   this->waits.name(this->name() + ".waits")
       .desc("PageWalker waits on available context");
+  this->ptwCycles.name(this->name() + ".ptwCycles")
+      .desc("PageWalker spent cycles");
 }
 
 void SEPageWalker::clearReadyStates(Cycles curCycle) {
@@ -73,6 +75,11 @@ Cycles SEPageWalker::walk(Addr pageVAddr, Cycles curCycle) {
     for (uint32_t i = 0; i < this->numContext - 1; i++)
       prevContextIter++;
     allocateCycle = prevContextIter->readyCycle;
+
+    this->ptwCycles = this->latency + allocateCycle - this->inflyState.rbegin()->readyCycle;
+  }
+  else {
+    this->ptwCycles = this->latency + allocateCycle - this->inflyState.rbegin()->readyCycle;
   }
 
   // Allocate it.

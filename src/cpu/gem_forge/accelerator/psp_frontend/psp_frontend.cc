@@ -260,7 +260,7 @@ void PSPFrontend::handleAddressTranslateResponse(IndexPacketHandler* _indexPacke
   uint64_t size = _pkt->getSize();
   this->paQueueArray->numInflightTranslations[entryId]--;
 
-  PhysicalAddressQueue::PhysicalAddressArgs args(pAddr, size);
+  PhysicalAddressQueue::PhysicalAddressArgs args(entryId, pAddr, size);
   this->paQueueArray->insert(entryId, &args);
   
   PSP_FE_DPRINTF("Address translation for %luth entryId done. PA: %x, Size: %lu, numInflight: %lu.\n", entryId, pAddr, size, this->paQueueArray->numInflightTranslations[entryId]);
