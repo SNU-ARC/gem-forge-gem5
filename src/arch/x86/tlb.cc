@@ -494,9 +494,18 @@ TLB::translate(const RequestPtr &req,
                     assert(this->l2tlb && "Missing L2TLB.");
                     delayedResponseCycles = this->sePageWalker->lookup(
                         pageVAddr, this->walker->curCycle());
-                    delayedResponseCycles = 
-                      (delayedResponseCycles > this->l2HitLatency) ? 
-                      delayedResponseCycles : this->l2HitLatency;
+                    if (delayedResponseCycles > this->l2HitLatency) {
+                      // This is not L2TLB hit, it is page table walking
+                      this->l2Misses++;
+                      delayedResponseCycles = delayedResponseCycles;
+                    }
+                    else {
+                      // This is not L1TLB hit, it is page table walking
+                      this->l1Misses++;
+                      this->l2Accesses++;
+                      this->l2Misses++;
+                      delayedResponseCycles = this->l2HitLatency;
+                    }
                     break;
                 case 0:
                     delayedResponseCycles = this->sePageWalker->lookup(
