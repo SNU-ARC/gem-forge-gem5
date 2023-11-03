@@ -197,7 +197,7 @@ void PSPFrontend::issueTranslateValueAddress(uint64_t _validEntryId) {
 
   if (((currentVAddr % pageSize) + currentSize) > pageSize) {
     // If current value is cross-page, split address translate
-    currentSize = pageSize - (currentVAddr % pageSize);
+    currentSize = (currentVAddr + currentSize) % pageSize;
     this->valCurrentSize[_validEntryId] = currentSize;
   }
   else {
@@ -218,7 +218,7 @@ void PSPFrontend::issueTranslateValueAddress(uint64_t _validEntryId) {
       cacheBlockVAddr, currentVAddr, currentSize);
   Request::Flags flags;
   PacketPtr pkt = GemForgePacketHandler::createGemForgePacket(
-      cacheBlockPAddr, cacheLineSize, indexPacketHandler, nullptr /* Data */,
+      cacheBlockPAddr, currentSize, indexPacketHandler, nullptr /* Data */,
       cpuDelegator->dataMasterId(), 0 /* ContextId */, 0 /* PC */, flags);
   pkt->req->setVirt(cacheBlockVAddr);
   PSP_FE_DPRINTF("Address translation for %luth entryId. VA: %x PA: %x Size: %d.\n", _validEntryId,
@@ -235,7 +235,7 @@ void PSPFrontend::issueTranslateValueAddress(uint64_t _validEntryId) {
   }
   
   // Update PAQueueArray(num of inflight load requests)
-  this->paQueueArray->numInflightTranslations[_validEntryId]++;
+  this->paQueueArray->numInflightTranslations[_validEntryId] += 1;
   PSP_FE_DPRINTF("%luth IndexQueue with numInflightTranslations: %d.\n", _validEntryId,
       this->paQueueArray->numInflightTranslations[_validEntryId]);
 }
@@ -261,7 +261,7 @@ void PSPFrontend::handleAddressTranslateResponse(IndexPacketHandler* _indexPacke
   uint64_t entryId = _indexPacketHandler->entryId;
   Addr pAddr = _pkt->getAddr();
   uint64_t size = _pkt->getSize();
-  this->paQueueArray->numInflightTranslations[entryId]--;
+  this->paQueueArray->numInflightTranslations[entryId] -= 1;
 
   PhysicalAddressQueue::PhysicalAddressArgs args(entryId, pAddr, size);
   this->paQueueArray->insert(entryId, &args);
