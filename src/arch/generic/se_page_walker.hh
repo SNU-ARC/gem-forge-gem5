@@ -33,9 +33,12 @@ public:
    */
   Cycles walk(Addr pageVAddr, Cycles curCycle);
 
+  Cycles lookup(Addr pageVAddr, Cycles curCycle);
+
   Stats::Scalar accesses;
   Stats::Scalar hits;
   Stats::Scalar waits;
+  Stats::Scalar ptwCycles;
 
 private:
   std::string myName;

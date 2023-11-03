@@ -15,6 +15,8 @@ void SEPageWalker::regStats() {
       .desc("PageWalker hits on infly walks");
   this->waits.name(this->name() + ".waits")
       .desc("PageWalker waits on available context");
+  this->ptwCycles.name(this->name() + ".ptwCycles")
+      .desc("PageWalker spent cycles");
 }
 
 void SEPageWalker::clearReadyStates(Cycles curCycle) {
@@ -56,8 +58,7 @@ Cycles SEPageWalker::walk(Addr pageVAddr, Cycles curCycle) {
   auto prevContextIter = this->inflyState.rbegin();
   auto prevContextEnd = this->inflyState.rend();
   // TODO: Why you do not care of numContext?
-  int i = 0;
-  while (i < this->numContext && prevContextIter != prevContextEnd) {
+  while (prevContextIter != prevContextEnd) {
     prevContextIter++;
   }
 
@@ -68,6 +69,18 @@ Cycles SEPageWalker::walk(Addr pageVAddr, Cycles curCycle) {
     allocateCycle = prevContextIter->readyCycle;
     this->waits++;
   }
+  else if (this->numContext <= this->inflyState.size()) {
+    // We have to wait until previous translations are done
+    prevContextIter = this->inflyState.rbegin();
+    for (uint32_t i = 0; i < this->numContext - 1; i++)
+      prevContextIter++;
+    allocateCycle = prevContextIter->readyCycle;
+
+//    this->ptwCycles = this->latency + allocateCycle - this->inflyState.rbegin()->readyCycle;
+  }
+  else {
+//    this->ptwCycles = this->latency + allocateCycle - this->inflyState.rbegin()->readyCycle;
+  }
 
   // Allocate it.
   auto readyCycle = allocateCycle + this->latency;
@@ -76,6 +89,25 @@ Cycles SEPageWalker::walk(Addr pageVAddr, Cycles curCycle) {
 
   // We should only return the difference.
   return readyCycle - curCycle;
+}
+
+Cycles SEPageWalker::lookup(Addr pageVAddr, Cycles curCycle) {
+  this->clearReadyStates(curCycle);
+
+  // Check if we have a parallel miss to the same page.
+  auto iter = this->pageVAddrToStateMap.find(pageVAddr);
+  if (iter != this->pageVAddrToStateMap.end()) {
+    /**
+     * Just add one cycle latency for parallel miss.
+     */
+    this->accesses++;
+    this->hits++;
+    DPRINTF(TLB, "Hit %#x, Latency %s.\n", pageVAddr,
+            iter->second->readyCycle - curCycle + Cycles(1));
+    return iter->second->readyCycle - curCycle + Cycles(1);
+  }
+  // If no match, it is L1 hit
+  return Cycles(0);
 }
 
 } // namespace X86ISA

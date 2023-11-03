@@ -479,25 +479,35 @@ TLB::translate(const RequestPtr &req,
                         hitLevel);
                 }
             }
-            if (!FullSystem && timing && this->timingSE && hitLevel > 0) {
+            if (!FullSystem && timing && this->timingSE) {
                 // We will delay the response and schedule a event.
-                delayedResponse = true;
                 Addr pageVAddr = tc->getProcessPtr()->pTable->pageAlign(vaddr);
                 switch (hitLevel) {
                 case 2:
+                    delayedResponse = true;
                     // This access goes to page walker.
                     delayedResponseCycles = this->sePageWalker->walk(
                         pageVAddr, this->walker->curCycle());
                     break;
                 case 1:
+                    delayedResponse = true;
                     assert(this->l2tlb && "Missing L2TLB.");
-                    delayedResponseCycles = this->l2HitLatency;
+                    delayedResponseCycles = this->sePageWalker->lookup(
+                        pageVAddr, this->walker->curCycle());
+                    delayedResponseCycles = 
+                      (delayedResponseCycles > this->l2HitLatency) ? 
+                      delayedResponseCycles : this->l2HitLatency;
+                    break;
+                case 0:
+                    delayedResponseCycles = this->sePageWalker->lookup(
+                        pageVAddr, this->walker->curCycle());
+                    delayedResponse = delayedResponseCycles > 0;
                     break;
                 default: panic("Illegal TLB HitLevel %d.\n", hitLevel);
                 }
-                DPRINTF(TLB, "SETiming HitLevel %d, Delayed by %s\n",
-                    hitLevel, delayedResponseCycles);
             }
+            DPRINTF(TLB, "SETiming HitLevel %d, Delayed by %s\n",
+                hitLevel, delayedResponseCycles);
 
             DPRINTF(TLB, "Entry found with paddr %#x, "
                     "doing protection checks.\n", entry->paddr);

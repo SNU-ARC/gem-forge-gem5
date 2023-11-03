@@ -17,11 +17,12 @@ class PhysicalAddressQueue {
     ~PhysicalAddressQueue();
 
     struct PhysicalAddressArgs {
+      uint64_t entryId;
       uint64_t pAddr;
       uint64_t size;
 
-      PhysicalAddressArgs(uint64_t _pAddr, uint64_t _size)
-        : pAddr(_pAddr), size(_size) {}
+      PhysicalAddressArgs(uint64_t _entryId, uint64_t _pAddr, uint64_t _size)
+        : entryId(_entryId), pAddr(_pAddr), size(_size) {}
     };
 
     uint32_t getSize();
