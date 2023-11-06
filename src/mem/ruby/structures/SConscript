@@ -31,10 +31,13 @@ Import('*')
 if env['PROTOCOL'] == 'None':
     Return()
 
+DebugFlag('PSPBackend')
+
 SimObject('RubyCache.py')
 SimObject('DirectoryMemory.py')
 SimObject('RubyPrefetcher.py')
 SimObject('WireBuffer.py')
+SimObject('PSPPrefetcher.py')
 
 Source('DirectoryMemory.cc')
 Source('CacheMemory.cc')
@@ -44,3 +47,4 @@ Source('RubyPrefetcher.cc')
 Source('RubyBingoPrefetcher.cc')
 Source('TimerTable.cc')
 Source('BankedArray.cc')
+Source('PSPBackend.cc')
