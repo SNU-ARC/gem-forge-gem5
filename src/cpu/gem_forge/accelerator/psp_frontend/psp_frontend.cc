@@ -119,6 +119,12 @@ void PSPFrontend::issueLoadIndex(uint64_t _validEntryId) {
 
   uint64_t offsetBegin, offsetEnd;
   this->patternTable->getInputInfo(_validEntryId, &offsetBegin, &offsetEnd);
+  
+  if (offsetBegin >= offsetEnd) {
+    this->patternTable->resetInput(_validEntryId);
+    return;
+  }
+
   PSP_FE_DPRINTF("EntryId: %lu, OffsetBegin: %lu, OffsetEnd: %lu\n",
       _validEntryId, offsetBegin, offsetEnd);
   assert(offsetBegin < offsetEnd);

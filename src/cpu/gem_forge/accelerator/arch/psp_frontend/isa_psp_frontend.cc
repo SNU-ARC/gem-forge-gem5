@@ -459,9 +459,6 @@ void ISAPSPFrontend::dispatchStreamConfigReady(
     GemForgeLSQCallbackList &extraLSQCallbacks) {
   ISA_PSP_FE_DPRINTF("dispatchStreamConfigReady\n");
 
-  auto streamNum = this->extractImm<uint64_t>(dynInfo.staticInst);
-  auto &regionInfo = this->getStreamRegionInfo(streamNum);
-
   DYN_INST_DPRINTF("[dispatch] dispatchStreamConfigReady\n");
 }
 
@@ -620,7 +617,6 @@ bool ISAPSPFrontend::canDispatchStreamTerminate(const GemForgeDynInstInfo &dynIn
   ISA_PSP_FE_DPRINTF("canDispatchStreamTerminate\n");
 
   auto streamNum = this->extractImm<uint64_t>(dynInfo.staticInst);
-  auto &regionInfo = this->getStreamRegionInfo(streamNum);
 
   auto psp = this->getPSPFrontend();
   ::PSPFrontend::StreamTerminateArgs args(dynInfo.seqNum, streamNum);
@@ -640,7 +636,6 @@ void ISAPSPFrontend::dispatchStreamTerminate(
   ISA_PSP_FE_DPRINTF("dispatchStreamTerminate\n");
 
   auto streamNum = this->extractImm<uint64_t>(dynInfo.staticInst);
-  auto &regionInfo = this->getStreamRegionInfo(streamNum);
 
   auto psp = this->getPSPFrontend();
   ::PSPFrontend::StreamTerminateArgs args(dynInfo.seqNum, streamNum);
@@ -653,7 +648,6 @@ bool ISAPSPFrontend::canExecuteStreamTerminate(const GemForgeDynInstInfo &dynInf
   ISA_PSP_FE_DPRINTF("canExecuteStreamTerminate\n");
 
   auto streamNum = this->extractImm<uint64_t>(dynInfo.staticInst);
-  auto &regionInfo = this->getStreamRegionInfo(streamNum);
 
   auto psp = this->getPSPFrontend();
   ::PSPFrontend::StreamTerminateArgs args(dynInfo.seqNum, streamNum);
@@ -672,7 +666,6 @@ void ISAPSPFrontend::executeStreamTerminate(const GemForgeDynInstInfo &dynInfo,
   ISA_PSP_FE_DPRINTF("executeStreamTerminate\n");
 
   auto streamNum = this->extractImm<uint64_t>(dynInfo.staticInst);
-  auto &regionInfo = this->getStreamRegionInfo(streamNum);
 
   auto psp = this->getPSPFrontend();
   ::PSPFrontend::StreamTerminateArgs args(dynInfo.seqNum, streamNum);
@@ -685,7 +678,6 @@ bool ISAPSPFrontend::canCommitStreamTerminate(const GemForgeDynInstInfo &dynInfo
   ISA_PSP_FE_DPRINTF("canCommitStreamTerminate\n");
 
   auto streamNum = this->extractImm<uint64_t>(dynInfo.staticInst);
-  auto &regionInfo = this->getStreamRegionInfo(streamNum);
 
   auto psp = this->getPSPFrontend();
   ::PSPFrontend::StreamTerminateArgs args(dynInfo.seqNum, streamNum);
@@ -703,7 +695,6 @@ void ISAPSPFrontend::commitStreamTerminate(const GemForgeDynInstInfo &dynInfo) {
   ISA_PSP_FE_DPRINTF("commitStreamTerminate\n");
 
   auto streamNum = this->extractImm<uint64_t>(dynInfo.staticInst);
-  auto &regionInfo = this->getStreamRegionInfo(streamNum);
 
   auto psp = this->getPSPFrontend();
   ::PSPFrontend::StreamTerminateArgs args(dynInfo.seqNum, streamNum);
@@ -718,7 +709,6 @@ void ISAPSPFrontend::rewindStreamTerminate(const GemForgeDynInstInfo &dynInfo) {
   ISA_PSP_FE_DPRINTF("rewindStreamTerminate\n");
   
   auto streamNum = this->extractImm<uint64_t>(dynInfo.staticInst);
-  auto &regionInfo = this->getStreamRegionInfo(streamNum);
 
   auto psp = this->getPSPFrontend();
   ::PSPFrontend::StreamTerminateArgs args(dynInfo.seqNum, streamNum);
