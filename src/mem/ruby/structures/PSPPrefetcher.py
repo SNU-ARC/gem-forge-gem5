@@ -1,5 +1,15 @@
-# -*- mode:python -*-
-
+# Copyright (c) 2020 ARM Limited
+# All rights reserved.
+#
+# The license below extends only to copyright in the software and shall
+# not be construed as granting a license to any other intellectual
+# property including but not limited to intellectual property relating
+# to a hardware implementation of the functionality of the software
+# licensed hereunder.  You may use the software subject to the license
+# terms below provided that you ensure that this notice is replicated
+# unmodified and in its entirety in all distributions of the software,
+# modified or unmodified, in source code or in binary form.
+#
 # Copyright (c) 2012 Mark D. Hill and David A. Wood
 # All rights reserved.
 #
@@ -26,25 +36,13 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-Import('*')
+from m5.SimObject import SimObject
+from m5.params import *
+from m5.proxy import *
 
-if env['PROTOCOL'] == 'None':
-    Return()
+from m5.objects.System import System
 
-DebugFlag('PSPBackend')
-
-SimObject('RubyCache.py')
-SimObject('DirectoryMemory.py')
-SimObject('RubyPrefetcher.py')
-SimObject('WireBuffer.py')
-SimObject('PSPPrefetcher.py')
-
-Source('DirectoryMemory.cc')
-Source('CacheMemory.cc')
-Source('WireBuffer.cc')
-Source('PersistentTable.cc')
-Source('RubyPrefetcher.cc')
-Source('RubyBingoPrefetcher.cc')
-Source('TimerTable.cc')
-Source('BankedArray.cc')
-Source('PSPBackend.cc')
+class PSPBackend(SimObject):
+    type = 'PSPBackend'
+    cxx_class = 'PSPBackend'
+    cxx_header = "mem/ruby/structures/PSPBackend.hh"

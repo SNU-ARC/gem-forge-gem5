@@ -112,7 +112,7 @@ def create_system(options, full_system, system, dma_ports, bootmem,
                 replacement_policy=BRRIPRP(),
                 dataAccessLatency=options.l1d_lat)
 
-            prefetcher = RubyPrefetcher(
+            prefetcher = PSPBackend(
                 num_streams=16,
                 unit_filter=256,
                 nonunit_filter=256,
