@@ -37,7 +37,7 @@ SimObject('RubyCache.py')
 SimObject('DirectoryMemory.py')
 SimObject('RubyPrefetcher.py')
 SimObject('WireBuffer.py')
-SimObject('PSPPrefetcher.py')
+SimObject('PSPBackend.py')
 
 Source('DirectoryMemory.cc')
 Source('CacheMemory.cc')
