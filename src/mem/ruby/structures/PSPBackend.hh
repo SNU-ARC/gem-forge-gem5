@@ -51,106 +51,118 @@
 #include "sim/sim_object.hh"
 #include "sim/system.hh"
 #include "cpu/gem_forge/accelerator/psp_frontend/psp_frontend.hh"
+#include "mem/ruby/protocol/RubyRequestType.hh"
 
 #include <math.h>
 
-/*
 class PrefetchEntry
 {
     private:
-        // Base physical address from stream prefetching
-        Addr m_addr;
-
-        // Line index to be prefetched
+        Addr m_addr; // Line address
         int m_index;
-
-        // Size of stream prefetching
         int m_size;
-
-        // Valid bit for each stream
         bool m_valid;
-
-        // Execute bit for each stream
-        bool m_execute;
-
-        RubyRequestType m_type;
+        bool m_use;
 
     public:
-        void setPrefetchEntry(Addr addr, int index, int size, RubyRequestType type) {
+        void setEntry(Addr addr, int size) {
             m_addr = makeLineAddress(addr);
-            m_index = index;
+            m_index = 0;
             m_size = ceil((double)size / RubySystem::getBlockSizeBytes());
-            m_type = type;
-            m_is_valid = false;
-            m_is_execute = false;
+            m_valid = true;
+            m_use = false;
         }
 
-        bool isLastElement(Addr addr) {
-            return addr == m_addr + m_size - 1;
-        }
+        void activate() { m_use = true; }
+        void deactivate() { m_use = false; }
+        bool isActive() { return m_use; }
+        void invalidate() { m_valid = false; }
+        bool isValid() { return m_valid; }
+        
+        Addr getNextLineAddr() { return m_addr + m_index; }
+        Addr getLastLineAddr() { return m_addr + m_size - 1; }
+        void incrementLineAddr() { m_addr = m_addr + 1; }
 
-        bool inRange(Addr addr) {
-            return addr >= m_addr && addr < m_addr + m_size;
-        }
-
-        void invalidate() {
-            m_valid = false;
-        }
-
-        void reverseExecute() {
-            m_execute = !m_execute;
-        }
-
-        void setExecute() {
-            m_execute = true;
-        }
-
-        bool isExecute() {
-            return m_execute;
-        }
-
-        Addr getNextAddr() {
-            return m_addr + m_index;
-        }
-
-        RubyRequestType getMemRequestType() {
-            return m_type;
-        }
+        bool isDone() { return m_index == m_size; }
+        bool isEntry(Addr addr) { return addr >= m_addr && addr < m_addr + m_size; }    
 };
 
 class StreamEntry
 {
     private : 
-        std::vector<PrefetchEntry>* prefetchEntryTable;
+        std::vector<PrefetchEntry> prefetchEntryTable;
+        int activeEntryIdx;
+        bool bulkPrefetch;
 
     public : 
         StreamEntry() {
-            prefetchEntryTable = new std::vector<PrefetchEntry>(2);
+            activeEntryIdx = -1;
+            bulkPrefetch = false;
         }
 
-        ~StreamEntry() {
-            delete prefetchEntryTable;
+        Addr getNextLineAddr(Addr snoopAddr) {            
+            assert(activeEntryIdx != -1);
+
+            PrefetchEntry *pe = &prefetchEntryTable[activeEntryIdx];
+            if (pe->isDone()) {
+                pe->deactivate();
+                activeEntryIdx = 1 - activeEntryIdx;
+                pe = &prefetchEntryTable[activeEntryIdx];
+                pe->activate();
+                bulkPrefetch = true;
+            }
+            if (prefetchEntryTable[1 - activeEntryIdx].getLastLineAddr() == snoopAddr) {
+                prefetchEntryTable[1 - activeEntryIdx].invalidate();
+            }
+            Addr addr = pe->getNextLineAddr();
+            pe->incrementLineAddr();
+            return addr;
         }
 
-        PrefetchEntry* changeStream() {
+        bool hasInvalidEntry() {
             PrefetchEntry& p1 = prefetchEntryTable[0];
             PrefetchEntry& p2 = prefetchEntryTable[1];
 
-            assert(p1.isExecute() || p2.isExecute());
+            return !p1.isValid() || !p2.isValid();
+        }
 
-            p1.reverseExecute();
-            p2.reverseExecute();
+        void insertEntry(Addr addr, int size) {
+            PrefetchEntry& p1 = prefetchEntryTable[0];
+            PrefetchEntry& p2 = prefetchEntryTable[1];
 
-            if (p1.isExecute()) {
-                return &p1;
+            bool p1_valid = p1.isValid();
+            bool p2_valid = p2.isValid();
+
+            assert(!p1_valid || !p2_valid);
+
+            if (p1_valid) {
+                p2.setEntry(addr, size);
+                if (activeEntryIdx == -1) { // When this is first entry inserting
+                    p2.activate();
+                    activeEntryIdx = 1;
+                    bulkPrefetch = true;
+                }
             } else {
-                return &p2;
+                p1.setEntry(addr, size);
+                if (activeEntryIdx == -1) {
+                    p1.activate();
+                    activeEntryIdx = 0;
+                    bulkPrefetch = true;
+                }
             }
+        }
+
+        bool isBulk() {
+            return bulkPrefetch;
+        }
+
+        void turnOffBulk() {
+            bulkPrefetch = false;
         }
 
         bool hasEntry(Addr addr) {
             for (auto& pe : prefetchEntryTable) {
-                if (pe.inRange(addr))
+                if (pe.isEntry(addr))
                     return true;
             }
             return false;
@@ -158,7 +170,7 @@ class StreamEntry
 
         PrefetchEntry* getEntry(Addr addr) {
             for (auto& pe : prefetchEntryTable) {
-                if (pe.inRange(addr)) {
+                if (pe.isEntry(addr)) {
                     return &pe;
                 }
             }
@@ -171,44 +183,44 @@ class PSPBackend : public SimObject
     public:
         typedef PSPBackendParams Params;
         PSPBackend(const Params *p);
-        ~PSPBackend();
 
-        void issueNextPrefetch(Addr address, PrefetchEntry *stream);
+        void issuePrefetch(Addr address);
 
         void observePfHit(Addr address);
         void observePfMiss(Addr address);
         void observeHit(Addr address, const RubyRequestType& type);
         void observeMiss(Addr address, const RubyRequestType& type);
 
-        void print(std::ostream& out) const;
+        StreamEntry* getEntry(Addr addr);
+
+        void regStats();
         void setController(AbstractController *_ctrl)
         { m_controller = _ctrl; }
-        void regStats();
-
+        void setPSPFrontend(PSPFrontend *pf)
+        { this->pf = pf; }
+        void insertEntry(uint64_t entryId, uint64_t pAddr, uint64_t size) {
+            streamTable[entryId].insertEntry(pAddr, size); 
+        }
+        std::vector<bool>& canInsertEntry() {
+            std::vector<bool> canInsert(num_streams);
+            for (int i = 0; i < num_streams; i++) {
+                canInsert[i] = streamTable[i].hasInvalidEntry();
+            }
+            return canInsert;
+        }
+        
     private:
-        std::vector<StreamEntry>* streamTable;
         int num_streams;
         int prefetch_distance;
-        AbstractController *m_controller;
         PSPFrontend *pf;
-
-        PrefetchEntry* getStream(Addr addr);
+        AbstractController *m_controller;
+        std::vector<StreamEntry> streamTable;
 
         Stats::Scalar numPrefetchHits;
         Stats::Scalar numPrefetchMisses;
         Stats::Scalar numTotalMemoryAccesses;
-        Stats::Scalar numAllocatedStreams;
         Stats::Scalar numInPrefetchDistance;
         Stats::Scalar numNotInPrefetchDistance;
-};
-*/
-
-class PSPBackend : public SimObject
-{
-    public:
-        PSPBackend(const Params *p);
-    private:
-        PSPFrontend *pf;
 };
 
 #endif // __MEM_RUBY_STRUCTURES_PSPBackend_HH__
