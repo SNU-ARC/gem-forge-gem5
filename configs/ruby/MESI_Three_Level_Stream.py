@@ -112,12 +112,11 @@ def create_system(options, full_system, system, dma_ports, bootmem,
                 replacement_policy=BRRIPRP(),
                 dataAccessLatency=options.l1d_lat)
 
-            prefetcher = PSPBackend(
+            pspbackend = PSPBackend(
                 num_streams=2,
                 prefetch_distance=4
             )
 
-            """
             prefetcher = RubyPrefetcher(
                 num_streams=16,
                 unit_filter=256,
@@ -126,7 +125,6 @@ def create_system(options, full_system, system, dma_ports, bootmem,
                 num_startup_pfs=options.gem_forge_prefetch_dist,
                 cross_page=True
             )
-            """
 
             bingo_prefetcher = RubyBingoPrefetcher(
                 enabled=(options.gem_forge_prefetcher == 'bingo'),
@@ -148,6 +146,7 @@ def create_system(options, full_system, system, dma_ports, bootmem,
                 version=i * num_cpus_per_cluster + j, Icache=l0i_cache,
                 Dcache=l0d_cache,
                 prefetcher=prefetcher,
+                pspbackend=pspbackend,
                 bingoPrefetcher=bingo_prefetcher,
                 send_evictions=send_evicts(options),
                 clk_domain=clk_domain,

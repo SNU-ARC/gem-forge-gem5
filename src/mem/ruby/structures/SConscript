@@ -31,8 +31,6 @@ Import('*')
 if env['PROTOCOL'] == 'None':
     Return()
 
-DebugFlag('PSPBackend')
-
 SimObject('RubyCache.py')
 SimObject('DirectoryMemory.py')
 SimObject('RubyPrefetcher.py')

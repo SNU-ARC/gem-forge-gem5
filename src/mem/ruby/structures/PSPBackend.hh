@@ -52,10 +52,11 @@
 #include "sim/system.hh"
 #include "cpu/gem_forge/accelerator/psp_frontend/psp_frontend.hh"
 #include "mem/ruby/protocol/RubyRequestType.hh"
+#include "mem/ruby/structures/RubyPrefetcher.hh"
 
 #include <math.h>
 
-class PrefetchEntry
+class PSPPrefetchEntry
 {
     private:
         Addr m_addr; // Line address
@@ -90,7 +91,7 @@ class PrefetchEntry
 class StreamEntry
 {
     private : 
-        std::vector<PrefetchEntry> prefetchEntryTable;
+        std::vector<PSPPrefetchEntry> PSPPrefetchEntryTable;
         int activeEntryIdx;
         bool bulkPrefetch;
 
@@ -103,16 +104,16 @@ class StreamEntry
         Addr getNextLineAddr(Addr snoopAddr) {            
             assert(activeEntryIdx != -1);
 
-            PrefetchEntry *pe = &prefetchEntryTable[activeEntryIdx];
+            PSPPrefetchEntry *pe = &PSPPrefetchEntryTable[activeEntryIdx];
             if (pe->isDone()) {
                 pe->deactivate();
                 activeEntryIdx = 1 - activeEntryIdx;
-                pe = &prefetchEntryTable[activeEntryIdx];
+                pe = &PSPPrefetchEntryTable[activeEntryIdx];
                 pe->activate();
                 bulkPrefetch = true;
             }
-            if (prefetchEntryTable[1 - activeEntryIdx].getLastLineAddr() == snoopAddr) {
-                prefetchEntryTable[1 - activeEntryIdx].invalidate();
+            if (PSPPrefetchEntryTable[1 - activeEntryIdx].getLastLineAddr() == snoopAddr) {
+                PSPPrefetchEntryTable[1 - activeEntryIdx].invalidate();
             }
             Addr addr = pe->getNextLineAddr();
             pe->incrementLineAddr();
@@ -120,15 +121,15 @@ class StreamEntry
         }
 
         bool hasInvalidEntry() {
-            PrefetchEntry& p1 = prefetchEntryTable[0];
-            PrefetchEntry& p2 = prefetchEntryTable[1];
+            PSPPrefetchEntry& p1 = PSPPrefetchEntryTable[0];
+            PSPPrefetchEntry& p2 = PSPPrefetchEntryTable[1];
 
             return !p1.isValid() || !p2.isValid();
         }
 
         void insertEntry(Addr addr, int size) {
-            PrefetchEntry& p1 = prefetchEntryTable[0];
-            PrefetchEntry& p2 = prefetchEntryTable[1];
+            PSPPrefetchEntry& p1 = PSPPrefetchEntryTable[0];
+            PSPPrefetchEntry& p2 = PSPPrefetchEntryTable[1];
 
             bool p1_valid = p1.isValid();
             bool p2_valid = p2.isValid();
@@ -161,15 +162,15 @@ class StreamEntry
         }
 
         bool hasEntry(Addr addr) {
-            for (auto& pe : prefetchEntryTable) {
+            for (auto& pe : PSPPrefetchEntryTable) {
                 if (pe.isEntry(addr))
                     return true;
             }
             return false;
         }
 
-        PrefetchEntry* getEntry(Addr addr) {
-            for (auto& pe : prefetchEntryTable) {
+        PSPPrefetchEntry* getEntry(Addr addr) {
+            for (auto& pe : PSPPrefetchEntryTable) {
                 if (pe.isEntry(addr)) {
                     return &pe;
                 }
