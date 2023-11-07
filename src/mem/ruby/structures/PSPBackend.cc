@@ -54,21 +54,8 @@ PSPBackendParams::create()
 PSPBackend::PSPBackend(const Params *p)
     : SimObject(p)
 { 
-    /*
     num_streams = p->num_streams;
     prefetch_distance = p->prefetch_distance;
-    streamTable = new std::vector<StreamEntry>(num_streams);
-
-    PSPFrontend * pf = m_controller->getCPUSequencer()->getThreadContext()->getCpuPtr()->getAccelManager()->getPSPFrontend();
-    this->pf = pf;
-    pf->setPSPBackend(this);
-    */
-}
-
-/*
-PSPBackend::~PSPBackend()
-{
-    delete streamTable;
 }
 
 void
@@ -84,9 +71,6 @@ PSPBackend::regStats()
     
     numTotalMemoryAccesses
         .name(name() + "numTotalMemoryAccesses");
-
-    numAllocatedStreams
-        .name(name() + "numAllocatedStreams");
 
     numInPrefetchDistance
         .name(name() + "numInPrefetchDistance");
@@ -108,20 +92,21 @@ PSPBackend::getEntry(Addr addr) {
 void
 PSPBackend::observeHit(Addr address, const RubyRequestType& type)
 {
-    numTotalAccesses++;
+    numTotalMemoryAccesses++;
     DPRINTF(PSPBackend, "Observed hit for %#x\n", address);
 }
 
 void
 PSPBackend::observeMiss(Addr address, const RubyRequestType& type)
 {
-    numTotalAccesses++;
+    numTotalMemoryAccesses++;
     DPRINTF(PSPBackend, "Observed miss for %#x\n", address);
 }
 
 void
 PSPBackend::observePfMiss(Addr address)
 {
+    numTotalMemoryAccesses++;
     numPrefetchMisses++;
     DPRINTF(PSPBackend, "Observed prefetch miss for %#x\n", address);
 }
@@ -129,37 +114,39 @@ PSPBackend::observePfMiss(Addr address)
 void
 PSPBackend::observePfHit(Addr address)
 {
-    // FIXME, not addresss but use line address
+    numTotalMemoryAccesses++;
     numPrefetchHits++;
     DPRINTF(PSPBackend, "Observed prefetch hit for %#x\n", address);
-    StreamEntry * se = getEntry(address);
-    PrefetchEntry * pe = se.getEntry(address);
-
-    assert(se);
-    assert(pe);
 
     Addr line_addr = makeLineAddress(address);
 
-    Addr nextPrefetchAddr = pe->getNextAddr();
+    StreamEntry * se = getEntry(line_addr);
+    assert(se);
 
-    if (pe->isLastElement(nextPrefetchAddr)) {
-        pe = se->changeStream();
-        nextPrefetchAddr = pe->getNextAddr();
-    } else if (pe->isLastElement(address)) {
-        // POP from PAQ and set new stream
+    int iter = 1;
+    if (se->isBulk()) {
+        iter = prefetch_distance;
     }
 
-    if (nextPrefetchAddr - address <= prefetch_distance) {
-        numInPrefetchDistance++;
-        issueNextPrefetch(nextPrefetchAddr, pe->getMemRequestType());
-    } else {
-        numNotInPrefetchDistance++;
+    for (int i = 0; i < iter; i++) {
+        Addr prefetch_addr = se->getNextLineAddr(line_addr);
+        int delta = prefetch_addr - line_addr;
+        
+        if (delta <= prefetch_distance) {
+            numInPrefetchDistance++;
+            issuePrefetch(prefetch_addr);
+        } else {
+            numNotInPrefetchDistance++;
+        }
     }
+
+    if (se->isBulk()) {
+        se->turnOffBulk();
+    }   
 }
 
 void
-PSPBackend::issueNextPrefetch(Addr address, RubyRequestType type)
+PSPBackend::issuePrefetch(Addr address)
 {
-    m_controller->enqueuePrefetch(address, type);
+    m_controller->enqueuePrefetch(address, RubyRequestType_LD);
 }
-*/
