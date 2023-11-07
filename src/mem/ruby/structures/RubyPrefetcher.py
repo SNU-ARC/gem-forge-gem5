@@ -65,7 +65,6 @@ class Prefetcher(RubyPrefetcher):
     """DEPRECATED"""
     pass
 
-
 class RubyBingoPrefetcher(SimObject):
     type = 'RubyBingoPrefetcher'
     cxx_class = 'RubyBingoPrefetcher'

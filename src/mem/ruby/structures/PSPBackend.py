@@ -49,3 +49,4 @@ class PSPBackend(SimObject):
 
     num_streams = Param.Int(2, "Number of max streams")
     prefetch_distance = Param.Int(4, "Prefetch distance")
+    sys = Param.System(Parent.any, "System this prefetcher belongs to")
