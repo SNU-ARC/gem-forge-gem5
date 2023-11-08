@@ -5,6 +5,7 @@
 #ifndef __CPU_GEM_FORGE_ACCELERATOR_PSP_FRONTEND_HH__
 #define __CPU_GEM_FORGE_ACCELERATOR_PSP_FRONTEND_HH__
 
+#include <string.h>
 #include "cpu/gem_forge/llvm_insts.hh"
 #include "base/statistics.hh"
 
