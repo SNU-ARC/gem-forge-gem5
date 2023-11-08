@@ -113,8 +113,9 @@ def create_system(options, full_system, system, dma_ports, bootmem,
                 dataAccessLatency=options.l1d_lat)
 
             pspbackend = PSPBackend(
-                num_streams=4,
-                prefetch_distance=4
+                enabled=(options.gem_forge_psp_backend_enable),
+                num_streams=(options.gem_forge_psp_frontend_total_pattern_table_entries),
+                prefetch_distance=(options.gem_forge_psp_backend_prefetch_distance)
             )
 
             prefetcher = RubyPrefetcher(

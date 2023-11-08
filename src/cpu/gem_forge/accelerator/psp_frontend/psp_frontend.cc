@@ -123,6 +123,8 @@ void PSPFrontend::tick() {
           validPAQEntry.entryId, validPAQEntry.pAddr, validPAQEntry.size, this->paQueueArray->canRead(i));
       this->paQueueArray->pop(i);
     }
+//    if (this->paQueueArray->canRead(i)) 
+//      this->paQueueArray->pop(i);
   }
 }
 

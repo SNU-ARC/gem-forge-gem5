@@ -82,7 +82,7 @@ class PSPPrefetchEntry
         bool isValid() { return m_valid; }
         
         Addr getNextLineAddr() { return m_addr + m_index; }
-        Addr getLastLineAddr() { return m_addr + (m_size - 1) * RubySystem::getBlockSizeBytes(); }
+        Addr getLastLineAddr() { return m_addr + m_size - RubySystem::getBlockSizeBytes(); }
         void incrementLineAddr() {
             m_index = m_index + RubySystem::getBlockSizeBytes();  
         }
@@ -113,10 +113,16 @@ class StreamEntry
             PSPPrefetchEntry& p1 = PSPPrefetchEntryTable[0];
             PSPPrefetchEntry& p2 = PSPPrefetchEntryTable[1];
 
+            DPRINTF(PSPBackend, "## %luth table for address %#x, snoopAddr:%#x.\n",
+                0, p1.getLastLineAddr(), snoopAddr);
+            DPRINTF(PSPBackend, "## %luth table for address %#x, snoopAddr:%#x.\n",
+                1, p2.getLastLineAddr(), snoopAddr);
             if (p1.getLastLineAddr() == snoopAddr) {
+                DPRINTF(PSPBackend, "## Free %luth table for address %#x.\n", 0, snoopAddr);
                 p1.invalidate();
             }
             if (p2.getLastLineAddr() == snoopAddr) {
+                DPRINTF(PSPBackend, "## Free %luth table for address %#x.\n", 1, snoopAddr);
                 p2.invalidate();
             }
         }
@@ -201,6 +207,7 @@ class PSPBackend : public SimObject
 
         void issuePrefetch(std::vector<Addr> addressList, Addr address);
 
+        bool isEnabled() const { return this->enabled; }
         void observePfHit(Addr address);
         void observePfMiss(Addr address);
         void observeHit(Addr address);
@@ -225,6 +232,7 @@ class PSPBackend : public SimObject
         }
         
     private:
+        bool enabled;
         int num_streams;
         int prefetch_distance;
         PSPFrontend *pf;

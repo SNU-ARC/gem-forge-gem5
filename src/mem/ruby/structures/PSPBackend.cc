@@ -62,7 +62,7 @@ PSPBackendParams::create()
 }
 
 PSPBackend::PSPBackend(const Params *p)
-    : SimObject(p), num_streams(p->num_streams), prefetch_distance(p->prefetch_distance)
+    : SimObject(p), enabled(p->enabled), num_streams(p->num_streams), prefetch_distance(p->prefetch_distance)
 { 
     this->streamTable.resize(p->num_streams, StreamEntry(this));
     numPrefetchHits = 0;
@@ -141,13 +141,18 @@ PSPBackend::observePfMiss(Addr address)
 void
 PSPBackend::observePfHit(Addr address)
 {
-    numPrefetchHits++;
-    DPRINTF(PSPBackend, "** Observed prefetch hit for %#x\n", address);
-
     Addr line_addr = makeLineAddress(address);
 
     StreamEntry * se = getEntry(line_addr);
-    assert(se);
+    if (se == NULL) {
+      return; //assert(se);
+    }
+    else {
+      se->freeEntry(line_addr);
+    }
+
+    numPrefetchHits++;
+    DPRINTF(PSPBackend, "** Observed prefetch hit for %#x\n", address);
 
     std::vector<Addr> prefetch_addr = se->getPrefetchAddr(line_addr);
     issuePrefetch(prefetch_addr, address);

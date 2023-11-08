@@ -39,6 +39,10 @@ parser.add_option("--gem-forge-psp-frontend-index-queue-capacity", action="store
                   help="""Capacity per index queue for PSP Frontend.""")
 parser.add_option("--gem-forge-psp-frontend-pa-queue-capacity", action="store", type="int", default="4", 
                   help="""Capacity per PA Queue for PSP Frontend.""")
+parser.add_option("--gem-forge-psp-backend-enable", action="store_true", default=False,
+                  help="""Enable PSP Backend.""")
+parser.add_option("--gem-forge-psp-backend-prefetch-distance", action="store", type="int", default=4,
+                  help="""PSP Backend prefetch distance.""")
 
 parser.add_option("--gem-forge-work-mark-history", action="store", type="string",
                   help="""work mark history""")
