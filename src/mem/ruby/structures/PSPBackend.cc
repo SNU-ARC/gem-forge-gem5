@@ -52,10 +52,12 @@ PSPBackendParams::create()
 }
 
 PSPBackend::PSPBackend(const Params *p)
-    : SimObject(p)
+    : SimObject(p), num_streams(p->num_streams), prefetch_distance(p->prefetch_distance)
 { 
-    num_streams = p->num_streams;
-    prefetch_distance = p->prefetch_distance;
+  // TODO: Modify codes below
+  for (uint64_t i = 0; i < p->num_streams; p++) {
+    this->streamTable.emplace_back();
+  }
 }
 
 void
