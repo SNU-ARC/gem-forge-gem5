@@ -58,8 +58,14 @@ void PSPFrontend::takeOverBy(GemForgeCPUDelegator *newCpuDelegator,
       [this](PacketPtr pkt, ThreadContext* tc, void* indexPacketHandler) -> void {
       this->handleAddressTranslateResponse((IndexPacketHandler*)indexPacketHandler, pkt); },
       false /* AccessLastLevelTLBOnly */, true /* MustDoneInOrder */);
+
+  char pspbackend_name[100] = "system.ruby.l0_cntrl";
+  char cpuId = (this->cpuDelegator->cpuId() + '0');
+  strncat(pspbackend_name, &cpuId, 1);
+  strcat(pspbackend_name, ".pspbackend");
+  PSP_FE_DPRINTF("Matching %s...\n", pspbackend_name);
   for (auto so : SimObject::getSimObjectList()) {
-    if (so->name() == "system.ruby.l0_cntrl0.pspbackend") {
+    if (so->name() == pspbackend_name) {
       pspBackend = dynamic_cast<PSPBackend*>(so);
       PSP_FE_DPRINTF("MATCH!\n");
     }
