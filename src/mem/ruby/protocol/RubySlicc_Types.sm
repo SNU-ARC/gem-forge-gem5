@@ -278,8 +278,8 @@ structure (RubyPrefetcher, external = "yes") {
 }
 
 structure (PSPBackend, external = "yes") {
-    void observeMiss(Addr);
-    void observeHit(Addr);
+    void observeMiss(Addr, RubyRequestType);
+    void observeHit(Addr, RubyRequestType);
     void observePfHit(Addr);
     void observePfMiss(Addr);
 }
