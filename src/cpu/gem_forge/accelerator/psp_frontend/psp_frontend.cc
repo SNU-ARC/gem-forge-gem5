@@ -114,6 +114,7 @@ void PSPFrontend::tick() {
   // Temporal code to prevent deadlock
   // TODO: Replace with implement for offloading packets to backend
   for (uint32_t i = 0; i < this->totalPatternTableEntries; i++) {
+    //PSP_FE_DPRINTF("PSPBackend_canInsert: %d / %d\n", this->pspBackend->canInsertEntry(i), this->totalPatternTableEntries);
     if (this->paQueueArray->canRead(i) && this->pspBackend->canInsertEntry(i)) {
       PhysicalAddressQueue::PhysicalAddressArgs validPAQEntry;
       this->paQueueArray->read(i, &validPAQEntry);
