@@ -16,6 +16,7 @@
 //#include "index_loader.hh"
 #include "translation_buffer.hh"
 #include "pa_queue.hh"
+#include "mem/ruby/structures/PSPBackend.hh"
 
 #include "params/PSPFrontend.hh"
 
@@ -148,5 +149,6 @@ private:
   PSPTranslationBuffer<void*>* translationBuffer;
   IndexQueueArrayRRArbiter* indexQueueArrayArbiter;
   PAQueueArray* paQueueArray;
+  PSPBackend* pspBackend;
 };
 #endif

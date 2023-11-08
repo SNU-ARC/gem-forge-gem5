@@ -99,6 +99,11 @@ class StreamEntry
         StreamEntry() {
             activeEntryIdx = -1;
             bulkPrefetch = false;
+            // TODO: Modify codes below
+            this->PSPPrefetchEntryTable.emplace_back(); 
+            this->PSPPrefetchEntryTable.emplace_back(), 
+            this->PSPPrefetchEntryTable.at(0).invalidate(); 
+            this->PSPPrefetchEntryTable.at(1).invalidate(); 
         }
 
         Addr getNextLineAddr(Addr snoopAddr) {            
@@ -202,12 +207,8 @@ class PSPBackend : public SimObject
         void insertEntry(uint64_t entryId, uint64_t pAddr, uint64_t size) {
             streamTable[entryId].insertEntry(pAddr, size); 
         }
-        std::vector<bool>& canInsertEntry() {
-            std::vector<bool> canInsert(num_streams);
-            for (int i = 0; i < num_streams; i++) {
-                canInsert[i] = streamTable[i].hasInvalidEntry();
-            }
-            return canInsert;
+        bool canInsertEntry(uint64_t entryId) {
+          return streamTable[entryId].hasInvalidEntry();
         }
         
     private:

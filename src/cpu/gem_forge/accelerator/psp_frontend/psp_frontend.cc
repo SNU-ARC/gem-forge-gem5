@@ -58,6 +58,12 @@ void PSPFrontend::takeOverBy(GemForgeCPUDelegator *newCpuDelegator,
       [this](PacketPtr pkt, ThreadContext* tc, void* indexPacketHandler) -> void {
       this->handleAddressTranslateResponse((IndexPacketHandler*)indexPacketHandler, pkt); },
       false /* AccessLastLevelTLBOnly */, true /* MustDoneInOrder */);
+  for (auto so : SimObject::getSimObjectList()) {
+    if (so->name() == "system.ruby.l0_cntrl0.pspbackend") {
+      pspBackend = dynamic_cast<PSPBackend*>(so);
+      PSP_FE_DPRINTF("MATCH!\n");
+    }
+  }
  }
 
 void PSPFrontend::dump() {
@@ -99,13 +105,17 @@ void PSPFrontend::tick() {
   }
 
   /* Issue PA packets to PSP Backend*/
-  uint32_t validPAQEntryId;
-
   // Temporal code to prevent deadlock
   // TODO: Replace with implement for offloading packets to backend
   for (uint32_t i = 0; i < this->totalPatternTableEntries; i++) {
-    if (this->paQueueArray->canRead(i))
+    if (this->paQueueArray->canRead(i) && this->pspBackend->canInsertEntry(i)) {
+      PhysicalAddressQueue::PhysicalAddressArgs validPAQEntry;
+      this->paQueueArray->read(i, &validPAQEntry);
+      this->pspBackend->insertEntry(validPAQEntry.entryId, validPAQEntry.pAddr, validPAQEntry.size);
+      PSP_FE_DPRINTF("paQueueEntryId: %lu, pAddr: %x, size: %lu, PSPBackend_canRead: %d\n",
+          validPAQEntry.entryId, validPAQEntry.pAddr, validPAQEntry.size, this->paQueueArray->canRead(i));
       this->paQueueArray->pop(i);
+    }
   }
 }
 
