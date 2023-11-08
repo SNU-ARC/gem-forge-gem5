@@ -63,7 +63,6 @@ python_class_map = {
                     "DMASequencer": "DMASequencer",
                     "RubyPrefetcher":"RubyPrefetcher",
                     "RubyBingoPrefetcher": "RubyBingoPrefetcher",
-                    "PSPBackend":"PSPBackend",
                     "Cycles":"Cycles",
                    }
 
@@ -100,7 +99,7 @@ class StateMachine(Symbol):
             self.symtab.registerSym(param.ident, var)
 
             typeStr = str(param.type_ast.type)
-            if typeStr == "RubyPrefetcher" or typeStr == 'RubyBingoPrefetcher' or typeStr == 'PSPBackend' :
+            if typeStr == "RubyPrefetcher" or typeStr == 'RubyBingoPrefetcher':
                 self.prefetchers.append(var)
 
         self.states = OrderedDict()

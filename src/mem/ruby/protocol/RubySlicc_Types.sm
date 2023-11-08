@@ -277,13 +277,6 @@ structure (RubyPrefetcher, external = "yes") {
     void observePfMiss(Addr);
 }
 
-structure (PSPBackend, external = "yes") {
-    void observeMiss(Addr, RubyRequestType);
-    void observeHit(Addr, RubyRequestType);
-    void observePfHit(Addr);
-    void observePfMiss(Addr);
-}
-
 structure (RubyBingoPrefetcher, external = "yes") {
   bool isEnabled();
   void observeReq(Addr, Addr, bool, RubyRequestType);

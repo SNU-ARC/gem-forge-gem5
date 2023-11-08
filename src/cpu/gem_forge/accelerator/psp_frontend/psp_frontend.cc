@@ -111,6 +111,8 @@ void PSPFrontend::tick() {
   }
 
   /* Issue PA packets to PSP Backend*/
+  uint32_t validPAQEntryId;
+
   // Temporal code to prevent deadlock
   // TODO: Replace with implement for offloading packets to backend
   for (uint32_t i = 0; i < this->totalPatternTableEntries; i++) {
@@ -122,7 +124,6 @@ void PSPFrontend::tick() {
       PSP_FE_DPRINTF("paQueueEntryId: %lu, pAddr: %x, size: %lu, PSPBackend_canRead: %d\n",
           validPAQEntry.entryId, validPAQEntry.pAddr, validPAQEntry.size, this->paQueueArray->canRead(i));
       this->paQueueArray->pop(i);
-    }
   }
 }
 

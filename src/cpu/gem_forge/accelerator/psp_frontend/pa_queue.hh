@@ -21,7 +21,7 @@ class PhysicalAddressQueue {
       uint64_t pAddr;
       uint64_t size;
 
-      PhysicalAddressArgs(uint64_t _entryId = 0, uint64_t _pAddr = 0, uint64_t _size = 0)
+      PhysicalAddressArgs(uint64_t _entryId, uint64_t _pAddr, uint64_t _size)
         : entryId(_entryId), pAddr(_pAddr), size(_size) {}
     };
 
