@@ -113,7 +113,7 @@ def create_system(options, full_system, system, dma_ports, bootmem,
                 dataAccessLatency=options.l1d_lat)
 
             pspbackend = PSPBackend(
-                num_streams=2,
+                num_streams=4,
                 prefetch_distance=4
             )
 

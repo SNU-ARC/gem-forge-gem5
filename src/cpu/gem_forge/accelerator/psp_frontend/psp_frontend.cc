@@ -58,6 +58,18 @@ void PSPFrontend::takeOverBy(GemForgeCPUDelegator *newCpuDelegator,
       [this](PacketPtr pkt, ThreadContext* tc, void* indexPacketHandler) -> void {
       this->handleAddressTranslateResponse((IndexPacketHandler*)indexPacketHandler, pkt); },
       false /* AccessLastLevelTLBOnly */, true /* MustDoneInOrder */);
+
+  char pspbackend_name[100] = "system.ruby.l0_cntrl";
+  char cpuId = (this->cpuDelegator->cpuId() + '0');
+  strncat(pspbackend_name, &cpuId, 1);
+  strcat(pspbackend_name, ".pspbackend");
+  PSP_FE_DPRINTF("Matching %s...\n", pspbackend_name);
+  for (auto so : SimObject::getSimObjectList()) {
+    if (so->name() == pspbackend_name) {
+      pspBackend = dynamic_cast<PSPBackend*>(so);
+      PSP_FE_DPRINTF("MATCH!\n");
+    }
+  }
  }
 
 void PSPFrontend::dump() {
@@ -104,7 +116,13 @@ void PSPFrontend::tick() {
   // Temporal code to prevent deadlock
   // TODO: Replace with implement for offloading packets to backend
   for (uint32_t i = 0; i < this->totalPatternTableEntries; i++) {
-    if (this->paQueueArray->canRead(i))
+    //PSP_FE_DPRINTF("PSPBackend_canInsert: %d / %d\n", this->pspBackend->canInsertEntry(i), this->totalPatternTableEntries);
+    if (this->paQueueArray->canRead(i) && this->pspBackend->canInsertEntry(i)) {
+      PhysicalAddressQueue::PhysicalAddressArgs validPAQEntry;
+      this->paQueueArray->read(i, &validPAQEntry);
+      this->pspBackend->insertEntry(validPAQEntry.entryId, validPAQEntry.pAddr, validPAQEntry.size);
+      PSP_FE_DPRINTF("paQueueEntryId: %lu, pAddr: %x, size: %lu, PSPBackend_canRead: %d\n",
+          validPAQEntry.entryId, validPAQEntry.pAddr, validPAQEntry.size, this->paQueueArray->canRead(i));
       this->paQueueArray->pop(i);
   }
 }
@@ -227,8 +245,8 @@ void PSPFrontend::issueTranslateValueAddress(uint64_t _validEntryId) {
       cacheBlockPAddr, currentSize, indexPacketHandler, nullptr /* Data */,
       cpuDelegator->dataMasterId(), 0 /* ContextId */, 0 /* PC */, flags);
   pkt->req->setVirt(cacheBlockVAddr);
-  PSP_FE_DPRINTF("Address translation for %luth entryId. VA: %x PA: %x Size: %d.\n", _validEntryId,
-      cacheBlockVAddr, pkt->getAddr(), pkt->getSize());
+  PSP_FE_DPRINTF("Address translation for %luth entryId. VA: %x, BlockVA: %x PA: %x Size: %d.\n", _validEntryId,
+      currentVAddr, cacheBlockVAddr, pkt->getAddr(), pkt->getSize());
  
   if (cpuDelegator->cpuType == GemForgeCPUDelegator::ATOMIC_SIMPLE) {
     // No requests sent to memory for atomic cpu.

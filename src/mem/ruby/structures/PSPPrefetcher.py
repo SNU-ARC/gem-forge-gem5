@@ -46,3 +46,7 @@ class PSPBackend(SimObject):
     type = 'PSPBackend'
     cxx_class = 'PSPBackend'
     cxx_header = "mem/ruby/structures/PSPBackend.hh"
+
+    num_streams = Param.Int(4, "Number of max streams")
+    prefetch_distance = Param.Int(4, "Prefetch distance")
+    sys = Param.System(Parent.any, "System this prefetcher belongs to")

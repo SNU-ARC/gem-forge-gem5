@@ -27,7 +27,7 @@ PatternTableRRArbiter::~PatternTableRRArbiter() {
 }
 
 bool PatternTableRRArbiter::getValidEntryId(uint32_t* _entryId, const uint64_t _cacheLineSize) {
-  for (uint32_t i = 0; i < this->getTotalPatternTableEntries(); i++) {
+  for (uint32_t i = 1; i < this->getTotalPatternTableEntries() + 1; i++) {
     uint32_t entryId = (this->getLastChosenEntryId() + i) % this->getTotalPatternTableEntries();
     if (this->patternTable->isConfigInfoValid(entryId) &&
         this->patternTable->isInputInfoValid(entryId) &&
@@ -49,7 +49,7 @@ IndexQueueArrayRRArbiter::~IndexQueueArrayRRArbiter() {
 }
 
 bool IndexQueueArrayRRArbiter::getValidEntryId(uint32_t* _entryId) {
-  for (uint32_t i = 0; i < this->getTotalPatternTableEntries(); i++) {
+  for (uint32_t i = 1; i < this->getTotalPatternTableEntries() + 1; i++) {
     uint32_t entryId = (this->getLastChosenEntryId() + i) % this->getTotalPatternTableEntries();
     if (this->indexQueueArray->getConfigured(entryId) &&
         this->indexQueueArray->canRead(entryId) &&

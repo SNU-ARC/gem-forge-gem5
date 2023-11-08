@@ -51,114 +51,141 @@
 #include "sim/sim_object.hh"
 #include "sim/system.hh"
 #include "cpu/gem_forge/accelerator/psp_frontend/psp_frontend.hh"
+#include "mem/ruby/protocol/RubyRequestType.hh"
+#include "mem/ruby/structures/RubyPrefetcher.hh"
+#include "debug/PSPBackend.hh"
 
 #include <math.h>
 
-/*
-class PrefetchEntry
+class PSPPrefetchEntry
 {
     private:
-        // Base physical address from stream prefetching
-        Addr m_addr;
-
-        // Line index to be prefetched
+        Addr m_addr; // Line address
         int m_index;
-
-        // Size of stream prefetching
         int m_size;
-
-        // Valid bit for each stream
         bool m_valid;
-
-        // Execute bit for each stream
-        bool m_execute;
-
-        RubyRequestType m_type;
+        bool m_use;
 
     public:
-        void setPrefetchEntry(Addr addr, int index, int size, RubyRequestType type) {
+        void setEntry(Addr addr, int size) {
             m_addr = makeLineAddress(addr);
-            m_index = index;
-            m_size = ceil((double)size / RubySystem::getBlockSizeBytes());
-            m_type = type;
-            m_is_valid = false;
-            m_is_execute = false;
+            m_index = 0;
+            m_size = ceil(size / RubySystem::getBlockSizeBytes()) * RubySystem::getBlockSizeBytes();
+            m_valid = true;
+            m_use = false;
         }
 
-        bool isLastElement(Addr addr) {
-            return addr == m_addr + m_size - 1;
+        void activate() { m_use = true; }
+        void deactivate() { m_use = false; }
+        bool isActive() { return m_use; }
+        void invalidate() { m_valid = false; }
+        bool isValid() { return m_valid; }
+        
+        Addr getNextLineAddr() { return m_addr + m_index; }
+        Addr getLastLineAddr() { return m_addr + (m_size - 1) * RubySystem::getBlockSizeBytes(); }
+        void incrementLineAddr() {
+            m_index = m_index + RubySystem::getBlockSizeBytes();  
         }
 
-        bool inRange(Addr addr) {
-            return addr >= m_addr && addr < m_addr + m_size;
-        }
-
-        void invalidate() {
-            m_valid = false;
-        }
-
-        void reverseExecute() {
-            m_execute = !m_execute;
-        }
-
-        void setExecute() {
-            m_execute = true;
-        }
-
-        bool isExecute() {
-            return m_execute;
-        }
-
-        Addr getNextAddr() {
-            return m_addr + m_index;
-        }
-
-        RubyRequestType getMemRequestType() {
-            return m_type;
-        }
+        bool isDone() { return m_index == m_size; }
+        bool isEntry(Addr addr) { return addr >= m_addr && addr < m_addr + m_size; } // m_size ?
 };
 
 class StreamEntry
 {
     private : 
-        std::vector<PrefetchEntry>* prefetchEntryTable;
-
+        std::vector<PSPPrefetchEntry> PSPPrefetchEntryTable;
+        int activeEntryIdx;
+        PSPBackend *pb;
+    
     public : 
-        StreamEntry() {
-            prefetchEntryTable = new std::vector<PrefetchEntry>(2);
+        void activate(PSPPrefetchEntry* pe);
+
+        StreamEntry(PSPBackend *pb) {
+            activeEntryIdx = -1;
+            this->PSPPrefetchEntryTable.resize(2);
+            this->PSPPrefetchEntryTable[0].invalidate(); 
+            this->PSPPrefetchEntryTable[1].invalidate();
+            this->pb = pb;
         }
 
-        ~StreamEntry() {
-            delete prefetchEntryTable;
+        void freeEntry(Addr snoopAddr) {
+            PSPPrefetchEntry& p1 = PSPPrefetchEntryTable[0];
+            PSPPrefetchEntry& p2 = PSPPrefetchEntryTable[1];
+
+            if (p1.getLastLineAddr() == snoopAddr) {
+                p1.invalidate();
+            }
+            if (p2.getLastLineAddr() == snoopAddr) {
+                p2.invalidate();
+            }
         }
 
-        PrefetchEntry* changeStream() {
-            PrefetchEntry& p1 = prefetchEntryTable[0];
-            PrefetchEntry& p2 = prefetchEntryTable[1];
+        std::vector<Addr> getPrefetchAddr(Addr snoopAddr) {            
+            assert(activeEntryIdx != -1);
 
-            assert(p1.isExecute() || p2.isExecute());
-
-            p1.reverseExecute();
-            p2.reverseExecute();
-
-            if (p1.isExecute()) {
-                return &p1;
+            PSPPrefetchEntry *pe = &PSPPrefetchEntryTable[activeEntryIdx];
+            if (pe->isDone()) {
+                pe->deactivate();
+                activeEntryIdx = 1 - activeEntryIdx;
+                pe = &PSPPrefetchEntryTable[activeEntryIdx];
+                this->activate(pe);
+                return std::vector<Addr>();
             } else {
-                return &p2;
+                Addr addr = pe->getNextLineAddr();
+                pe->incrementLineAddr();
+                return std::vector<Addr>(1, addr);
+            }
+        }
+
+        bool hasInvalidEntry() {
+            PSPPrefetchEntry& p1 = PSPPrefetchEntryTable[0];
+            PSPPrefetchEntry& p2 = PSPPrefetchEntryTable[1];
+
+            return !p1.isValid() || !p2.isValid();
+        }
+
+        void insertEntry(Addr addr, int size) {
+            DPRINTF(PSPBackend, "## Write prefetch request from PAQ to table for address %#x.\n", addr);
+
+            PSPPrefetchEntry& p1 = PSPPrefetchEntryTable[0];
+            PSPPrefetchEntry& p2 = PSPPrefetchEntryTable[1];
+
+            bool p1_valid = p1.isValid();
+            bool p2_valid = p2.isValid();
+
+            assert(!p1_valid || !p2_valid);
+
+            DPRINTF(PSPBackend, "## Entry 1 valid : %d, Entry 2 valid : %d.\n", p1_valid, p2_valid);
+
+            if (p1_valid) {
+                p2.setEntry(addr, size);
+                if (activeEntryIdx == -1) { // When this is first entry inserting
+                    this->activate(&p2);
+                    activeEntryIdx = 1;
+                }
+                DPRINTF(PSPBackend, "## Entry 2 set.\n");
+            } else {
+                p1.setEntry(addr, size);
+                if (activeEntryIdx == -1) {
+                    this->activate(&p1);
+                    activeEntryIdx = 0;
+                }
+                DPRINTF(PSPBackend, "## Entry 1 set.\n");
             }
         }
 
         bool hasEntry(Addr addr) {
-            for (auto& pe : prefetchEntryTable) {
-                if (pe.inRange(addr))
+            for (auto& pe : PSPPrefetchEntryTable) {
+                if (pe.isEntry(addr))
                     return true;
             }
             return false;
         }
 
-        PrefetchEntry* getEntry(Addr addr) {
-            for (auto& pe : prefetchEntryTable) {
-                if (pe.inRange(addr)) {
+        PSPPrefetchEntry* getEntry(Addr addr) {
+            for (auto& pe : PSPPrefetchEntryTable) {
+                if (pe.isEntry(addr)) {
                     return &pe;
                 }
             }
@@ -171,44 +198,45 @@ class PSPBackend : public SimObject
     public:
         typedef PSPBackendParams Params;
         PSPBackend(const Params *p);
-        ~PSPBackend();
 
-        void issueNextPrefetch(Addr address, PrefetchEntry *stream);
+        void issuePrefetch(std::vector<Addr> addressList, Addr address);
 
         void observePfHit(Addr address);
         void observePfMiss(Addr address);
-        void observeHit(Addr address, const RubyRequestType& type);
-        void observeMiss(Addr address, const RubyRequestType& type);
+        void observeHit(Addr address);
+        void observeMiss(Addr address);
 
-        void print(std::ostream& out) const;
+        StreamEntry* getEntry(Addr addr);
+
+        void regStats();
         void setController(AbstractController *_ctrl)
         { m_controller = _ctrl; }
-        void regStats();
-
+        void setPSPFrontend(PSPFrontend *pf)
+        { this->pf = pf; }
+        void insertEntry(uint64_t entryId, uint64_t pAddr, uint64_t size) {
+            streamTable[entryId].insertEntry(pAddr, size); 
+        }
+        bool canInsertEntry(uint64_t entryId) {
+          assert(entryId < streamTable.size());
+          return streamTable[entryId].hasInvalidEntry();
+        }
+        int getPrefetchDistance() {
+            return prefetch_distance;
+        }
+        
     private:
-        std::vector<StreamEntry>* streamTable;
         int num_streams;
         int prefetch_distance;
-        AbstractController *m_controller;
         PSPFrontend *pf;
-
-        PrefetchEntry* getStream(Addr addr);
+        AbstractController *m_controller;
+        std::vector<StreamEntry> streamTable;
 
         Stats::Scalar numPrefetchHits;
         Stats::Scalar numPrefetchMisses;
-        Stats::Scalar numTotalMemoryAccesses;
-        Stats::Scalar numAllocatedStreams;
+        Stats::Scalar numHits;
+        Stats::Scalar numMisses;
         Stats::Scalar numInPrefetchDistance;
         Stats::Scalar numNotInPrefetchDistance;
-};
-*/
-
-class PSPBackend : public SimObject
-{
-    public:
-        PSPBackend(const Params *p);
-    private:
-        PSPFrontend *pf;
 };
 
 #endif // __MEM_RUBY_STRUCTURES_PSPBackend_HH__
