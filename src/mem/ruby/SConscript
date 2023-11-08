@@ -60,6 +60,7 @@ DebugFlag('RubyStats')
 DebugFlag('RubyResourceStalls')
 # ! Sean: StreamAwareCache
 DebugFlag('RubyStream')
+DebugFlag('PSPBackend')
 
 CompoundFlag('Ruby', [ 'RubyQueue', 'RubyNetwork', 'RubyTester',
     'RubyGenerated', 'RubySlicc', 'RubyMulticast', 'RubySystem',
@@ -67,6 +68,7 @@ CompoundFlag('Ruby', [ 'RubyQueue', 'RubyNetwork', 'RubyTester',
     'RubyPrefetcher',
     # ! Sean: StreamAwareCache
     'RubyStream',
+    'PSPBackend',
     ])
 
 def do_embed_text(target, source, env):
@@ -165,3 +167,6 @@ MakeInclude('../../cpu/gem_forge/accelerator/stream/cache/MLCStreamEngine.hh')
 # generated_dir = Dir('../protocol')
 MakeInclude('system/GPUCoalescer.hh')
 MakeInclude('system/VIPERCoalescer.hh')
+
+# Sungjun Jung: PSPBackend
+MakeInclude('structures/PSPBackend.hh')

@@ -290,3 +290,13 @@ structure (RubyBingoPrefetcher, external = "yes") {
 
 structure (RequestStatisticPtr, external="yes") {
 }
+
+/**
+ * Sungjun Jung: PSPBackend
+ */
+structure(PSPBackend, desc="Backend of PSP module", external="yes") {
+  bool isEnabled();
+  void observeMiss(Addr);
+  void observePfHit(Addr);
+  void observePfMiss(Addr);
+}

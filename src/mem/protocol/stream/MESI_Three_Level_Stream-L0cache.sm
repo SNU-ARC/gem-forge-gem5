@@ -34,6 +34,7 @@ machine(MachineType:L0Cache, "MESI Directory L0 Cache", interface="AbstractStrea
    Cycles response_latency := 2;
    bool send_evictions;
    
+   PSPBackend* pspbackend;
    RubyPrefetcher * prefetcher;
    RubyBingoPrefetcher * bingoPrefetcher;
    bool enable_prefetch := "False";
@@ -979,7 +980,12 @@ machine(MachineType:L0Cache, "MESI Directory L0 Cache", interface="AbstractStrea
       Addr req_address := in_msg.LineAddress;
       RubyRequestType type := in_msg.Type;
       if (cache_entry.isPrefetch) {
-        prefetcher.observePfHit(req_address);
+        if (pspbackend.isEnabled()) {
+          pspbackend.observePfHit(req_address);
+        }
+        else {
+          prefetcher.observePfHit(req_address);
+        }
         cache_entry.isPrefetch := false;
         if (bingoPrefetcher.isEnabled()) {
           bingoPrefetcher.observePfHit(req_address);
@@ -997,7 +1003,12 @@ machine(MachineType:L0Cache, "MESI Directory L0 Cache", interface="AbstractStrea
       Addr req_address := in_msg.LineAddress;
       RubyRequestType type := in_msg.Type;
       if (enable_prefetch) {
-        prefetcher.observeMiss(req_address, in_msg.Type);
+        if (pspbackend.isEnabled()) {
+          pspbackend.observeMiss(req_address);
+        }
+        else {
+          prefetcher.observeMiss(req_address, in_msg.Type);
+        }
       }
       if (bingoPrefetcher.isEnabled() && hasPC(in_msg.pkt)) {
         Addr pc := getPC(in_msg.pkt);
@@ -1008,7 +1019,12 @@ machine(MachineType:L0Cache, "MESI Directory L0 Cache", interface="AbstractStrea
   
   action(ppm_observePfMiss, "\ppm", desc="Inform the prefetcher about the partial miss") {
     peek(mandatoryQueue_in, RubyRequest) {
-      prefetcher.observePfMiss(in_msg.LineAddress);
+      if (pspbackend.isEnabled()) {
+        pspbackend.observePfMiss(in_msg.LineAddress);
+      }
+      else {
+        prefetcher.observePfMiss(in_msg.LineAddress);
+      }
       if (bingoPrefetcher.isEnabled()) {
         bingoPrefetcher.observePfMiss(in_msg.LineAddress);
       }
