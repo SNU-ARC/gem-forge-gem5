@@ -47,7 +47,7 @@ void
 StreamEntry::activate(PSPPrefetchEntry* pe) {
     std::vector<Addr> prefetchList;
     Addr first_line_addr = pe->getNextLineAddr();
-    for (int i = 0; i < this->pb->getPrefetchDistance() && pe->getNextLineAddr() < pe->getLastLineAddr(); i++) {
+    for (int i = 0; i < this->pb->getPrefetchDistance() && pe->getNextLineAddr() <= pe->getLastLineAddr(); i++) {
         Addr line_addr = pe->getNextLineAddr();
         prefetchList.push_back(line_addr);
         pe->incrementLineAddr();
@@ -64,7 +64,7 @@ PSPBackendParams::create()
 PSPBackend::PSPBackend(const Params *p)
     : SimObject(p), enabled(p->enabled), num_streams(p->num_streams), prefetch_distance(p->prefetch_distance)
 { 
-    this->streamTable.resize(p->num_streams, StreamEntry(this));
+    this->streamTable.resize(p->num_streams, StreamEntry(this, p->num_stream_entry));
     numPrefetchHits = 0;
     numPrefetchMisses = 0;
     numHits = 0;
@@ -110,52 +110,57 @@ PSPBackend::getEntry(Addr addr) {
 void
 PSPBackend::observeHit(Addr address)
 {
+    DPRINTF(PSPBackend, "** Observed hit for %#x\n", address);
+    numHits++;
+
     StreamEntry * se = getEntry(address);
     if (se != NULL) {
         se->freeEntry(address);
     }
-
-    numHits++;
-    DPRINTF(PSPBackend, "** Observed hit for %#x\n", address);
 }
 
 void
 PSPBackend::observeMiss(Addr address)
 {
+    DPRINTF(PSPBackend, "** Observed miss for %#x\n", address);
+    numMisses++;
+
     StreamEntry * se = getEntry(address);
     if (se != NULL) {
         se->freeEntry(address);
     }
-
-    numMisses++;
-    DPRINTF(PSPBackend, "** Observed miss for %#x\n", address);
-}
-
-void
-PSPBackend::observePfMiss(Addr address)
-{
-    numPrefetchMisses++;
-    DPRINTF(PSPBackend, "** Observed prefetch miss for %#x\n", address);
 }
 
 void
 PSPBackend::observePfHit(Addr address)
 {
-    Addr line_addr = makeLineAddress(address);
+    StreamEntry * se = getEntry(address);
 
-    StreamEntry * se = getEntry(line_addr);
-    if (se == NULL) {
-      return; //assert(se);
+    if (se == NULL) { // Not PF hit of PSPBackend
+        DPRINTF(PSPBackend, "** Observed OTHER prefetcher hit for %#x\n", address);
+        return;
+    } else {
+        DPRINTF(PSPBackend, "** Observed PSP prefetcher hit for %#x\n", address);
+        se->freeEntry(address); // Delete already used entry if possible
+        numPrefetchHits++;
+        std::vector<Addr> prefetch_addr = se->getPrefetchAddr(address);
+        issuePrefetch(prefetch_addr, address);
     }
-    else {
-      se->freeEntry(line_addr);
+}
+
+void
+PSPBackend::observePfMiss(Addr address)
+{
+    StreamEntry * se = getEntry(address);
+    
+    if (se == NULL) { // Not PF miss of PSPBackend
+        DPRINTF(PSPBackend, "** Observed OTHER prefetcher miss for %#x\n", address);
+        return;
+    } else {
+        DPRINTF(PSPBackend, "** Observed PSP prefetcher miss for %#x\n", address);
+        se->freeEntry(address); // Delete already used entry if possible
+        numPrefetchMisses++;
     }
-
-    numPrefetchHits++;
-    DPRINTF(PSPBackend, "** Observed prefetch hit for %#x\n", address);
-
-    std::vector<Addr> prefetch_addr = se->getPrefetchAddr(line_addr);
-    issuePrefetch(prefetch_addr, address);
 }
 
 void
