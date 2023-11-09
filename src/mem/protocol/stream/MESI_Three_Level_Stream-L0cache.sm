@@ -945,6 +945,9 @@ machine(MachineType:L0Cache, "MESI Directory L0 Cache", interface="AbstractStrea
   }
 
   action(kd_wakeUpDependents, "kd", desc="wake-up dependents") {
+    if (cache_entry.isPrefetch) {
+      DPRINTF(PSPBackend, "## Prefetched, addr %#x\n", address);
+    }
     wakeUpAllBuffers(address);
   }
 
@@ -983,12 +986,16 @@ machine(MachineType:L0Cache, "MESI Directory L0 Cache", interface="AbstractStrea
         if (pspbackend.isEnabled()) {
           pspbackend.observePfHit(req_address);
         }
-        else {
+        if (enable_prefetch) {
           prefetcher.observePfHit(req_address);
         }
-        cache_entry.isPrefetch := false;
         if (bingoPrefetcher.isEnabled()) {
           bingoPrefetcher.observePfHit(req_address);
+        }
+        cache_entry.isPrefetch := false;
+      } else {
+        if (pspbackend.isEnabled()) {
+          pspbackend.observeHit(req_address);
         }
       }
       if (bingoPrefetcher.isEnabled() && hasPC(in_msg.pkt)) {
@@ -1002,13 +1009,11 @@ machine(MachineType:L0Cache, "MESI Directory L0 Cache", interface="AbstractStrea
     peek(mandatoryQueue_in, RubyRequest) {
       Addr req_address := in_msg.LineAddress;
       RubyRequestType type := in_msg.Type;
+      if (pspbackend.isEnabled()) {
+        pspbackend.observeMiss(req_address);
+      }
       if (enable_prefetch) {
-        if (pspbackend.isEnabled()) {
-          pspbackend.observeMiss(req_address);
-        }
-        else {
-          prefetcher.observeMiss(req_address, in_msg.Type);
-        }
+        prefetcher.observeMiss(req_address, in_msg.Type);
       }
       if (bingoPrefetcher.isEnabled() && hasPC(in_msg.pkt)) {
         Addr pc := getPC(in_msg.pkt);
@@ -1022,7 +1027,7 @@ machine(MachineType:L0Cache, "MESI Directory L0 Cache", interface="AbstractStrea
       if (pspbackend.isEnabled()) {
         pspbackend.observePfMiss(in_msg.LineAddress);
       }
-      else {
+      if (enable_prefetch) {
         prefetcher.observePfMiss(in_msg.LineAddress);
       }
       if (bingoPrefetcher.isEnabled()) {

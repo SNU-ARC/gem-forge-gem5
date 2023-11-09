@@ -70,7 +70,7 @@ class PSPPrefetchEntry
         void setEntry(Addr addr, int size) {
             m_addr = makeLineAddress(addr);
             m_index = 0;
-            m_size = ceil(size / RubySystem::getBlockSizeBytes()) * RubySystem::getBlockSizeBytes();
+            m_size = ceil((double)size / RubySystem::getBlockSizeBytes()) * RubySystem::getBlockSizeBytes();
             m_valid = true;
             m_use = false;
         }
@@ -80,7 +80,8 @@ class PSPPrefetchEntry
         bool isActive() { return m_use; }
         void invalidate() { m_valid = false; }
         bool isValid() { return m_valid; }
-        
+
+        Addr getFirstLineAddr() { return m_addr; }
         Addr getNextLineAddr() { return m_addr + m_index; }
         Addr getLastLineAddr() { return m_addr + m_size - RubySystem::getBlockSizeBytes(); }
         void incrementLineAddr() {
@@ -88,7 +89,7 @@ class PSPPrefetchEntry
         }
 
         bool isDone() { return m_index == m_size; }
-        bool isEntry(Addr addr) { return addr >= m_addr && addr < m_addr + m_size; } // m_size ?
+        bool isEntry(Addr addr) { return addr >= m_addr && addr < m_addr + m_size; }
 };
 
 class StreamEntry
@@ -97,45 +98,67 @@ class StreamEntry
         std::vector<PSPPrefetchEntry> PSPPrefetchEntryTable;
         int activeEntryIdx;
         PSPBackend *pb;
+        int num_stream_entry;
     
     public : 
         void activate(PSPPrefetchEntry* pe);
 
-        StreamEntry(PSPBackend *pb) {
+        StreamEntry(PSPBackend *pb, int num_stream_entry) {
             activeEntryIdx = -1;
-            this->PSPPrefetchEntryTable.resize(2);
-            this->PSPPrefetchEntryTable[0].invalidate(); 
-            this->PSPPrefetchEntryTable[1].invalidate();
+            this->PSPPrefetchEntryTable.resize(num_stream_entry);
+            for (int i = 0; i < this->num_stream_entry; i++) {
+                this->PSPPrefetchEntryTable[i].invalidate(); 
+                this->PSPPrefetchEntryTable[i].deactivate(); // Just in case
+            }
             this->pb = pb;
+            this->num_stream_entry = num_stream_entry;
         }
 
         void freeEntry(Addr snoopAddr) {
-            PSPPrefetchEntry& p1 = PSPPrefetchEntryTable[0];
-            PSPPrefetchEntry& p2 = PSPPrefetchEntryTable[1];
-
-            DPRINTF(PSPBackend, "## %luth table for address %#x, snoopAddr:%#x.\n",
-                0, p1.getLastLineAddr(), snoopAddr);
-            DPRINTF(PSPBackend, "## %luth table for address %#x, snoopAddr:%#x.\n",
-                1, p2.getLastLineAddr(), snoopAddr);
-            if (p1.getLastLineAddr() == snoopAddr) {
-                DPRINTF(PSPBackend, "## Free %luth table for address %#x.\n", 0, snoopAddr);
-                p1.invalidate();
-            }
-            if (p2.getLastLineAddr() == snoopAddr) {
-                DPRINTF(PSPBackend, "## Free %luth table for address %#x.\n", 1, snoopAddr);
-                p2.invalidate();
+            for (int i = 0; i < this->num_stream_entry; i++) {
+                PSPPrefetchEntry& p = PSPPrefetchEntryTable[i];
+                if (p.getLastLineAddr() == snoopAddr && p.isDone()) {
+                    DPRINTF(PSPBackend, "## Invalidate Entry %d, address %#x.\n", i + 1, p.getFirstLineAddr());
+                    p.deactivate(); // Just in case
+                    p.invalidate();
+                    return;
+                }
             }
         }
 
-        std::vector<Addr> getPrefetchAddr(Addr snoopAddr) {            
+        int entryToActivate() {
+            for (int i = 0; i < this->num_stream_entry; i++) {
+                PSPPrefetchEntry& p = PSPPrefetchEntryTable[i];
+                if (p.isValid() && !p.isActive() && !p.isDone()) {
+                    return i;
+                }
+            }
+            return -1;
+        }
+
+        int entryToValidate() {
+            for (int i = 0; i < this->num_stream_entry; i++) {
+                PSPPrefetchEntry& p = PSPPrefetchEntryTable[i];
+                if (!p.isValid()) {
+                    return i;
+                }
+            }
+            return -1;
+        }
+
+        std::vector<Addr> getPrefetchAddr(Addr snoopAddr) { // FIXME
             assert(activeEntryIdx != -1);
 
             PSPPrefetchEntry *pe = &PSPPrefetchEntryTable[activeEntryIdx];
             if (pe->isDone()) {
                 pe->deactivate();
-                activeEntryIdx = 1 - activeEntryIdx;
-                pe = &PSPPrefetchEntryTable[activeEntryIdx];
-                this->activate(pe);
+                int toActivate = entryToActivate();
+                if (toActivate != -1) {
+                    activeEntryIdx = toActivate;
+                    pe = &PSPPrefetchEntryTable[activeEntryIdx];
+                    DPRINTF(PSPBackend, "## Activate Entry %d, address %#x.\n", activeEntryIdx + 1, pe->getFirstLineAddr());
+                    this->activate(pe); // 한번에 다 날리는거 맞음?
+                }
                 return std::vector<Addr>();
             } else {
                 Addr addr = pe->getNextLineAddr();
@@ -144,40 +167,17 @@ class StreamEntry
             }
         }
 
-        bool hasInvalidEntry() {
-            PSPPrefetchEntry& p1 = PSPPrefetchEntryTable[0];
-            PSPPrefetchEntry& p2 = PSPPrefetchEntryTable[1];
-
-            return !p1.isValid() || !p2.isValid();
-        }
-
         void insertEntry(Addr addr, int size) {
-            DPRINTF(PSPBackend, "## Write prefetch request from PAQ to table for address %#x.\n", addr);
+            int idx = entryToValidate();
+            // Must have invalid entry for insertion when call this function 
+            assert(idx != -1 && "## No free entry\n");
 
-            PSPPrefetchEntry& p1 = PSPPrefetchEntryTable[0];
-            PSPPrefetchEntry& p2 = PSPPrefetchEntryTable[1];
-
-            bool p1_valid = p1.isValid();
-            bool p2_valid = p2.isValid();
-
-            assert(!p1_valid || !p2_valid);
-
-            DPRINTF(PSPBackend, "## Entry 1 valid : %d, Entry 2 valid : %d.\n", p1_valid, p2_valid);
-
-            if (p1_valid) {
-                p2.setEntry(addr, size);
-                if (activeEntryIdx == -1) { // When this is first entry inserting
-                    this->activate(&p2);
-                    activeEntryIdx = 1;
-                }
-                DPRINTF(PSPBackend, "## Entry 2 set.\n");
-            } else {
-                p1.setEntry(addr, size);
-                if (activeEntryIdx == -1) {
-                    this->activate(&p1);
-                    activeEntryIdx = 0;
-                }
-                DPRINTF(PSPBackend, "## Entry 1 set.\n");
+            PSPPrefetchEntry& p = PSPPrefetchEntryTable[idx];
+            p.setEntry(addr, size);
+            if (activeEntryIdx == -1) {
+                DPRINTF(PSPBackend, "## Activate Entry %d, address %#x.\n", idx + 1, addr);
+                this->activate(&p);
+                activeEntryIdx = idx;
             }
         }
 
@@ -225,7 +225,7 @@ class PSPBackend : public SimObject
         }
         bool canInsertEntry(uint64_t entryId) {
           assert(entryId < streamTable.size());
-          return streamTable[entryId].hasInvalidEntry();
+          return streamTable[entryId].entryToValidate() != -1;
         }
         int getPrefetchDistance() {
             return prefetch_distance;
