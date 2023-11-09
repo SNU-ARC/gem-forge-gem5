@@ -258,6 +258,7 @@ void PSPFrontend::issueTranslateValueAddress(uint64_t _validEntryId) {
         pkt, cpuDelegator->getSingleThreadContext(), (void*)indexPacketHandler,
         true /* VA to PA only */);
   }
+  this->indexQueueArrayArbiter->setLastChosenEntryId(_validEntryId);
   
   // Update PAQueueArray(num of inflight load requests)
   this->paQueueArray->numInflightTranslations[_validEntryId] += 1;
