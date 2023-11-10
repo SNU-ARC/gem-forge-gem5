@@ -87,72 +87,66 @@ PSPBackend::getEntry(Addr addr) {
     return NULL;
 }
 
-void
+bool
 PSPBackend::observeHit(Addr address)
 {
-    //DPRINTF(PSPBackend, "** Observed hit for %#x\n", address);
-    numHits++;
+    DPRINTF(PSPBackend, "** Observed hit for %#x\n", address);
 
     StreamEntry * se = getEntry(address);
     if (se != NULL) {
-        DPRINTF(PSPBackend, "** Observed hit for %#x\n", address);
         se->freeEntry(address);
         se->prefetchRequestCompleted();
         issuePrefetch(se);
+        return true;
     }
-    //printStatus();
+    return false;
 }
 
-void
+bool
 PSPBackend::observeMiss(Addr address)
 {
-    //DPRINTF(PSPBackend, "** Observed miss for %#x\n", address);
-    numMisses++;
+    DPRINTF(PSPBackend, "** Observed miss for %#x\n", address);
 
     StreamEntry * se = getEntry(address);
     if (se != NULL) {
-        DPRINTF(PSPBackend, "** Observed miss for %#x\n", address);
         se->freeEntry(address);
         se->prefetchRequestCompleted();
         issuePrefetch(se);
+        return true;
     }
-    //printStatus();
+    return false;
 }
 
-void
+bool
 PSPBackend::observePfHit(Addr address)
 {
     StreamEntry * se = getEntry(address);
-
-    if (se == NULL) { // Not PF hit of PSPBackend
-        //DPRINTF(PSPBackend, "** Observed OTHER prefetcher hit for %#x\n", address);
-        return;
-    } else {
+    if (se != NULL) {
         DPRINTF(PSPBackend, "** Observed PSP prefetcher hit for %#x\n", address);
         se->freeEntry(address); // Delete already used entry if possible
         se->prefetchRequestCompleted();
         issuePrefetch(se);
         numPrefetchHits++;
+        return true;
     }
-    //printStatus();
+    DPRINTF(PSPBackend, "** Observed OTHER prefetcher hit for %#x\n", address);
+    return false;
 }
 
-void
+bool
 PSPBackend::observePfMiss(Addr address)
 {
     StreamEntry * se = getEntry(address);
-    
-    if (se == NULL) { // Not PF miss of PSPBackend
-        //DPRINTF(PSPBackend, "** Observed OTHER prefetcher miss for %#x\n", address);
-        return;
-    } else {
+    if (se != NULL) {
         DPRINTF(PSPBackend, "** Observed PSP prefetcher miss for %#x\n", address);
         se->freeEntry(address); // Delete already used entry if possible
         se->prefetchRequestCompleted();
         issuePrefetch(se);
         numPrefetchMisses++;
+        return true;
     }
-    //printStatus();
+    DPRINTF(PSPBackend, "** Observed OTHER prefetcher miss for %#x\n", address);
+    return false;
 }
 
 void

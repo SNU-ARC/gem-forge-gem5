@@ -994,11 +994,12 @@ machine(MachineType:L0Cache, "MESI Directory L0 Cache", interface="AbstractStrea
       Addr req_address := in_msg.LineAddress;
       RubyRequestType type := in_msg.Type;
       if (cache_entry.isPrefetch) {
-        if (pspbackend.isEnabled()) {
-          pspbackend.observePfHit(req_address);
-        }
-        if (enable_prefetch) {
-          prefetcher.observePfHit(req_address);
+        if (pspbackend.isEnabled() && pspbackend.observePfHit(req_address)) {
+          // empty
+        } else {
+          if (enable_prefetch) {
+            prefetcher.observePfHit(req_address);
+          }
         }
         if (bingoPrefetcher.isEnabled()) {
           bingoPrefetcher.observePfHit(req_address);
@@ -1020,11 +1021,12 @@ machine(MachineType:L0Cache, "MESI Directory L0 Cache", interface="AbstractStrea
     peek(mandatoryQueue_in, RubyRequest) {
       Addr req_address := in_msg.LineAddress;
       RubyRequestType type := in_msg.Type;
-      if (pspbackend.isEnabled()) {
-        pspbackend.observeMiss(req_address);
-      }
-      if (enable_prefetch) {
-        prefetcher.observeMiss(req_address, in_msg.Type);
+      if (pspbackend.isEnabled() && pspbackend.observeMiss(req_address)) {
+        // empty
+      } else {
+        if (enable_prefetch) {
+          prefetcher.observeMiss(req_address, in_msg.Type);
+        }
       }
       if (bingoPrefetcher.isEnabled() && hasPC(in_msg.pkt)) {
         Addr pc := getPC(in_msg.pkt);
@@ -1035,11 +1037,12 @@ machine(MachineType:L0Cache, "MESI Directory L0 Cache", interface="AbstractStrea
   
   action(ppm_observePfMiss, "\ppm", desc="Inform the prefetcher about the partial miss") {
     peek(mandatoryQueue_in, RubyRequest) {
-      if (pspbackend.isEnabled()) {
-        pspbackend.observePfMiss(in_msg.LineAddress);
-      }
-      if (enable_prefetch) {
-        prefetcher.observePfMiss(in_msg.LineAddress);
+      if (pspbackend.isEnabled() && pspbackend.observePfMiss(in_msg.LineAddress)) {
+        // empty
+      } else {
+        if (enable_prefetch) {
+          prefetcher.observePfMiss(in_msg.LineAddress);
+        }
       }
       if (bingoPrefetcher.isEnabled()) {
         bingoPrefetcher.observePfMiss(in_msg.LineAddress);

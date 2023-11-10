@@ -43,6 +43,8 @@ parser.add_option("--gem-forge-psp-backend-enable", action="store_true", default
                   help="""Enable PSP Backend.""")
 parser.add_option("--gem-forge-psp-backend-prefetch-distance", action="store", type="int", default=4,
                   help="""PSP Backend prefetch distance.""")
+parser.add_option("--gem-forge-psp-backend-num-stream-entry", action="store", type="int", default=4,
+                  help="""PSP Backend num stream entries.""")
 
 parser.add_option("--gem-forge-work-mark-history", action="store", type="string",
                   help="""work mark history""")

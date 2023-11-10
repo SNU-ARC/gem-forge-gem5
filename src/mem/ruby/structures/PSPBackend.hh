@@ -222,10 +222,10 @@ class PSPBackend : public SimObject
 
         void issuePrefetch(StreamEntry *se);
         bool isEnabled() const { return this->enabled; }
-        void observePfHit(Addr address);
-        void observePfMiss(Addr address);
-        void observeHit(Addr address);
-        void observeMiss(Addr address);
+        bool observePfHit(Addr address);
+        bool observePfMiss(Addr address);
+        bool observeHit(Addr address);
+        bool observeMiss(Addr address);
 
         StreamEntry* getEntry(Addr addr);
         void regStats();
