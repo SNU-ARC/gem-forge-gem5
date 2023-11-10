@@ -143,6 +143,7 @@ public:
   // TODO: Define Stats below
   mutable Stats::Scalar numConfigured;
 private:
+  bool isPSPBackendEnabled;
   unsigned totalPatternTableEntries;
   PatternTable* patternTable;
   IndexQueueArray* indexQueueArray;

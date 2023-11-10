@@ -28,7 +28,8 @@ void IndexPacketHandler::issueToMemoryCallback(GemForgeCPUDelegator* cpuDelegato
 }
 
 PSPFrontend::PSPFrontend(Params* params)
-  : GemForgeAccelerator(params), totalPatternTableEntries(params->totalPatternTableEntries) {
+  : GemForgeAccelerator(params), totalPatternTableEntries(params->totalPatternTableEntries),
+    isPSPBackendEnabled(params->isPSPBackendEnabled) {
     valCurrentSize = new uint64_t[params->totalPatternTableEntries]();
     patternTable = new PatternTable(params->totalPatternTableEntries); 
     indexQueueArray = new IndexQueueArray(params->totalPatternTableEntries,
@@ -111,20 +112,22 @@ void PSPFrontend::tick() {
   }
 
   /* Issue PA packets to PSP Backend*/
-  // Temporal code to prevent deadlock
-  // TODO: Replace with implement for offloading packets to backend
   for (uint32_t i = 0; i < this->totalPatternTableEntries; i++) {
     //PSP_FE_DPRINTF("PSPBackend_canInsert: %d / %d\n", this->pspBackend->canInsertEntry(i), this->totalPatternTableEntries);
-    if (this->paQueueArray->canRead(i) && this->pspBackend->canInsertEntry(i)) {
-      PhysicalAddressQueue::PhysicalAddressArgs validPAQEntry;
-      this->paQueueArray->read(i, &validPAQEntry);
-      this->pspBackend->insertEntry(validPAQEntry.entryId, validPAQEntry.pAddr, validPAQEntry.size);
-      PSP_FE_DPRINTF("paQueueEntryId: %lu, pAddr: %x, size: %lu, PSPBackend_canRead: %d\n",
-          validPAQEntry.entryId, validPAQEntry.pAddr, validPAQEntry.size, this->paQueueArray->canRead(i));
-      this->paQueueArray->pop(i);
+    if (this->paQueueArray->canRead(i)) {
+      if (!this->isPSPBackendEnabled) { 
+        // Deadlock prevent implementation to measure impact of TLB prefetch
+        this->paQueueArray->pop(i);
+      }
+      else if (this->pspBackend->canInsertEntry(i)) {
+        PhysicalAddressQueue::PhysicalAddressArgs validPAQEntry;
+        this->paQueueArray->read(i, &validPAQEntry);
+        this->pspBackend->insertEntry(validPAQEntry.entryId, validPAQEntry.pAddr, validPAQEntry.size);
+        PSP_FE_DPRINTF("paQueueEntryId: %lu, pAddr: %x, size: %lu, PSPBackend_canRead: %d\n",
+            validPAQEntry.entryId, validPAQEntry.pAddr, validPAQEntry.size, this->paQueueArray->canRead(i));
+        this->paQueueArray->pop(i);
+      }
     }
-//    if (this->paQueueArray->canRead(i)) 
-//      this->paQueueArray->pop(i);
   }
 }
 
