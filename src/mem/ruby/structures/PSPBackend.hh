@@ -92,6 +92,7 @@ class PSPPrefetchEntry
         }
 
         bool isDone() { return m_index == m_size; }
+        //bool isEntry(Addr addr) { return addr == getNextLineAddr() && m_valid; }
         bool isEntry(Addr addr) { return (addr >= m_addr) && (addr < m_addr + m_size) && m_valid; }
 };
 
@@ -124,6 +125,7 @@ class StreamEntry
                 PSPPrefetchEntry& p = PSPPrefetchEntryTable[i];
                 if (p.getLastLineAddr() == snoopAddr && p.isDone()) {
                     DPRINTF(PSPBackend, "## Invalidate Entry %d, address %#x.\n", i + 1, p.getFirstLineAddr());
+                    DPRINTF(PSPBackend, "##############################################################\n");
                     p.deactivate(); // Just in case
                     p.invalidate();
                     return;
@@ -171,9 +173,9 @@ class StreamEntry
             //DPRINTF(PSPBackend, "@@ %d %d %d\n", pe->get_index(), pe->get_size(), pe->isDone());
 
             if (pe->isDone()) {
-                activeEntryIdx = -1;
                 pe->deactivate();
                 DPRINTF(PSPBackend, "## Deactivate Entry %d, address %#x.\n", activeEntryIdx + 1, pe->getFirstLineAddr());
+                activeEntryIdx = -1;
                 int toActivate = entryToActivate();
                 if (toActivate != -1) {
                     activeEntryIdx = toActivate;
