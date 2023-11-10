@@ -129,7 +129,8 @@ def create_system(options, full_system, system, dma_ports, bootmem,
             )
 
             bingo_prefetcher = RubyBingoPrefetcher(
-                enabled=(options.gem_forge_prefetcher == 'bingo'),
+                enabled=False
+                #enabled=(options.gem_forge_prefetcher == 'bingo'),
             )
 
             # the ruby random tester reuses num_cpus to specify the
