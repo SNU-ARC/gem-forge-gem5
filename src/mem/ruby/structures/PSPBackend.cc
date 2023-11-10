@@ -163,8 +163,8 @@ PSPBackend::issuePrefetch(StreamEntry *se)
         if (se->existNextLineAddr()) {
             Addr cur_addr = se->getNextLineAddr();
             m_controller->enqueuePrefetch(cur_addr, RubyRequestType_LD);
-            se->incrementLineAddr();
             DPRINTF(PSPBackend, "## Enqueue prefetch request for address %#x done.\n", cur_addr);
+            se->incrementLineAddr();
         }
     }
 }
