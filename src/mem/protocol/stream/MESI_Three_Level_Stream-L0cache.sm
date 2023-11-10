@@ -644,7 +644,9 @@ machine(MachineType:L0Cache, "MESI Directory L0 Cache", interface="AbstractStrea
   }
 
   action(pa_issuePfGETS, "pa", desc="Issue prefetch GETS") {
-    peek(prefetchQueue_in, RubyRequest) {
+    peek (prefetchQueue_in, RubyRequest) {
+      DPRINTF(PSPBackend, "Pop from prefetch queue %#x\n", address);
+
       enqueue(requestNetwork_out, CoherenceMsg, request_latency) {
         out_msg.addr := address;
         out_msg.Class := CoherenceClass:GETS;
@@ -946,7 +948,7 @@ machine(MachineType:L0Cache, "MESI Directory L0 Cache", interface="AbstractStrea
 
   action(kd_wakeUpDependents, "kd", desc="wake-up dependents") {
     if (cache_entry.isPrefetch) {
-      DPRINTF(PSPBackend, "## Prefetched, addr %#x\n", address);
+      DPRINTF(RubySlicc, "## Prefetched, addr %#x\n", address);
     }
     wakeUpAllBuffers(address);
   }
