@@ -1054,9 +1054,15 @@ machine(MachineType:L0Cache, "MESI Directory L0 Cache", interface="AbstractStrea
       }
   }
 
+  action(mp_markPrefetched_I, "mpi", desc="Set the isPrefetch flag for inst") {
+    assert(is_valid(cache_entry));
+    cache_entry.isPrefetch := true;
+  }
+
   action(mp_markPrefetched, "mp", desc="Set the isPrefetch flag") {
     assert(is_valid(cache_entry));
     cache_entry.isPrefetch := true;
+
     Dcache.setMRU(cache_entry); // Added
   }
 
@@ -1231,14 +1237,14 @@ machine(MachineType:L0Cache, "MESI Directory L0 Cache", interface="AbstractStrea
   transition(PF_Inst_IS, Data, S) {
     u_writeInstToCache;
     s_deallocateTBE;
-    mp_markPrefetched;
+    mp_markPrefetched_I;
     o_popIncomingResponseQueue;
     kd_wakeUpDependents;
   }
   transition(PF_Inst_IS, Data_Exclusive, E) {
     u_writeInstToCache;
     s_deallocateTBE;
-    mp_markPrefetched;
+    mp_markPrefetched_I;
     o_popIncomingResponseQueue;
     kd_wakeUpDependents;
   }
