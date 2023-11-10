@@ -296,8 +296,8 @@ structure (RequestStatisticPtr, external="yes") {
  */
 structure(PSPBackend, desc="Backend of PSP module", external="yes") {
   bool isEnabled();
-  void observeHit(Addr);
-  void observeMiss(Addr);
-  void observePfHit(Addr);
-  void observePfMiss(Addr);
+  bool observeHit(Addr);
+  bool observeMiss(Addr);
+  bool observePfHit(Addr);
+  bool observePfMiss(Addr);
 }
