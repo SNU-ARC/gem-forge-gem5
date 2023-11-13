@@ -576,11 +576,6 @@ void ISAPSPFrontend::commitStreamInputReady(const GemForgeDynInstInfo &dynInfo) 
   ::PSPFrontend::StreamInputArgs args(dynInfo.seqNum, streamNum, regionInfo.inputInfo.inputContents);
   psp->commitStreamInput(args);
 
-  regionInfo.inputInfo.dispatched[0] = 0;
-  regionInfo.inputInfo.executed[0] = 0;
-  regionInfo.inputInfo.dispatched[1] = 0;
-  regionInfo.inputInfo.executed[1] = 0;
-
   DYN_INST_DPRINTF("[commit] commitStreamInputReady\n");
 }
 
