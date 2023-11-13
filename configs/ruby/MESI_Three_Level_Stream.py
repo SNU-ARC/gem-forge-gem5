@@ -123,9 +123,9 @@ def create_system(options, full_system, system, dma_ports, bootmem,
                 num_streams=16,
                 unit_filter=256,
                 nonunit_filter=256,
-                train_misses=5,
+                train_misses=3,
                 num_startup_pfs=options.gem_forge_prefetch_dist,
-                cross_page=True
+                cross_page=False #True
             )
 
             bingo_prefetcher = RubyBingoPrefetcher(
@@ -217,9 +217,9 @@ def create_system(options, full_system, system, dma_ports, bootmem,
                 num_streams=16,
                 unit_filter=256,
                 nonunit_filter=256,
-                train_misses=5,
+                train_misses=3,
                 num_startup_pfs=options.gem_forge_l2_prefetch_dist,
-                cross_page=True,
+                cross_page=False, #True,
                 bulk_prefetch_size=options.gem_forge_l2_bulk_prefetch_size,
             )
 
