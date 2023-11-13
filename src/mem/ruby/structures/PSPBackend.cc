@@ -90,10 +90,9 @@ PSPBackend::getEntry(Addr addr) {
 bool
 PSPBackend::observeHit(Addr address)
 {
-    DPRINTF(PSPBackend, "** Observed hit for %#x\n", address);
-
     StreamEntry * se = getEntry(address);
     if (se != NULL) {
+        DPRINTF(PSPBackend, "** Observed hit for %#x\n", address);
         se->freeEntry(address);
         se->prefetchRequestCompleted();
         issuePrefetch(se);
@@ -105,10 +104,9 @@ PSPBackend::observeHit(Addr address)
 bool
 PSPBackend::observeMiss(Addr address)
 {
-    DPRINTF(PSPBackend, "** Observed miss for %#x\n", address);
-
     StreamEntry * se = getEntry(address);
     if (se != NULL) {
+        DPRINTF(PSPBackend, "** Observed miss for %#x\n", address);
         se->freeEntry(address);
         se->prefetchRequestCompleted();
         issuePrefetch(se);
@@ -129,7 +127,7 @@ PSPBackend::observePfHit(Addr address)
         numPrefetchHits++;
         return true;
     }
-    DPRINTF(PSPBackend, "** Observed OTHER prefetcher hit for %#x\n", address);
+    //DPRINTF(PSPBackend, "** Observed OTHER prefetcher hit for %#x\n", address);
     return false;
 }
 
@@ -145,7 +143,7 @@ PSPBackend::observePfMiss(Addr address)
         numPrefetchMisses++;
         return true;
     }
-    DPRINTF(PSPBackend, "** Observed OTHER prefetcher miss for %#x\n", address);
+    //DPRINTF(PSPBackend, "** Observed OTHER prefetcher miss for %#x\n", address);
     return false;
 }
 

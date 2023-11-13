@@ -999,10 +999,12 @@ machine(MachineType:L0Cache, "MESI Directory L0 Cache", interface="AbstractStrea
         } else {
           if (enable_prefetch) {
             prefetcher.observePfHit(req_address);
+            cache_entry.isPrefetch := false;
           }
         }
         if (bingoPrefetcher.isEnabled()) {
           bingoPrefetcher.observePfHit(req_address);
+          cache_entry.isPrefetch := false;
         }
         //cache_entry.isPrefetch := false;
       } else {
