@@ -238,7 +238,6 @@ class PSPBackend : public SimObject
         }
         bool canInsertEntry(uint64_t entryId) {
           assert(entryId < streamTable.size());
-          //DPRINTF(PSPBackend, "## canInsert %d.\n", streamTable[entryId].entryToValidate() != -1);
           return streamTable[entryId].entryToValidate() != -1;
         }
         void printStatus() {
@@ -247,6 +246,7 @@ class PSPBackend : public SimObject
                 streamTable[i].printStatus();
             }
         }
+        
 
     private:
         bool enabled;
