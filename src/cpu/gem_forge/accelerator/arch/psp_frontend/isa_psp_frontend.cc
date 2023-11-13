@@ -33,7 +33,13 @@
 bool ISAPSPFrontend::canDispatchStreamConfigIndexBase(
     const GemForgeDynInstInfo &dynInfo) {
   ISA_PSP_FE_DPRINTF("canDispatchStreamConfigIndexBase\n");
-  return true;
+
+  auto streamNum = this->extractImm<uint64_t>(dynInfo.staticInst);
+  auto iter = this->streamNumToStreamRegionMap.find(streamNum);
+  if (iter == this->streamNumToStreamRegionMap.end()) {
+    return true;
+  }
+  return false;
 }
 
 bool ISAPSPFrontend::canDispatchStreamConfigIndexGranularity(
