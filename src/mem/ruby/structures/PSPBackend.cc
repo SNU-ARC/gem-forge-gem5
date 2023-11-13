@@ -167,6 +167,12 @@ StreamEntry::insertEntry(Addr addr, int size) {
     // Must have invalid entry for insertion when call this function 
     assert(idx != -1 && "## No free entry\n");
 
+    // Merge duplicated entry
+    if (hasEntry(addr)) {
+      DPRINTF(PSPBackend, "## Merge Address %#x.\n", addr);
+      return;
+    }
+
     PSPPrefetchEntry& p = PSPPrefetchEntryTable[idx];
     p.setEntry(addr, size);
     DPRINTF(PSPBackend, "## Set Entry %d, address %#x.\n", idx + 1, addr);
