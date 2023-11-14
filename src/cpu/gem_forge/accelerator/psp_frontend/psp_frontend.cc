@@ -111,6 +111,7 @@ void PSPFrontend::tick() {
     this->issueTranslateValueAddress(validIQEntryId);
   }
 
+  this->pspBackend->printStatus();
   /* Issue PA packets to PSP Backend*/
   for (uint32_t i = 0; i < this->totalPatternTableEntries; i++) {
     //PSP_FE_DPRINTF("PSPBackend_canInsert: %d / %d\n", this->pspBackend->canInsertEntry(i), this->totalPatternTableEntries);
