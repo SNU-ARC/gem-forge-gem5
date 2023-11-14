@@ -578,6 +578,7 @@ machine(MachineType:L0Cache, "MESI Directory L0 Cache", interface="AbstractStrea
           if (is_valid(dEntry)) {
             // The prefetched block is already present, drop the request.
             DPRINTF(PSPBackend, "Drop request, already cached : %#x\n", in_msg.LineAddress);
+            pspbackend.observePfHit(in_msg.LineAddress);
 
             trigger(
               prefetch_request_type_to_event(in_msg.Type),
@@ -1068,7 +1069,7 @@ machine(MachineType:L0Cache, "MESI Directory L0 Cache", interface="AbstractStrea
     assert(is_valid(cache_entry));
     cache_entry.isPrefetch := true;
 
-    Dcache.setMRU(cache_entry); // Added
+//    Dcache.setMRU(cache_entry); // Added
   }
 
   /**
