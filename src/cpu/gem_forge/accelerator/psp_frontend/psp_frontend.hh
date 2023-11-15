@@ -28,11 +28,16 @@ class IndexPacketHandler final : public GemForgePacketHandler {
 public:
   IndexPacketHandler(PSPFrontend* _pspFrontend, uint64_t _entryId,
                      Addr _cacheBlockVAddr, Addr _vaddr,
-                     int _size);
+                     int _size, int _additional_delay = 0);
   virtual ~IndexPacketHandler() {}
   void handlePacketResponse(GemForgeCPUDelegator* cpuDelegator,
                             PacketPtr packet);
+  void handleAddressTranslateResponse(GemForgeCPUDelegator* cpuDelegator,
+                            PacketPtr packet);
   void issueToMemoryCallback(GemForgeCPUDelegator* cpuDelegator);
+  void setAdditionalDelay(int _additionalDelay) {
+    this->additionalDelay = _additionalDelay;
+  }
 
   struct ResponseEvent : public Event {
   public:
@@ -41,13 +46,21 @@ public:
     PacketPtr pkt;
     std::string n;
     ResponseEvent(GemForgeCPUDelegator *_cpuDelegator,
-                  IndexPacketHandler *_indexPacketHandler, PacketPtr _pkt)
+                  IndexPacketHandler *_indexPacketHandler, PacketPtr _pkt, std::string _n)
         : cpuDelegator(_cpuDelegator), indexPacketHandler(_indexPacketHandler), pkt(_pkt),
-          n("IndexPacketHandlerResponseEvent") {
+          n(_n) {
       this->setFlags(EventBase::AutoDelete);
     }
     void process() override {
-      this->indexPacketHandler->handlePacketResponse(this->cpuDelegator, this->pkt);
+      if (this->n.compare("handlePacketResponse") == 0) {
+        this->indexPacketHandler->handlePacketResponse(this->cpuDelegator, this->pkt);
+      }
+      else if (this->n.compare("handleAddressTranslateResponse") == 0) {
+        this->indexPacketHandler->handleAddressTranslateResponse(this->cpuDelegator, this->pkt);
+      }
+      else {
+        assert(false && "This is invalid packet");
+      }
     }
 
     const char *description() const { return "IndexPacketHandlerResponseEvent"; }
@@ -60,6 +73,7 @@ public:
   Addr vaddr;
   int size;
   uint64_t entryId;
+  int additionalDelay;
 };
 
 class PSPFrontend : public GemForgeAccelerator {

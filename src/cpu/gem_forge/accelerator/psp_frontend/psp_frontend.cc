@@ -11,14 +11,38 @@
 
 IndexPacketHandler::IndexPacketHandler(PSPFrontend* _pspFrontend, uint64_t _entryId,
                                        Addr _cacheBlockVAddr, Addr _vaddr,
-                                       int _size)
+                                       int _size, int _additional_delay)
   : pspFrontend(_pspFrontend), entryId(_entryId), cacheBlockVAddr(_cacheBlockVAddr),
-    vaddr(_vaddr), size(_size) {
+    vaddr(_vaddr), size(_size), additionalDelay(_additional_delay) {
 }
 
 void IndexPacketHandler::handlePacketResponse(GemForgeCPUDelegator* cpuDelegator,
                                               PacketPtr pkt) {
+  if (this->additionalDelay != 0) {
+    PSP_FE_DPRINTF("PacketResposne with additional delay. Reschedule after %d cycle.\n",
+        this->additionalDelay);
+    auto responseEvent = new ResponseEvent(cpuDelegator, this, pkt, "handlePacketResponse");
+    cpuDelegator->schedule(responseEvent, Cycles(this->additionalDelay));
+    this->additionalDelay = 0;
+    return;
+  }
   this->pspFrontend->handlePacketResponse(this, pkt);
+
+  delete pkt;
+  delete this;
+}
+
+void IndexPacketHandler::handleAddressTranslateResponse(GemForgeCPUDelegator* cpuDelegator,
+                                              PacketPtr pkt) {
+  if (this->additionalDelay != 0) {
+    PSP_FE_DPRINTF("PacketResposne with additional delay. Reschedule after %d cycle.\n",
+        this->additionalDelay);
+    auto responseEvent = new ResponseEvent(cpuDelegator, this, pkt, "handleAddressTranslateResponse");
+    cpuDelegator->schedule(responseEvent, Cycles(this->additionalDelay));
+    this->additionalDelay = 0;
+    return;
+  }
+  this->pspFrontend->handleAddressTranslateResponse(this, pkt);
 
   delete pkt;
   delete this;
@@ -57,7 +81,7 @@ void PSPFrontend::takeOverBy(GemForgeCPUDelegator *newCpuDelegator,
       [this](PacketPtr pkt, ThreadContext* tc, void* ) -> void {
       this->cpuDelegator->sendRequest(pkt); },
       [this](PacketPtr pkt, ThreadContext* tc, void* indexPacketHandler) -> void {
-      this->handleAddressTranslateResponse((IndexPacketHandler*)indexPacketHandler, pkt); },
+      ((IndexPacketHandler*)indexPacketHandler)->handleAddressTranslateResponse(this->cpuDelegator, pkt); },
       false /* AccessLastLevelTLBOnly */, true /* MustDoneInOrder */);
 
   char pspbackend_name[100] = "system.ruby.l0_cntrl";
@@ -105,7 +129,6 @@ void PSPFrontend::tick() {
 
   /* Issue feature vector address translation */
   uint32_t validIQEntryId;
-  
   // TODO: Should I check the availability of TLB? (e.g., pending translation by PTW)
   if (this->indexQueueArrayArbiter->getValidEntryId(&validIQEntryId)) {
     this->issueTranslateValueAddress(validIQEntryId);
@@ -166,7 +189,7 @@ void PSPFrontend::issueLoadIndex(uint64_t _validEntryId) {
 
   // Send load index request
   IndexPacketHandler* indexPacketHandler = new IndexPacketHandler(this, _validEntryId,
-      cacheBlockVAddr, currentVAddr, currentSize);
+      cacheBlockVAddr, currentVAddr, currentSize, 8 /* Latency for address compute */);
   Request::Flags flags;
   PacketPtr pkt = GemForgePacketHandler::createGemForgePacket(
       cacheBlockPAddr, cacheLineSize, indexPacketHandler, nullptr /* Data */,
@@ -243,7 +266,7 @@ void PSPFrontend::issueTranslateValueAddress(uint64_t _validEntryId) {
 
   // VA to PA
   IndexPacketHandler* indexPacketHandler = new IndexPacketHandler(this, _validEntryId,
-      cacheBlockVAddr, currentVAddr, currentSize);
+      cacheBlockVAddr, currentVAddr, currentSize, 8 /* Latency for address compute */);
   Request::Flags flags;
   PacketPtr pkt = GemForgePacketHandler::createGemForgePacket(
       cacheBlockPAddr, cacheBlockSize, indexPacketHandler, nullptr /* Data */,
