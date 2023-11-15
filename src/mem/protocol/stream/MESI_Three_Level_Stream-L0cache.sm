@@ -578,7 +578,9 @@ machine(MachineType:L0Cache, "MESI Directory L0 Cache", interface="AbstractStrea
           if (is_valid(dEntry)) {
             // The prefetched block is already present, drop the request.
             DPRINTF(PSPBackend, "Drop request, already cached : %#x\n", in_msg.LineAddress);
-            pspbackend.observePfHit(in_msg.LineAddress);
+            if (pspbackend.isEnabled()) {
+              pspbackend.observePfHit(in_msg.LineAddress);
+            }
 
             trigger(
               prefetch_request_type_to_event(in_msg.Type),
@@ -791,9 +793,9 @@ machine(MachineType:L0Cache, "MESI Directory L0 Cache", interface="AbstractStrea
   action(h_load_hit, "hd", desc="If not prefetch, notify sequencer the load completed.") {
     assert(is_valid(cache_entry));
     DPRINTF(RubySlicc, "%s\n", cache_entry.DataBlk);
-    if (!cache_entry.isPrefetch) {
+//    if (!cache_entry.isPrefetch) {
       Dcache.setMRU(cache_entry);
-    }
+//    }
     sequencer.readCallback(address, cache_entry.DataBlk);
   }
 
@@ -807,9 +809,9 @@ machine(MachineType:L0Cache, "MESI Directory L0 Cache", interface="AbstractStrea
   action(hx_load_hit, "hxd", desc="notify sequencer the load completed.") {
     assert(is_valid(cache_entry));
     DPRINTF(RubySlicc, "%s\n", cache_entry.DataBlk);
-    if (!cache_entry.isPrefetch) {
+//    if (!cache_entry.isPrefetch) {
       Dcache.setMRU(cache_entry);
-    }
+//    }
     sequencer.readCallback(address, cache_entry.DataBlk, true);
   }
 
