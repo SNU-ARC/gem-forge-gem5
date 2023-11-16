@@ -174,11 +174,11 @@ StreamEntry::insertEntry(Addr addr, int size) {
     }
 
     PSPPrefetchEntry& p = PSPPrefetchEntryTable[idx];
-    p.setEntry(addr, size);
-    DPRINTF(PSPBackend, "## Set Entry %d, address %#x.\n", idx + 1, addr);
+    p.setEntry(addr, size, getPriority());
+    DPRINTF(PSPBackend, "## Set Entry %d, address %#x.\n", idx, addr);
 
     if (activeEntryIdx == -1) {
-        DPRINTF(PSPBackend, "## Activate Entry %d, address %#x.\n", idx + 1, addr);
+        DPRINTF(PSPBackend, "## Activate Entry %d, address %#x.\n", idx, addr);
         activeEntryIdx = idx;
         pb->issuePrefetch(this);
     }

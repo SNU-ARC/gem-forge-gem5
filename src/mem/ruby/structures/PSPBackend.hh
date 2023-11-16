@@ -65,18 +65,21 @@ class PSPPrefetchEntry
         int m_size;
         bool m_valid;
         bool m_use;
+        int m_priority;
 
     public:
-        void setEntry(Addr addr, int size) {
+        void setEntry(Addr addr, int size, int priority) {
             m_addr = makeLineAddress(addr);
             m_index = 0;
             m_size = ceil((double)size / RubySystem::getBlockSizeBytes()) * RubySystem::getBlockSizeBytes();
             m_valid = true;
             m_use = false;
+            m_priority = priority;
         }
 
         int get_size() { return m_size; }
         int get_index() { return m_index; }
+        int get_priority() { return m_priority; }
 
         void activate() { m_use = true; }
         void deactivate() { m_use = false; }
@@ -94,6 +97,7 @@ class PSPPrefetchEntry
         bool isDone() { return m_index == m_size; }
         //bool isEntry(Addr addr) { return addr == getNextLineAddr() && m_valid; }
         bool isEntry(Addr addr) { return (addr >= m_addr) && (addr < m_addr + m_size) && m_valid; }
+        void incrementPriority() { if (m_priority >= 0) m_priority--; }
 };
 
 class StreamEntry
@@ -124,7 +128,7 @@ class StreamEntry
             for (int i = 0; i < this->num_stream_entry; i++) {
                 PSPPrefetchEntry& p = PSPPrefetchEntryTable[i];
                 if (p.getLastLineAddr() == snoopAddr && p.isDone()) {
-                    DPRINTF(PSPBackend, "## Invalidate Entry %d, address %#x.\n", i + 1, p.getFirstLineAddr());
+                    DPRINTF(PSPBackend, "## Invalidate Entry %d, address %#x.\n", i, p.getFirstLineAddr());
                     DPRINTF(PSPBackend, "##############################################################\n");
                     p.deactivate(); // Just in case
                     p.invalidate();
@@ -138,19 +142,21 @@ class StreamEntry
             for (int i = 0; i < this->num_stream_entry; i++) {
                 PSPPrefetchEntry& p = PSPPrefetchEntryTable[i];
                 if (p.isValid()) {
-                    DPRINTF(PSPBackend, "## entry %d : %d / %d active ? %d addr %#x %#x\n", i, p.get_index(), p.get_size(), p.isActive(), p.getFirstLineAddr(), p.getLastLineAddr());
+                    DPRINTF(PSPBackend, "## entry %d : %d / %d active ? %d addr %#x %#x priority %d\n", i, p.get_index(), p.get_size(), p.isActive(), p.getFirstLineAddr(), p.getLastLineAddr(), p.get_priority());
                 }
             }
         }
 
         int entryToActivate() {
+            int entryId = -1;
             for (int i = 0; i < this->num_stream_entry; i++) {
                 PSPPrefetchEntry& p = PSPPrefetchEntryTable[i];
-                if (p.isValid() && !p.isActive() && !p.isDone()) {
-                    return i;
+                p.incrementPriority();
+                if (p.isValid() && !p.isActive() && !p.isDone() && p.get_priority() == 0) {
+                    entryId = i;
                 }
             }
-            return -1;
+            return entryId;
         }
 
         int entryToValidate() {
@@ -161,6 +167,17 @@ class StreamEntry
                 }
             }
             return -1;
+        }
+
+        int getPriority() {
+            int priority = 0;
+            for (int i = 0; i < this->num_stream_entry; i++) {
+                PSPPrefetchEntry& p = PSPPrefetchEntryTable[i];
+                if (p.isValid()) {
+                    priority = priority > p.get_priority() ? priority : p.get_priority() + 1;
+                }
+            }
+            return priority;
         }
 
         void incrementLineAddr() {
@@ -174,14 +191,14 @@ class StreamEntry
 
             if (pe->isDone()) {
                 pe->deactivate();
-                DPRINTF(PSPBackend, "## Deactivate Entry %d, address %#x.\n", activeEntryIdx + 1, pe->getFirstLineAddr());
+                DPRINTF(PSPBackend, "## Deactivate Entry %d, address %#x\n", activeEntryIdx, pe->getFirstLineAddr());
                 activeEntryIdx = -1;
                 int toActivate = entryToActivate();
                 if (toActivate != -1) {
                     activeEntryIdx = toActivate;
                     pe = &PSPPrefetchEntryTable[activeEntryIdx];
                     pe->activate();
-                    DPRINTF(PSPBackend, "## Activate Entry %d, address %#x.\n", activeEntryIdx + 1, pe->getFirstLineAddr());
+                    DPRINTF(PSPBackend, "## Activate Entry %d, address %#x.\n", activeEntryIdx, pe->getFirstLineAddr());
                 }
             }
         }
