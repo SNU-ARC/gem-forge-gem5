@@ -80,12 +80,16 @@ StreamEntry::insertEntry(Addr _addr, int _size) {
   assert(this->count != this->numQueueEntry && "## No free entry\n");
 
   // Enable prefetch if it was disabled
+  int prevTailEntryIdx = (this->tailEntryIdx + this->numQueueEntry - 1) % this->numQueueEntry;
   int prefetchDistanceBytes = this->prefetchDistance * RubySystem::getBlockSizeBytes();
+  int offset = prefetchDistanceBytes - this->accumulatedSize[prevTailEntryIdx];
   if (this->prefetchEnabled == false && prefetchDistanceBytes < this->totalSize + _size) {
     this->prefetchEnabled = true;
     this->prefetchEntryIdx = this->tailEntryIdx;
-    this->nextPrefetchAddr = _addr + prefetchDistanceBytes - this->accumulatedSize[this->tailEntryIdx];
-    this->nextPrefetchSize = (_size - prefetchDistanceBytes);
+    this->nextPrefetchAddr = _addr + offset;
+    this->nextPrefetchSize = (_size - offset);
+    DPRINTF(PSPBackend, "## Set Prefetch for Entry %d, address %#x, size %d.\n", 
+        this->prefetchEntryIdx, this->nextPrefetchAddr, this->nextPrefetchSize);
   }
 
   // Set inserted packet as Tag Address if not set
