@@ -35,6 +35,8 @@
 #include "base/random.hh"
 #include "params/BRRIPRP.hh"
 
+#include "debug/PSPBackend.hh"
+
 BRRIPRP::BRRIPRP(const Params *p)
     : BaseReplacementPolicy(p),
       numRRPVBits(p->num_bits), hitPriority(p->hit_priority), btp(p->btp)
@@ -67,6 +69,8 @@ BRRIPRP::touch(const std::shared_ptr<ReplacementData>& replacement_data) const
     } else {
         casted_replacement_data->rrpv--;
     }
+
+    DPRINTF(PSPBackend, "Counter : %d, Initial Value : %d\n", casted_replacement_data->rrpv.getCounter(), casted_replacement_data->rrpv.getInitVal());
 }
 
 void
@@ -113,11 +117,16 @@ BRRIPRP::getVictim(const ReplacementCandidates& candidates) const
 
         // Update victim entry if necessary
         int candidate_RRPV = candidate_repl_data->rrpv;
+
+        //DPRINTF(PSPBackend, "Set %d Way %d, Score %d\n", candidate->getSet(), candidate->getWay(), candidate_RRPV);
+
         if (candidate_RRPV > victim_RRPV) {
             victim = candidate;
             victim_RRPV = candidate_RRPV;
         }
     }
+
+    DPRINTF(PSPBackend, "Evict : Set %d Way %d, Score %d\n", victim->getSet(), victim->getWay(), victim_RRPV);
 
     // Get difference of victim's RRPV to the highest possible RRPV in
     // order to update the RRPV of all the other entries accordingly

@@ -581,6 +581,8 @@ machine(MachineType:L2Cache, "MESI Directory L2 Cache CMP", interface="AbstractS
   // ACTIONS
 
   action(a_issueFetchToMemory, "a", desc="fetch data from memory") {
+    DPRINTF(PSPBackend, "Issue fetch to memory %#x\n", address);
+
     peek(L1RequestL2Network_in, RequestMsg) {
       enqueue(DirRequestL2Network_out, RequestMsg, l2_request_latency) {
         out_msg.addr := address;
@@ -1009,6 +1011,7 @@ machine(MachineType:L2Cache, "MESI Directory L2 Cache CMP", interface="AbstractS
 
   action(qq_allocateL2CacheBlock, "\q", desc="Set L2 cache tag equal to tag of block B.") {
     if (is_invalid(cache_entry)) {
+      DPRINTF(PSPBackend, "L2, Allocate cache block, was invalid. addr %#x\n", address);
       set_cache_entry(L2cache.allocate(address, new Entry));
     }
   }
@@ -1336,6 +1339,7 @@ machine(MachineType:L2Cache, "MESI Directory L2 Cache CMP", interface="AbstractS
 
   transition(ISS, Mem_Data, MT_MB) {
     m_writeDataToCache;
+    set_setMRU; //
     ex_sendExclusiveDataToGetSRequestors;
     // Also sent data to possible GETU requestor.
     net_notifyStreamEngineFromTBE;
@@ -1347,6 +1351,7 @@ machine(MachineType:L2Cache, "MESI Directory L2 Cache CMP", interface="AbstractS
   // The data is not cached by upper requestor.
   transition(IVV, Mem_Data, M) {
     m_writeDataToCache;
+    set_setMRU; //
     net_notifyStreamEngineFromTBE;
     eu_sendDataToGetURequestors;
     s_deallocateTBE;

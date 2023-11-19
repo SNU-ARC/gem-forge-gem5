@@ -208,6 +208,8 @@ structure(RubyRequest, desc="...", interface="Message", external="yes") {
 
 structure(AbstractCacheEntry, primitive="yes", external = "yes") {
   void changePermission(AccessPermission);
+  uint32_t getSet();
+  uint32_t getWay();
 }
 
 structure (DirectoryMemory, external = "yes") {

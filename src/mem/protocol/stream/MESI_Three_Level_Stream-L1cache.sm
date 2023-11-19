@@ -530,11 +530,15 @@ machine(MachineType:L1Cache, "MESI Directory L1 Cache CMP", interface="AbstractS
           } else {
 
             if (cache.cacheAvail(in_msg.addr)) {
+              DPRINTF(PSPBackend, "Yes room in L1, addr %#x\n", in_msg.addr);
+
               // L1 does't have the line, but we have space for it
               // in the L1 let's see if the L2 has it
               trigger(mandatory_request_type_to_event(in_msg.Class),
                       in_msg.addr, cache_entry, tbe);
             } else {
+              DPRINTF(PSPBackend, "No room in L1, addr %#x\n", in_msg.addr);
+
               // No room in the L1, so we need to make room in the L1
               Entry victim_entry :=
                 getCacheEntry(cache.cacheProbe(in_msg.addr));
@@ -739,7 +743,7 @@ machine(MachineType:L1Cache, "MESI Directory L1 Cache CMP", interface="AbstractS
         out_msg.Requestors.add(machineID);
         out_msg.Destination.add(mapAddressToRange(address, MachineType:L2Cache,
                           l2_select_low_bit, l2_select_num_bits, clusterID));
-        DPRINTF(RubySlicc, "address: %#x, destination: %s\n",
+        DPRINTF(RubySlicc, "L1 issueGETS, address: %#x, destination: %s\n",
                 address, out_msg.Destination);
         out_msg.MessageSize := MessageSizeType:Control;
         out_msg.AccessMode := in_msg.AccessMode;
@@ -920,6 +924,8 @@ machine(MachineType:L1Cache, "MESI Directory L1 Cache CMP", interface="AbstractS
   }
 
   action(forward_eviction_to_L0, "\cc", desc="sends eviction information to the processor") {
+      DPRINTF(PSPBackend, "Forward eviction to L0 from L1, addr %#x\n", address);
+
       enqueue(bufferToL0_out, CoherenceMsg, l1_response_latency) {
           out_msg.addr := address;
           out_msg.Class := CoherenceClass:INV;
@@ -1167,6 +1173,7 @@ machine(MachineType:L1Cache, "MESI Directory L1 Cache CMP", interface="AbstractS
 
   action(oo_allocateCacheBlock, "\o", desc="Set cache tag equal to tag of block B.") {
     if (is_invalid(cache_entry)) {
+      DPRINTF(PSPBackend, "L1, Allocate cache block, was invalid. addr %#x\n", address);
       set_cache_entry(cache.allocate(address, new Entry));
     }
   }
@@ -1232,7 +1239,7 @@ machine(MachineType:L1Cache, "MESI Directory L1 Cache CMP", interface="AbstractS
         out_msg.Requestors.add(machineID);
         out_msg.Destination.add(mapAddressToRange(address, MachineType:L2Cache,
                           l2_select_low_bit, l2_select_num_bits, clusterID));
-        DPRINTF(RubySlicc, "address: %#x, destination: %s\n",
+        DPRINTF(RubySlicc, "L1 issuePfGETS, address: %#x, destination: %s\n",
                 address, out_msg.Destination);
         out_msg.MessageSize := MessageSizeType:Control;
         out_msg.Prefetch := in_msg.Prefetch;

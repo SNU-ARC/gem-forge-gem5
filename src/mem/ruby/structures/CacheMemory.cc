@@ -40,6 +40,7 @@
 #include "mem/ruby/system/RubySystem.hh"
 
 #include "sim/stream_nuca/stream_nuca_map.hh"
+#include "debug/PSPBackend.hh"
 
 using namespace std;
 
@@ -327,6 +328,9 @@ CacheMemory::allocate(Addr address, AbstractCacheEntry *entry)
             set[i]->setPosition(cacheSet, i);
             // Call reset function here to set initial value for different
             // replacement policies.
+
+            DPRINTF(PSPBackend, "Allocate cache block for addr %#x, set %d, way %d\n", address, cacheSet, i);
+
             m_replacementPolicy_ptr->reset(replacement_data[cacheSet][i]);
             set[i]->setLastAccess(curTick());
             return entry;
@@ -356,7 +360,7 @@ Addr
 CacheMemory::cacheProbe(Addr address) const
 {
     assert(address == makeLineAddress(address));
-    assert(!cacheAvail(address));
+    assert(!cacheAvail(address));    
 
     int64_t cacheSet = addressToCacheSet(address);
     std::vector<ReplaceableEntry*> candidates;
@@ -375,8 +379,13 @@ CacheMemory::cacheProbe(Addr address) const
         candidates.push_back(static_cast<ReplaceableEntry*>(
                                                        m_cache[cacheSet][i]));
     }
-    return m_cache[cacheSet][m_replacementPolicy_ptr->
-                        getVictim(candidates)->getWay()]->m_Address;
+
+    uint32_t loc = m_replacementPolicy_ptr->getVictim(candidates)->getWay();
+    Addr ret = m_cache[cacheSet][loc]->m_Address;
+
+    DPRINTF(PSPBackend, "Candidate size %d, cache probe for address %#x. Set %d, Way %d\n", candidates.size(), address, cacheSet, loc);
+
+    return ret;
 }
 
 // looks an address up in the cache
@@ -419,7 +428,6 @@ CacheMemory::setMRU(const AbstractCacheEntry *e)
 {
     uint32_t cacheSet = e->getSet();
     uint32_t loc = e->getWay();
-    DPRINTF(RubyCache, "SetMRU set %u way %u.\n", cacheSet, loc);
     m_replacementPolicy_ptr->touch(replacement_data[cacheSet][loc]);
     m_cache[cacheSet][loc]->setLastAccess(curTick());
 }

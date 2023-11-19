@@ -53,6 +53,9 @@ PSPBackend::PSPBackend(const Params *p)
     : SimObject(p), enabled(p->enabled), num_streams(p->num_streams), prefetch_distance(p->prefetch_distance)
 { 
     this->streamTable.resize(p->num_streams, StreamEntry(this, p->num_stream_entry, p->prefetch_distance));
+    for (int i = 0; i < p->num_stream_entry; i++) {
+        this->streamTable[i].setStreamNum(i);
+    }
     numPrefetchHits = 0;
     numPrefetchMisses = 0;
     numHits = 0;
@@ -91,11 +94,9 @@ bool
 PSPBackend::observeHit(Addr address)
 {
     StreamEntry * se = getEntry(address);
+    DPRINTF(PSPBackend, "** Observed hit for %#x, exist entry %d\n", address, se != NULL);
     if (se != NULL) {
-        DPRINTF(PSPBackend, "** Observed hit for %#x\n", address);
-        se->freeEntry(address);
-        se->prefetchRequestCompleted();
-        issuePrefetch(se);
+        DPRINTF(PSPBackend, "PSP entry exists.\n");
         return true;
     }
     return false;
@@ -105,11 +106,9 @@ bool
 PSPBackend::observeMiss(Addr address)
 {
     StreamEntry * se = getEntry(address);
+    DPRINTF(PSPBackend, "** Observed miss for %#x, exist entry %d\n", address, se != NULL);
     if (se != NULL) {
-        DPRINTF(PSPBackend, "** Observed miss for %#x\n", address);
-        se->freeEntry(address);
-        se->prefetchRequestCompleted();
-        issuePrefetch(se);
+        DPRINTF(PSPBackend, "PSP entry exists.\n");
         return true;
     }
     return false;
@@ -119,15 +118,15 @@ bool
 PSPBackend::observePfHit(Addr address)
 {
     StreamEntry * se = getEntry(address);
+    DPRINTF(PSPBackend, "** Observed prefetcher hit for %#x, exist entry %d\n", address, se != NULL);
     if (se != NULL) {
-        DPRINTF(PSPBackend, "** Observed PSP prefetcher hit for %#x\n", address);
-        se->freeEntry(address); // Delete already used entry if possible
-        se->prefetchRequestCompleted();
-        issuePrefetch(se);
-        numPrefetchHits++;
-        return true;
+        DPRINTF(PSPBackend, "PSP entry exists.\n");
+        if (se->viewRequest(address)) {
+            issuePrefetch(se);
+            numPrefetchHits++;
+            return true;
+        }
     }
-    //DPRINTF(PSPBackend, "** Observed OTHER prefetcher hit for %#x\n", address);
     return false;
 }
 
@@ -135,15 +134,15 @@ bool
 PSPBackend::observePfMiss(Addr address)
 {
     StreamEntry * se = getEntry(address);
+    DPRINTF(PSPBackend, "** Observed prefetcher miss for %#x, exist entry %d\n", address, se != NULL);
     if (se != NULL) {
-        DPRINTF(PSPBackend, "** Observed PSP prefetcher miss for %#x\n", address);
-        se->freeEntry(address); // Delete already used entry if possible
-        se->prefetchRequestCompleted();
-        issuePrefetch(se);
-        numPrefetchMisses++;
-        return true;
+        DPRINTF(PSPBackend, "PSP entry exists.\n");
+        if (se->viewRequest(address)) {
+            issuePrefetch(se);
+            numPrefetchMisses++;
+            return true;
+        }
     }
-    //DPRINTF(PSPBackend, "** Observed OTHER prefetcher miss for %#x\n", address);
     return false;
 }
 
@@ -151,17 +150,14 @@ void
 PSPBackend::issuePrefetch(StreamEntry *se)
 {
     int size = se->numToPrefetch();
+    DPRINTF(PSPBackend, "## Issue %d prefetch requests. Num inflight requests : %d\n", size, se->numInflightRequest());
     for (int i = 0; i < size; i++) {
-        if (se->existNextLineAddr()) {
-            Addr cur_addr = se->getNextLineAddr();
-            m_controller->enqueuePrefetch(cur_addr, RubyRequestType_LD);
-            DPRINTF(PSPBackend, "## Enqueue prefetch request for address %#x done.\n", cur_addr);
-            se->incrementLineAddr();
-        }
+        Addr cur_addr = se->issueRequest();
+        m_controller->enqueuePrefetch(cur_addr, RubyRequestType_LD);
     }
 }
 
-void 
+void
 StreamEntry::insertEntry(Addr addr, int size) {
     int idx = entryToValidate();
     // Must have invalid entry for insertion when call this function 

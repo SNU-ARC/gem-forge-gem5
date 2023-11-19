@@ -255,6 +255,14 @@ class SatCounter
         return diff;
     }
 
+    uint8_t getCounter() {
+        return counter;
+    }
+
+    uint8_t getInitVal() {
+        return initialVal;
+    }
+
   private:
     uint8_t initialVal;
     uint8_t maxVal;

@@ -577,9 +577,13 @@ machine(MachineType:L0Cache, "MESI Directory L0 Cache", interface="AbstractStrea
           Entry dEntry := getDCacheEntry(in_msg.LineAddress);
           if (is_valid(dEntry)) {
             // The prefetched block is already present, drop the request.
-            DPRINTF(PSPBackend, "Drop request, already cached : %#x\n", in_msg.LineAddress);
+            DPRINTF(PSPBackend, "Drop request, already cached or processing miss : %#x\n", in_msg.LineAddress);
             if (pspbackend.isEnabled()) {
               pspbackend.observePfHit(in_msg.LineAddress);
+              dEntry.isPrefetch := true;
+              Dcache.setMRU(dEntry); // Added
+              //Dcache.setMRU(dEntry); // Added
+              //Dcache.setMRU(dEntry); // Added
             }
 
             trigger(
@@ -637,7 +641,7 @@ machine(MachineType:L0Cache, "MESI Directory L0 Cache", interface="AbstractStrea
         out_msg.Class := CoherenceClass:GETS;
         out_msg.Sender := machineID;
         out_msg.Dest := createMachineID(MachineType:L1Cache, version);
-        DPRINTF(RubySlicc, "address: %#x, destination: %s\n",
+        DPRINTF(RubySlicc, "L0 issueGETS, address: %#x, destination: %s\n",
                 address, out_msg.Dest);
         out_msg.MessageSize := MessageSizeType:Control;
         out_msg.AccessMode := in_msg.AccessMode;
@@ -657,7 +661,7 @@ machine(MachineType:L0Cache, "MESI Directory L0 Cache", interface="AbstractStrea
         out_msg.Class := CoherenceClass:GETS;
         out_msg.Sender := machineID;
         out_msg.Dest := createMachineID(MachineType:L1Cache, version);
-        DPRINTF(RubySlicc, "PfGETS address: %#x, destination: %s\n",
+        DPRINTF(RubySlicc, "L0 issuePfGETS, PfGETS address: %#x, destination: %s\n",
                 address, out_msg.Dest);
         out_msg.MessageSize := MessageSizeType:Control;
         out_msg.AccessMode := in_msg.AccessMode;
@@ -765,9 +769,10 @@ machine(MachineType:L0Cache, "MESI Directory L0 Cache", interface="AbstractStrea
   action(forward_eviction_to_cpu, "\cc", desc="sends eviction information to the processor") {
     if (send_evictions) {
       if (cache_entry.isPrefetch) {
-        DPRINTF(PSPBackend, "Sending invalidation for %#x to the CPU\n", address);
+        DPRINTF(PSPBackend, "Sending invalidation for %#x to the CPU, prefetch. set %d way %d\n", address, cache_entry.getSet(), cache_entry.getWay());
+      } else {
+        DPRINTF(RubySlicc, "Sending invalidation for %#x to the CPU, no prefetch. set %d way %d\n", address, cache_entry.getSet(), cache_entry.getWay());
       }
-      //DPRINTF(RubySlicc, "Sending invalidation for %#x to the CPU\n", address);
       sequencer.evictionCallback(address);
     }
   }
@@ -940,7 +945,10 @@ machine(MachineType:L0Cache, "MESI Directory L0 Cache", interface="AbstractStrea
 
   action(oo_allocateDCacheBlock, "\o", desc="Set L1 D-cache tag equal to tag of block B.") {
     if (is_invalid(cache_entry)) {
+      DPRINTF(PSPBackend, "L0, Allocate cache block, was invalid. addr %#x\n", address);
       set_cache_entry(Dcache.allocate(address, new Entry));
+    } else {
+      //DPRINTF(PSPBackend, "Allocate cache block, was valid. addr %#x\n", address);
     }
   }
 
@@ -1044,6 +1052,9 @@ machine(MachineType:L0Cache, "MESI Directory L0 Cache", interface="AbstractStrea
     peek(mandatoryQueue_in, RubyRequest) {
       if (pspbackend.isEnabled() && pspbackend.observePfMiss(in_msg.LineAddress)) {
         // empty
+        Dcache.setMRU(cache_entry); // Added
+        //Dcache.setMRU(cache_entry); // Added
+        //Dcache.setMRU(cache_entry); // Added
       } else {
         if (enable_prefetch) {
           prefetcher.observePfMiss(in_msg.LineAddress);
@@ -1071,7 +1082,10 @@ machine(MachineType:L0Cache, "MESI Directory L0 Cache", interface="AbstractStrea
     assert(is_valid(cache_entry));
     cache_entry.isPrefetch := true;
 
-//    Dcache.setMRU(cache_entry); // Added
+    DPRINTF(PSPBackend, "setMRU, addr %#x\n", address);
+    Dcache.setMRU(cache_entry); // Added
+    //Dcache.setMRU(cache_entry); // Added
+    //Dcache.setMRU(cache_entry); // Added
   }
 
   /**

@@ -1,0 +1,142 @@
+configs/ruby/MESI_Two_Level_Stream.py:49:    if buildEnv['PROTOCOL'] != 'MESI_Two_Level_Stream':
+configs/ruby/MESI_Two_Level_Stream.py:50:        fatal("This script requires the MESI_Two_Level_Stream protocol to be built.")
+Binary file build/sconsign.dblite matches
+build/X86/mem/ruby/protocol/Directory_Wakeup.cc:64:                                    panic("Runtime Error at MESI_Two_Level_Stream-dir.sm:272: %s.\n", "assert failure");
+build/X86/mem/ruby/protocol/Directory_Wakeup.cc:281:                                                                                                                DPRINTF(RubySlicc, "MESI_Two_Level_Stream-dir.sm:299: %s\n", (*in_msg_ptr));
+build/X86/mem/ruby/protocol/Directory_Wakeup.cc:282:                                                                                                                panic("Runtime Error at MESI_Two_Level_Stream-dir.sm:300: %s.\n", ("Invalid message"));
+build/X86/mem/ruby/protocol/Directory_Wakeup.cc:315:                                    panic("Runtime Error at MESI_Two_Level_Stream-dir.sm:309: %s.\n", "assert failure");
+build/X86/mem/ruby/protocol/Directory_Wakeup.cc:362:                                                DPRINTF(RubySlicc, "MESI_Two_Level_Stream-dir.sm:315: %s\n", ((*in_msg_ptr)).m_Type);
+build/X86/mem/ruby/protocol/Directory_Wakeup.cc:363:                                                panic("Runtime Error at MESI_Two_Level_Stream-dir.sm:316: %s.\n", ("Invalid message"));
+build/X86/mem/ruby/protocol/Directory_Wakeup.cc:428:                                                DPRINTF(RubySlicc, "MESI_Two_Level_Stream-dir.sm:331: %s\n", ((*in_msg_ptr)).m_Type);
+build/X86/mem/ruby/protocol/Directory_Wakeup.cc:429:                                                panic("Runtime Error at MESI_Two_Level_Stream-dir.sm:332: %s.\n", ("Invalid message"));
+build/X86/mem/ruby/protocol/Directory_Wakeup.cc:454:                                    panic("Runtime Error at MESI_Two_Level_Stream-dir.sm:347: %s.\n", "assert failure");
+build/X86/mem/ruby/protocol/Directory_Wakeup.cc:461:                                    panic("Runtime Error at MESI_Two_Level_Stream-dir.sm:349: %s.\n", "assert failure");
+build/X86/mem/ruby/protocol/Directory_Wakeup.cc:466:                                DPRINTF(RubyStream, "MESI_Two_Level_Stream-dir.sm:351: Received stream indirect request [%lu, +%lu) %#x.\n", ((((((*in_msg_ptr)).m_sliceIds).singleSliceId())).getStartIdx()), ((((((*in_msg_ptr)).m_sliceIds).singleSliceId())).getNumElements()), ((*in_msg_ptr)).m_addr);
+build/X86/mem/ruby/protocol/L2Cache_Wakeup.cc:69:                                DPRINTF(RubySlicc, "MESI_Two_Level_Stream-L2cache.sm:387: Addr: %#x State: %s Sender: %s Type: %s Dest: %s\n", ((*in_msg_ptr)).m_addr, state, ((*in_msg_ptr)).m_Sender, ((*in_msg_ptr)).m_Type, ((*in_msg_ptr)).m_Destination);
+build/X86/mem/ruby/protocol/L2Cache_Wakeup.cc:72:                                    panic("Runtime Error at MESI_Two_Level_Stream-L2cache.sm:391: %s.\n", "assert failure");
+build/X86/mem/ruby/protocol/L2Cache_Wakeup.cc:102:                                                            panic("Runtime Error at MESI_Two_Level_Stream-L2cache.sm:400: %s.\n", "assert failure");
+build/X86/mem/ruby/protocol/L2Cache_Wakeup.cc:151:                                                                        panic("Runtime Error at MESI_Two_Level_Stream-L2cache.sm:407: %s.\n", ("Zero PendingUnblocks when receiving Unblock"));
+build/X86/mem/ruby/protocol/L2Cache_Wakeup.cc:177:                                                            panic("Runtime Error at MESI_Two_Level_Stream-L2cache.sm:413: %s.\n", ("unknown unblock message"));
+build/X86/mem/ruby/protocol/L2Cache_Wakeup.cc:202:                                    panic("Runtime Error at MESI_Two_Level_Stream-L2cache.sm:424: %s.\n", "assert failure");
+build/X86/mem/ruby/protocol/L2Cache_Wakeup.cc:298:                                                                panic("Runtime Error at MESI_Two_Level_Stream-L2cache.sm:442: %s.\n", ("unknown message type"));
+build/X86/mem/ruby/protocol/L2Cache_Wakeup.cc:346:                                                                                DPRINTF(RubySlicc, "MESI_Two_Level_Stream-L2cache.sm:451: Addr: %#x MemInv TBEs %d.\n", ((*in_msg_ptr)).m_addr, (((*m_TBEs_ptr)).size()));
+build/X86/mem/ruby/protocol/L2Cache_Wakeup.cc:367:                                                                                panic("Runtime Error at MESI_Two_Level_Stream-L2cache.sm:454: %s.\n", ("unknown message type"));
+build/X86/mem/ruby/protocol/L2Cache_Wakeup.cc:392:                                DPRINTF(RubySlicc, "MESI_Two_Level_Stream-L2cache.sm:465: Addr: %#x Req: %s Type: %s Slices: %s Dest: %s\n", ((*in_msg_ptr)).m_addr, ((*in_msg_ptr)).m_Requestors, ((*in_msg_ptr)).m_Type, ((*in_msg_ptr)).m_sliceIds, ((*in_msg_ptr)).m_Destination);
+build/X86/mem/ruby/protocol/L2Cache_Wakeup.cc:399:                                    panic("Runtime Error at MESI_Two_Level_Stream-L2cache.sm:472: %s.\n", "assert failure");
+build/X86/mem/ruby/protocol/L2Cache_Wakeup.cc:407:                                            panic("Runtime Error at MESI_Two_Level_Stream-L2cache.sm:479: %s.\n", "assert failure");
+build/X86/mem/ruby/protocol/L2Cache_Wakeup.cc:412:                                        DPRINTF(RubySlicc, "MESI_Two_Level_Stream-L2cache.sm:480: Addr: %#x MemInvAsRequest TBEs %d.\n", ((*in_msg_ptr)).m_addr, (((*m_TBEs_ptr)).size()));
+build/X86/mem/ruby/protocol/L2Cache_Wakeup.cc:540:                                                                                        DPRINTF(RubyStream, "MESI_Two_Level_Stream-L2cache.sm:507: Miss stream request [%lu, +%lu).\n", ((((((*in_msg_ptr)).m_sliceIds).singleSliceId())).getStartIdx()), ((((((*in_msg_ptr)).m_sliceIds).singleSliceId())).getNumElements()));
+build/X86/mem/ruby/protocol/L2Cache_Wakeup.cc:635:                                    panic("Runtime Error at MESI_Two_Level_Stream-L2cache.sm:546: %s.\n", "assert failure");
+build/X86/mem/ruby/protocol/L2Cache_Wakeup.cc:642:                                    panic("Runtime Error at MESI_Two_Level_Stream-L2cache.sm:548: %s.\n", "assert failure");
+build/X86/mem/ruby/protocol/L2Cache_Wakeup.cc:647:                                DPRINTF(RubyStream, "MESI_Two_Level_Stream-L2cache.sm:550: Received stream indirect request [%lu, +%lu) %#x.\n", ((((((*in_msg_ptr)).m_sliceIds).singleSliceId())).getStartIdx()), ((((((*in_msg_ptr)).m_sliceIds).singleSliceId())).getNumElements()), ((*in_msg_ptr)).m_addr);
+Binary file build/X86/mem/ruby/protocol/Directory_Wakeup.o matches
+Binary file build/X86/mem/ruby/protocol/lib.o.partial matches
+Binary file build/X86/mem/ruby/protocol/DMA_Controller.o matches
+Binary file build/X86/mem/ruby/protocol/Directory_Controller.o matches
+build/X86/mem/ruby/protocol/DMA_Wakeup.cc:103:                                                panic("Runtime Error at MESI_Two_Level_Stream-dma.sm:113: %s.\n", ("Invalid request type"));
+build/X86/mem/ruby/protocol/DMA_Wakeup.cc:168:                                                panic("Runtime Error at MESI_Two_Level_Stream-dma.sm:129: %s.\n", ("Invalid response type"));
+Binary file build/X86/mem/ruby/protocol/DMA_Wakeup.o matches
+build/X86/mem/ruby/protocol/Directory_Controller.cc:682:        panic("Runtime Error at MESI_Two_Level_Stream-dir.sm:485: %s.\n", "assert failure");
+build/X86/mem/ruby/protocol/Directory_Controller.cc:736:        panic("Runtime Error at MESI_Two_Level_Stream-dir.sm:511: %s.\n", "assert failure");
+build/X86/mem/ruby/protocol/Directory_Controller.cc:845:        panic("Runtime Error at MESI_Two_Level_Stream-dir.sm:557: %s.\n", "assert failure");
+build/X86/mem/ruby/protocol/Directory_Controller.cc:878:    panic("Runtime Error at MESI_Two_Level_Stream-dir.sm:569: %s.\n", "assert failure");
+build/X86/mem/ruby/protocol/Directory_Controller.cc:905:    panic("Runtime Error at MESI_Two_Level_Stream-dir.sm:575: %s.\n", "assert failure");
+build/X86/mem/ruby/protocol/Directory_Controller.cc:933:    panic("Runtime Error at MESI_Two_Level_Stream-dir.sm:582: %s.\n", "assert failure");
+build/X86/mem/ruby/protocol/Directory_Controller.cc:960:    panic("Runtime Error at MESI_Two_Level_Stream-dir.sm:588: %s.\n", "assert failure");
+build/X86/mem/ruby/protocol/Directory_Controller.cc:978:    panic("Runtime Error at MESI_Two_Level_Stream-dir.sm:594: %s.\n", "assert failure");
+build/X86/mem/ruby/protocol/Directory_Controller.cc:1061:    panic("Runtime Error at MESI_Two_Level_Stream-dir.sm:632: %s.\n", "assert failure");
+build/X86/mem/ruby/protocol/Directory_Controller.cc:1088:    panic("Runtime Error at MESI_Two_Level_Stream-dir.sm:638: %s.\n", "assert failure");
+build/X86/mem/ruby/protocol/Directory_Controller.cc:1115:    panic("Runtime Error at MESI_Two_Level_Stream-dir.sm:644: %s.\n", "assert failure");
+build/X86/mem/ruby/protocol/Directory_Controller.cc:1133:    panic("Runtime Error at MESI_Two_Level_Stream-dir.sm:651: %s.\n", "assert failure");
+build/X86/mem/ruby/protocol/Directory_Controller.cc:1163:    panic("Runtime Error at MESI_Two_Level_Stream-dir.sm:673: %s.\n", "assert failure");
+build/X86/mem/ruby/protocol/Directory_Controller.cc:1171:            panic("Runtime Error at MESI_Two_Level_Stream-dir.sm:675: %s.\n", "assert failure");
+build/X86/mem/ruby/protocol/Directory_Controller.cc:1220:DPRINTF(RubyStream, "MESI_Two_Level_Stream-dir.sm:695: Receive StreamConfig: %#x\n", ((*in_msg_ptr)).m_pkt);
+build/X86/mem/ruby/protocol/Directory_Controller.cc:1331:        DPRINTF(RubySlicc, "MESI_Two_Level_Stream-dir.sm:209: %s\n", (Directory_State_to_permission((*tbe).m_TBEState)));
+build/X86/mem/ruby/protocol/Directory_Controller.cc:1335:            DPRINTF(RubySlicc, "MESI_Two_Level_Stream-dir.sm:214: %s\n", (Directory_State_to_permission((*(getDirectoryEntry(param_addr))).m_DirectoryState)));
+build/X86/mem/ruby/protocol/Directory_Controller.cc:1338:        DPRINTF(RubySlicc, "MESI_Two_Level_Stream-dir.sm:218: %s\n", AccessPermission_NotPresent);
+build/X86/mem/ruby/protocol/L2Cache_Controller.cc:830:        panic("Runtime Error at MESI_Two_Level_Stream-L2cache.sm:598: %s.\n", "assert failure");
+build/X86/mem/ruby/protocol/L2Cache_Controller.cc:862:        panic("Runtime Error at MESI_Two_Level_Stream-L2cache.sm:612: %s.\n", "assert failure");
+build/X86/mem/ruby/protocol/L2Cache_Controller.cc:917:        panic("Runtime Error at MESI_Two_Level_Stream-L2cache.sm:635: %s.\n", "assert failure");
+build/X86/mem/ruby/protocol/L2Cache_Controller.cc:959:        panic("Runtime Error at MESI_Two_Level_Stream-L2cache.sm:649: %s.\n", "assert failure");
+build/X86/mem/ruby/protocol/L2Cache_Controller.cc:1005:        panic("Runtime Error at MESI_Two_Level_Stream-L2cache.sm:668: %s.\n", "assert failure");
+build/X86/mem/ruby/protocol/L2Cache_Controller.cc:1019:            DPRINTF(RubyMulticast, "MESI_Two_Level_Stream-L2cache.sm:679: Multicast %#x to %s.\n", addr, multicastTestDest1);
+build/X86/mem/ruby/protocol/L2Cache_Controller.cc:1023:            DPRINTF(RubyMulticast, "MESI_Two_Level_Stream-L2cache.sm:682: Multicast %#x to %s.\n", addr, multicastTestDest2);
+build/X86/mem/ruby/protocol/L2Cache_Controller.cc:1027:            DPRINTF(RubyMulticast, "MESI_Two_Level_Stream-L2cache.sm:685: Multicast %#x to %s.\n", addr, multicastTestDest3);
+build/X86/mem/ruby/protocol/L2Cache_Controller.cc:1031:            DPRINTF(RubyMulticast, "MESI_Two_Level_Stream-L2cache.sm:688: Multicast %#x to %s.\n", addr, multicastTestDest4);
+build/X86/mem/ruby/protocol/L2Cache_Controller.cc:1035:                DPRINTF(RubyMulticast, "MESI_Two_Level_Stream-L2cache.sm:692: Multicast Line %#x State %s\n", addr, (*m_cache_entry_ptr).m_CacheState);
+build/X86/mem/ruby/protocol/L2Cache_Controller.cc:1078:        panic("Runtime Error at MESI_Two_Level_Stream-L2cache.sm:717: %s.\n", "assert failure");
+build/X86/mem/ruby/protocol/L2Cache_Controller.cc:1090:            DPRINTF(RubyMulticast, "MESI_Two_Level_Stream-L2cache.sm:726: Multicast Line %#x State %s.\n", addr, (*m_cache_entry_ptr).m_CacheState);
+build/X86/mem/ruby/protocol/L2Cache_Controller.cc:1094:            panic("Runtime Error at MESI_Two_Level_Stream-L2cache.sm:733: %s.\n", "assert failure");
+build/X86/mem/ruby/protocol/L2Cache_Controller.cc:1134:        panic("Runtime Error at MESI_Two_Level_Stream-L2cache.sm:749: %s.\n", "assert failure");
+build/X86/mem/ruby/protocol/L2Cache_Controller.cc:1146:            DPRINTF(RubyMulticast, "MESI_Two_Level_Stream-L2cache.sm:758: Multicast Line %#x State %s.\n", addr, (*m_tbe_ptr).m_TBEState);
+build/X86/mem/ruby/protocol/L2Cache_Controller.cc:1150:            panic("Runtime Error at MESI_Two_Level_Stream-L2cache.sm:765: %s.\n", "assert failure");
+build/X86/mem/ruby/protocol/L2Cache_Controller.cc:1190:        panic("Runtime Error at MESI_Two_Level_Stream-L2cache.sm:782: %s.\n", "assert failure");
+build/X86/mem/ruby/protocol/L2Cache_Controller.cc:1221:    panic("Runtime Error at MESI_Two_Level_Stream-L2cache.sm:795: %s.\n", "assert failure");
+build/X86/mem/ruby/protocol/L2Cache_Controller.cc:1228:    panic("Runtime Error at MESI_Two_Level_Stream-L2cache.sm:796: %s.\n", "assert failure");
+build/X86/mem/ruby/protocol/L2Cache_Controller.cc:1237:        panic("Runtime Error at MESI_Two_Level_Stream-L2cache.sm:798: %s.\n", "assert failure");
+build/X86/mem/ruby/protocol/L2Cache_Controller.cc:1266:    panic("Runtime Error at MESI_Two_Level_Stream-L2cache.sm:809: %s.\n", "assert failure");
+build/X86/mem/ruby/protocol/L2Cache_Controller.cc:1273:    panic("Runtime Error at MESI_Two_Level_Stream-L2cache.sm:810: %s.\n", "assert failure");
+build/X86/mem/ruby/protocol/L2Cache_Controller.cc:1282:        panic("Runtime Error at MESI_Two_Level_Stream-L2cache.sm:812: %s.\n", "assert failure");
+build/X86/mem/ruby/protocol/L2Cache_Controller.cc:1311:    panic("Runtime Error at MESI_Two_Level_Stream-L2cache.sm:823: %s.\n", "assert failure");
+build/X86/mem/ruby/protocol/L2Cache_Controller.cc:1319:            panic("Runtime Error at MESI_Two_Level_Stream-L2cache.sm:826: %s.\n", "assert failure");
+build/X86/mem/ruby/protocol/L2Cache_Controller.cc:1328:                panic("Runtime Error at MESI_Two_Level_Stream-L2cache.sm:828: %s.\n", "assert failure");
+build/X86/mem/ruby/protocol/L2Cache_Controller.cc:1364:        panic("Runtime Error at MESI_Two_Level_Stream-L2cache.sm:850: %s.\n", "assert failure");
+build/X86/mem/ruby/protocol/L2Cache_Controller.cc:1371:        panic("Runtime Error at MESI_Two_Level_Stream-L2cache.sm:851: %s.\n", "assert failure");
+build/X86/mem/ruby/protocol/L2Cache_Controller.cc:1380:    DPRINTF(RubySlicc, "MESI_Two_Level_Stream-L2cache.sm:856: %s\n", (*out_msg).m_Destination);
+build/X86/mem/ruby/protocol/L2Cache_Controller.cc:1382:    DPRINTF(RubySlicc, "MESI_Two_Level_Stream-L2cache.sm:858: Address: %#x, Destination: %s, DataBlock: %s\n", (*out_msg).m_addr, (*out_msg).m_Destination, (*out_msg).m_DataBlk);
+build/X86/mem/ruby/protocol/L2Cache_Controller.cc:1404:        panic("Runtime Error at MESI_Two_Level_Stream-L2cache.sm:866: %s.\n", "assert failure");
+build/X86/mem/ruby/protocol/L2Cache_Controller.cc:1444:        panic("Runtime Error at MESI_Two_Level_Stream-L2cache.sm:878: %s.\n", "assert failure");
+build/X86/mem/ruby/protocol/L2Cache_Controller.cc:1485:        panic("Runtime Error at MESI_Two_Level_Stream-L2cache.sm:891: %s.\n", "assert failure");
+build/X86/mem/ruby/protocol/L2Cache_Controller.cc:1515:    panic("Runtime Error at MESI_Two_Level_Stream-L2cache.sm:905: %s.\n", "assert failure");
+build/X86/mem/ruby/protocol/L2Cache_Controller.cc:1542:    panic("Runtime Error at MESI_Two_Level_Stream-L2cache.sm:915: %s.\n", "assert failure");
+build/X86/mem/ruby/protocol/L2Cache_Controller.cc:1575:    panic("Runtime Error at MESI_Two_Level_Stream-L2cache.sm:921: %s.\n", "assert failure");
+build/X86/mem/ruby/protocol/L2Cache_Controller.cc:1685:    panic("Runtime Error at MESI_Two_Level_Stream-L2cache.sm:949: %s.\n", "assert failure");
+build/X86/mem/ruby/protocol/L2Cache_Controller.cc:1721:    panic("Runtime Error at MESI_Two_Level_Stream-L2cache.sm:959: %s.\n", "assert failure");
+build/X86/mem/ruby/protocol/L2Cache_Controller.cc:1757:    panic("Runtime Error at MESI_Two_Level_Stream-L2cache.sm:969: %s.\n", "assert failure");
+build/X86/mem/ruby/protocol/L2Cache_Controller.cc:1793:    panic("Runtime Error at MESI_Two_Level_Stream-L2cache.sm:979: %s.\n", "assert failure");
+build/X86/mem/ruby/protocol/L2Cache_Controller.cc:1827:    panic("Runtime Error at MESI_Two_Level_Stream-L2cache.sm:987: %s.\n", "assert failure");
+build/X86/mem/ruby/protocol/L2Cache_Controller.cc:1860:    panic("Runtime Error at MESI_Two_Level_Stream-L2cache.sm:994: %s.\n", "assert failure");
+build/X86/mem/ruby/protocol/L2Cache_Controller.cc:1893:    panic("Runtime Error at MESI_Two_Level_Stream-L2cache.sm:1001: %s.\n", "assert failure");
+build/X86/mem/ruby/protocol/L2Cache_Controller.cc:2010:        panic("Runtime Error at MESI_Two_Level_Stream-L2cache.sm:1036: %s.\n", "assert failure");
+build/X86/mem/ruby/protocol/L2Cache_Controller.cc:2115:    panic("Runtime Error at MESI_Two_Level_Stream-L2cache.sm:1072: %s.\n", "assert failure");
+build/X86/mem/ruby/protocol/L2Cache_Controller.cc:2149:    panic("Runtime Error at MESI_Two_Level_Stream-L2cache.sm:1080: %s.\n", "assert failure");
+build/X86/mem/ruby/protocol/L2Cache_Controller.cc:2182:    panic("Runtime Error at MESI_Two_Level_Stream-L2cache.sm:1087: %s.\n", "assert failure");
+build/X86/mem/ruby/protocol/L2Cache_Controller.cc:2189:    panic("Runtime Error at MESI_Two_Level_Stream-L2cache.sm:1088: %s.\n", "assert failure");
+build/X86/mem/ruby/protocol/L2Cache_Controller.cc:2196:    panic("Runtime Error at MESI_Two_Level_Stream-L2cache.sm:1089: %s.\n", "assert failure");
+build/X86/mem/ruby/protocol/L2Cache_Controller.cc:2201:DPRINTF(LLCRubyStreamBase, "MESI_Two_Level_Stream-L2cache.sm:1090: %s: Add to LLC cache entry.\n", ((*in_msg_ptr)).m_sliceIds);
+build/X86/mem/ruby/protocol/L2Cache_Controller.cc:2231:    panic("Runtime Error at MESI_Two_Level_Stream-L2cache.sm:1098: %s.\n", "assert failure");
+build/X86/mem/ruby/protocol/L2Cache_Controller.cc:2264:    panic("Runtime Error at MESI_Two_Level_Stream-L2cache.sm:1105: %s.\n", "assert failure");
+build/X86/mem/ruby/protocol/L2Cache_Controller.cc:2287:    panic("Runtime Error at MESI_Two_Level_Stream-L2cache.sm:1111: %s.\n", "assert failure");
+build/X86/mem/ruby/protocol/L2Cache_Controller.cc:2319:    panic("Runtime Error at MESI_Two_Level_Stream-L2cache.sm:1117: %s.\n", "assert failure");
+build/X86/mem/ruby/protocol/L2Cache_Controller.cc:2354:    panic("Runtime Error at MESI_Two_Level_Stream-L2cache.sm:1126: %s.\n", "assert failure");
+build/X86/mem/ruby/protocol/L2Cache_Controller.cc:2426:    panic("Runtime Error at MESI_Two_Level_Stream-L2cache.sm:1150: %s.\n", "assert failure");
+build/X86/mem/ruby/protocol/L2Cache_Controller.cc:2451:    panic("Runtime Error at MESI_Two_Level_Stream-L2cache.sm:1159: %s.\n", "assert failure");
+build/X86/mem/ruby/protocol/L2Cache_Controller.cc:2485:    panic("Runtime Error at MESI_Two_Level_Stream-L2cache.sm:1166: %s.\n", "assert failure");
+build/X86/mem/ruby/protocol/L2Cache_Controller.cc:2520:    panic("Runtime Error at MESI_Two_Level_Stream-L2cache.sm:1174: %s.\n", "assert failure");
+build/X86/mem/ruby/protocol/L2Cache_Controller.cc:2553:DPRINTF(RubyStream, "MESI_Two_Level_Stream-L2cache.sm:1183: Receive StreamConfig: %#x\n", ((*in_msg_ptr)).m_pkt);
+build/X86/mem/ruby/protocol/L2Cache_Controller.cc:2715:    panic("Runtime Error at MESI_Two_Level_Stream-L2cache.sm:249: %s.\n", "assert failure");
+build/X86/mem/ruby/protocol/L2Cache_Controller.cc:2720:DPRINTF(RubySlicc, "MESI_Two_Level_Stream-L2cache.sm:250: machineID: %s, requestor: %s, address: %#x\n", m_machineID, param_requestor, param_addr);
+build/X86/mem/ruby/protocol/L2Cache_Controller.cc:2754:        DPRINTF(RubySlicc, "MESI_Two_Level_Stream-L2cache.sm:278: %s %s\n", (*tbe).m_TBEState, (L2Cache_State_to_permission((*tbe).m_TBEState)));
+build/X86/mem/ruby/protocol/L2Cache_Controller.cc:2760:            DPRINTF(RubySlicc, "MESI_Two_Level_Stream-L2cache.sm:284: %s %s\n", (*cache_entry).m_CacheState, (L2Cache_State_to_permission((*cache_entry).m_CacheState)));
+build/X86/mem/ruby/protocol/L2Cache_Controller.cc:2763:        DPRINTF(RubySlicc, "MESI_Two_Level_Stream-L2cache.sm:288: %s\n", AccessPermission_NotPresent);
+build/X86/mem/ruby/protocol/L2Cache_Controller.cc:2847:                                                                                        DPRINTF(RubySlicc, "MESI_Two_Level_Stream-L2cache.sm:356: address: %#x, Request Type: %s\n", param_addr, param_type);
+build/X86/mem/ruby/protocol/L2Cache_Controller.cc:2848:                                                                                        panic("Runtime Error at MESI_Two_Level_Stream-L2cache.sm:357: %s.\n", ("Invalid L1 forwarded request type"));
+build/X86/mem/ruby/protocol/L2Cache_Controller.cc:2873:    panic("Runtime Error at MESI_Two_Level_Stream-L2cache.sm:366: %s.\n", "assert failure");
+Binary file build/X86/mem/ruby/protocol/L2Cache_Controller.o matches
+Binary file build/X86/mem/ruby/protocol/L2Cache_Wakeup.o matches
+build/X86/mem/ruby/protocol/DMA_Controller.cc:395:    panic("Runtime Error at MESI_Two_Level_Stream-dma.sm:172: %s.\n", "assert failure");
+build/X86/mem/ruby/protocol/DMA_Controller.cc:505:panic("Runtime Error at MESI_Two_Level_Stream-dma.sm:96: %s.\n", ("DMA does not support functional read."));
+build/X86/mem/ruby/protocol/DMA_Controller.cc:512:panic("Runtime Error at MESI_Two_Level_Stream-dma.sm:100: %s.\n", ("DMA does not support functional write."));
+Binary file build/X86/gem5.opt matches
+src/mem/protocol/stream/MESI_Three_Level_Stream.slicc:4:include "MESI_Two_Level_Stream-msg.sm";
+src/mem/protocol/stream/MESI_Three_Level_Stream.slicc:8:include "MESI_Two_Level_Stream-L2cache.sm";
+src/mem/protocol/stream/MESI_Three_Level_Stream.slicc:9:include "MESI_Two_Level_Stream-dir.sm";
+src/mem/protocol/stream/MESI_Three_Level_Stream.slicc:10:include "MESI_Two_Level_Stream-dma.sm";
+src/mem/protocol/stream/MESI_Two_Level_Stream.slicc:1:protocol "MESI_Two_Level_Stream";
+src/mem/protocol/stream/MESI_Two_Level_Stream.slicc:4:include "MESI_Two_Level_Stream-msg.sm";
+src/mem/protocol/stream/MESI_Two_Level_Stream.slicc:5:include "MESI_Two_Level_Stream-L1cache.sm";
+src/mem/protocol/stream/MESI_Two_Level_Stream.slicc:6:include "MESI_Two_Level_Stream-L2cache.sm";
+src/mem/protocol/stream/MESI_Two_Level_Stream.slicc:7:include "MESI_Two_Level_Stream-dir.sm";
+src/mem/protocol/stream/MESI_Two_Level_Stream.slicc:8:include "MESI_Two_Level_Stream-dma.sm";
+src/mem/protocol/stream/SConsopts:36:    'MESI_Two_Level_Stream',
+grep: input file ‘result.txt’ is also the output
