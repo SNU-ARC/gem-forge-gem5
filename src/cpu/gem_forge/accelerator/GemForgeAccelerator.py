@@ -51,6 +51,8 @@ class PSPFrontend(GemForgeAccelerator):
         4, "Capacity per PA Queue.")
     isPSPBackendEnabled = Param.Bool(
         True, "Is PSPBackend enabled.")
+    isTLBPrefetchOnly = Param.Bool(
+        False, "Is TLBPrefetch only = Cache prefetch off.")
 
 class StreamEngine(GemForgeAccelerator):
     type = "StreamEngine"

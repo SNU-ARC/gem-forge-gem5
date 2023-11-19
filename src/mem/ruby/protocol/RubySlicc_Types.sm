@@ -298,6 +298,7 @@ structure(PSPBackend, desc="Backend of PSP module", external="yes") {
   bool isEnabled();
   bool observeHit(Addr);
   bool observeMiss(Addr);
+  bool observePfInCache(Addr);
   bool observePfHit(Addr);
   bool observePfMiss(Addr);
 }

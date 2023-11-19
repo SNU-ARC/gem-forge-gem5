@@ -53,7 +53,8 @@ void IndexPacketHandler::issueToMemoryCallback(GemForgeCPUDelegator* cpuDelegato
 
 PSPFrontend::PSPFrontend(Params* params)
   : GemForgeAccelerator(params), totalPatternTableEntries(params->totalPatternTableEntries),
-    isPSPBackendEnabled(params->isPSPBackendEnabled) {
+    isPSPBackendEnabled(params->isPSPBackendEnabled), 
+    isTLBPrefetchOnly(params->isTLBPrefetchOnly) {
     valCurrentSize = new uint64_t[params->totalPatternTableEntries]();
     patternTable = new PatternTable(params->totalPatternTableEntries); 
     indexQueueArray = new IndexQueueArray(params->totalPatternTableEntries,
@@ -134,25 +135,27 @@ void PSPFrontend::tick() {
     this->issueTranslateValueAddress(validIQEntryId);
   }
 
-  this->pspBackend->printStatus();
   /* Issue PA packets to PSP Backend*/
   for (uint32_t i = 0; i < this->totalPatternTableEntries; i++) {
     //PSP_FE_DPRINTF("PSPBackend_canInsert: %d / %d\n", this->pspBackend->canInsertEntry(i), this->totalPatternTableEntries);
     if (this->paQueueArray->canRead(i)) {
-      if (!this->isPSPBackendEnabled) { 
-        // Deadlock prevent implementation to measure impact of TLB prefetch
-        this->paQueueArray->pop(i);
+      if (this->isPSPBackendEnabled) {
+        if (this->pspBackend->canInsertEntry(i)) {
+          PhysicalAddressQueue::PhysicalAddressArgs validPAQEntry;
+          this->paQueueArray->read(i, &validPAQEntry);
+          this->pspBackend->insertEntry(validPAQEntry.entryId, validPAQEntry.pAddr, validPAQEntry.size);
+          PSP_FE_DPRINTF("paQueueEntryId: %lu, pAddr: %#x, size: %lu, PSPBackend_canRead: %d\n",
+              validPAQEntry.entryId, validPAQEntry.pAddr, validPAQEntry.size, this->paQueueArray->canRead(i));
+          this->paQueueArray->pop(i);
+        }
       }
-      else if (this->pspBackend->canInsertEntry(i)) {
-        PhysicalAddressQueue::PhysicalAddressArgs validPAQEntry;
-        this->paQueueArray->read(i, &validPAQEntry);
-        this->pspBackend->insertEntry(validPAQEntry.entryId, validPAQEntry.pAddr, validPAQEntry.size);
-        PSP_FE_DPRINTF("paQueueEntryId: %lu, pAddr: %x, size: %lu, PSPBackend_canRead: %d\n",
-            validPAQEntry.entryId, validPAQEntry.pAddr, validPAQEntry.size, this->paQueueArray->canRead(i));
+      else {
+        // Deadlock prevent implementation to measure impact of TLB prefetch
         this->paQueueArray->pop(i);
       }
     }
   }
+  this->pspBackend->printStatus();
 }
 
 void PSPFrontend::issueLoadIndex(uint64_t _validEntryId) {
@@ -189,13 +192,13 @@ void PSPFrontend::issueLoadIndex(uint64_t _validEntryId) {
 
   // Send load index request
   IndexPacketHandler* indexPacketHandler = new IndexPacketHandler(this, _validEntryId,
-      cacheBlockVAddr, currentVAddr, currentSize, 8 /* Latency for address compute */);
+      cacheBlockVAddr, currentVAddr, currentSize, 1 /* Latency for address compute */);
   Request::Flags flags;
   PacketPtr pkt = GemForgePacketHandler::createGemForgePacket(
       cacheBlockPAddr, cacheLineSize, indexPacketHandler, nullptr /* Data */,
       cpuDelegator->dataMasterId(), 0 /* ContextId */, 0 /* PC */, flags);
   pkt->req->setVirt(cacheBlockVAddr);
-  PSP_FE_DPRINTF("Prefetch for %luth entryId. VA: %x PA: %x Size: %d.\n", _validEntryId,
+  PSP_FE_DPRINTF("Prefetch for %luth entryId. VA: %#x PA: %#x Size: %d.\n", _validEntryId,
       cacheBlockVAddr, pkt->getAddr(), pkt->getSize());
  
   if (cpuDelegator->cpuType == GemForgeCPUDelegator::ATOMIC_SIMPLE) {
@@ -266,13 +269,13 @@ void PSPFrontend::issueTranslateValueAddress(uint64_t _validEntryId) {
 
   // VA to PA
   IndexPacketHandler* indexPacketHandler = new IndexPacketHandler(this, _validEntryId,
-      cacheBlockVAddr, currentVAddr, currentSize, 8 /* Latency for address compute */);
+      cacheBlockVAddr, currentVAddr, currentSize, 1 /* Latency for address compute */);
   Request::Flags flags;
   PacketPtr pkt = GemForgePacketHandler::createGemForgePacket(
       cacheBlockPAddr, cacheBlockSize, indexPacketHandler, nullptr /* Data */,
       cpuDelegator->dataMasterId(), 0 /* ContextId */, 0 /* PC */, flags);
   pkt->req->setVirt(cacheBlockVAddr);
-  PSP_FE_DPRINTF("Address translation for %luth entryId (size: %lu). VA: %x, BlockVA: %x PA: %x Size: %d.\n", _validEntryId,
+  PSP_FE_DPRINTF("Address translation for %luth entryId (size: %lu). VA: %#x, BlockVA: %#x PA: %#x Size: %d.\n", _validEntryId,
       this->indexQueueArray->getSize(_validEntryId), currentVAddr, cacheBlockVAddr, pkt->getAddr(), pkt->getSize());
  
   if (cpuDelegator->cpuType == GemForgeCPUDelegator::ATOMIC_SIMPLE) {
@@ -306,7 +309,7 @@ void PSPFrontend::handlePacketResponse(IndexPacketHandler* indexPacketHandler,
   data += (vaddr - cacheBlockVAddr);
   this->indexQueueArray->insert(entryId, data, inputSize);
   this->indexQueueArray->numInflightBytes[entryId] -= inputSize;
-  PSP_FE_DPRINTF("%luth IndexQueue filled with blockVA: %x, VA: %x, size: %lu, data: %lu.\n", entryId,
+  PSP_FE_DPRINTF("%luth IndexQueue filled with blockVA: %#x, VA: %#x, size: %lu, data: %lu.\n", entryId,
       cacheBlockVAddr, vaddr, inputSize, *(uint64_t*)data);
 }
 
@@ -320,8 +323,7 @@ void PSPFrontend::handleAddressTranslateResponse(IndexPacketHandler* _indexPacke
   PhysicalAddressQueue::PhysicalAddressArgs args(entryId, pAddr, size);
   this->paQueueArray->insert(entryId, &args);
   
-  DPRINTF(PSPBackend, "Address translation for %luth entryId done. PA: %x, Size: %lu, numInflightTranslations: %lu.\n", entryId, pAddr, size, this->paQueueArray->numInflightTranslations[entryId]);
-  //PSP_FE_DPRINTF("Address translation for %luth entryId done. PA: %x, Size: %lu, numInflight: %lu.\n", entryId, pAddr, size, this->paQueueArray->numInflightTranslations[entryId]);
+  PSP_FE_DPRINTF("Address translation for %luth entryId done. PA: %#x, Size: %lu, numInflightTranslations: %lu.\n", entryId, pAddr, size, this->paQueueArray->numInflightTranslations[entryId]);
 }
 
 /********************************************************************************

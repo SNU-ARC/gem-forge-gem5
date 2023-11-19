@@ -577,9 +577,10 @@ machine(MachineType:L0Cache, "MESI Directory L0 Cache", interface="AbstractStrea
           Entry dEntry := getDCacheEntry(in_msg.LineAddress);
           if (is_valid(dEntry)) {
             // The prefetched block is already present, drop the request.
-            DPRINTF(PSPBackend, "Drop request, already cached : %#x\n", in_msg.LineAddress);
+            DPRINTF(PSPBackend, "Drop request, already cached : %#x, TBE_hit : %d\n",
+                in_msg.LineAddress, TBEs.isPresent(in_msg.LineAddress));
             if (pspbackend.isEnabled()) {
-              pspbackend.observePfHit(in_msg.LineAddress);
+              pspbackend.observePfInCache(in_msg.LineAddress);
             }
 
             trigger(
@@ -632,6 +633,8 @@ machine(MachineType:L0Cache, "MESI Directory L0 Cache", interface="AbstractStrea
   // ACTIONS
   action(a_issueGETS, "a", desc="Issue GETS") {
     peek(mandatoryQueue_in, RubyRequest) {
+      DPRINTF(PSPBackend, "Issue load, peek from mandatory queue %#x\n", address);
+
       enqueue(requestNetwork_out, CoherenceMsg, request_latency) {
         out_msg.addr := address;
         out_msg.Class := CoherenceClass:GETS;
@@ -997,8 +1000,14 @@ machine(MachineType:L0Cache, "MESI Directory L0 Cache", interface="AbstractStrea
       Addr req_address := in_msg.LineAddress;
       RubyRequestType type := in_msg.Type;
       if (cache_entry.isPrefetch) {
-        if (pspbackend.isEnabled() && pspbackend.observePfHit(req_address)) {
-          // empty
+        if (pspbackend.isEnabled()) {
+          if (pspbackend.observePfHit(req_address)) {
+            cache_entry.isPrefetch := false;
+          }
+          else if (enable_prefetch) {
+            prefetcher.observePfHit(req_address);
+            cache_entry.isPrefetch := false;
+          }
         } else {
           if (enable_prefetch) {
             prefetcher.observePfHit(req_address);
@@ -1026,8 +1035,13 @@ machine(MachineType:L0Cache, "MESI Directory L0 Cache", interface="AbstractStrea
     peek(mandatoryQueue_in, RubyRequest) {
       Addr req_address := in_msg.LineAddress;
       RubyRequestType type := in_msg.Type;
-      if (pspbackend.isEnabled() && pspbackend.observeMiss(req_address)) {
-        // empty
+      if (pspbackend.isEnabled()) {
+        if (pspbackend.observeMiss(req_address)) {
+          // empty
+        }
+        else if (enable_prefetch) {
+          prefetcher.observeMiss(req_address, in_msg.Type);
+        }
       } else {
         if (enable_prefetch) {
           prefetcher.observeMiss(req_address, in_msg.Type);
@@ -1042,8 +1056,13 @@ machine(MachineType:L0Cache, "MESI Directory L0 Cache", interface="AbstractStrea
   
   action(ppm_observePfMiss, "\ppm", desc="Inform the prefetcher about the partial miss") {
     peek(mandatoryQueue_in, RubyRequest) {
-      if (pspbackend.isEnabled() && pspbackend.observePfMiss(in_msg.LineAddress)) {
-        // empty
+      if (pspbackend.isEnabled()) {
+        if (pspbackend.observePfMiss(in_msg.LineAddress)) {
+          // empty
+        }
+        else if (enable_prefetch) {
+          prefetcher.observePfMiss(in_msg.LineAddress);
+        }
       } else {
         if (enable_prefetch) {
           prefetcher.observePfMiss(in_msg.LineAddress);

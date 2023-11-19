@@ -64,7 +64,7 @@ void PAQueueArray::pop(const uint64_t _entryId) {
 }
 
 bool PAQueueArray::canInsert(const uint64_t _entryId) {
-  return (this->paQueue[_entryId].getSize() + this->numInflightTranslations[_entryId]) <= this->capacity; 
+  return (this->paQueue[_entryId].getSize() + this->numInflightTranslations[_entryId]) < this->capacity; 
 }
 
 void PAQueueArray::insert(const uint64_t _entryId, 

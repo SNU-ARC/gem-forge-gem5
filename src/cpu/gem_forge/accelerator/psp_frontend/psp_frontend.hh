@@ -158,6 +158,7 @@ public:
   mutable Stats::Scalar numConfigured;
 private:
   bool isPSPBackendEnabled;
+  bool isTLBPrefetchOnly;
   unsigned totalPatternTableEntries;
   PatternTable* patternTable;
   IndexQueueArray* indexQueueArray;

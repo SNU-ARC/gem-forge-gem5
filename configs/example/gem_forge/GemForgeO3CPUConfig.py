@@ -38,11 +38,13 @@ def initializeO3CPU(options, o3cpu):
         o3cpu.LQEntries = 24
         o3cpu.SQEntries = 30
         o3cpu.fuPool = GemForgeO4FUPool()
-    elif options.llvm_issue_width == 6:
-        o3cpu.numROBEntries = 192
-        o3cpu.numIQEntries = 28
-        o3cpu.LQEntries = 42
-        o3cpu.SQEntries = 36
+    elif options.llvm_issue_width == 6: # For Gracemont-like
+        o3cpu.numROBEntries = 256
+        o3cpu.numIQEntries = 64
+        o3cpu.LQEntries = 80
+        o3cpu.SQEntries = 50
+        o3cpu.cacheStorePorts = 2
+        o3cpu.cacheLoadPorts = 2
         o3cpu.fuPool = GemForgeO4FUPool()
     elif options.llvm_issue_width == 8:
         o3cpu.numROBEntries = 224
