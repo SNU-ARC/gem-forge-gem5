@@ -46,9 +46,10 @@ Cycles SEPageWalker::walk(Addr pageVAddr, Cycles curCycle) {
      * Cycle latency for parallel miss.
      */
     this->hits++;
+    iter->second->numAccess++;
     DPRINTF(TLB, "Hit %#x, Latency %s.\n", pageVAddr,
-            iter->second->readyCycle - curCycle);
-    return iter->second->readyCycle - curCycle;
+            iter->second->readyCycle - curCycle + Cycles(iter->second->numAccess));
+    return iter->second->readyCycle - curCycle + Cycles(iter->second->numAccess);
   }
 
   /**
@@ -93,13 +94,14 @@ Cycles SEPageWalker::lookup(Addr pageVAddr, Cycles curCycle) {
   if (iter != this->pageVAddrToStateMap.end()) {
     this->accesses++;
     this->hits++;
+    iter->second->numAccess++;
     if (curCycle + this->latency < iter->second->readyCycle) {
       this->waits++;
     }
 
     DPRINTF(TLB, "Hit %#x, Latency %s.\n", pageVAddr,
-            iter->second->readyCycle - curCycle);
-    return iter->second->readyCycle - curCycle;
+            iter->second->readyCycle - curCycle + Cycles(iter->second->numAccess));
+    return iter->second->readyCycle - curCycle + Cycles(iter->second->numAccess);
   }
   // If no match, it is L1 hit
   return Cycles(0);
