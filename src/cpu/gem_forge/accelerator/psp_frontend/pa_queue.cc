@@ -24,7 +24,7 @@ void PhysicalAddressQueue::pop() {
 }
 
 bool PhysicalAddressQueue::canInsert() {
-  return this->pkt.size() <= this->capacity;
+  return this->pkt.size() < this->capacity;
 }
 
 void PhysicalAddressQueue::insert(PhysicalAddressArgs* _pkt) {

@@ -53,6 +53,7 @@ bool IndexQueueArrayRRArbiter::getValidEntryId(uint32_t* _entryId) {
     uint32_t entryId = (this->getLastChosenEntryId() + i) % this->getTotalPatternTableEntries();
     if (this->indexQueueArray->getConfigured(entryId) &&
         this->indexQueueArray->canRead(entryId) &&
+        this->paQueueArray->numInflightTranslations[entryId] < 1 &&
         this->paQueueArray->canInsert(entryId)) {
       *_entryId = entryId;
       return true;
