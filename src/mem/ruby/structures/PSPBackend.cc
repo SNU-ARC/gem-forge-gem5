@@ -135,11 +135,19 @@ StreamEntry::incrementTagAddr(Addr _snoopAddr) {
     }
   }
 
+  bool mask = false;
   for (int i = 0; i < this->numQueueEntry; i++) {
-    this->accumulatedSize[i] -= incrementSize;
-    if (this->prefetchQueue[i].isValid()) {
-      if (_snoopAddr == this->prefetchQueue[i].getEndAddr()) {
-        this->popEntry(i);
+    int currIdx = (this->headEntryIdx + i) % this->numQueueEntry;
+    if (currIdx == hitIdx) {
+      mask = true;
+    }
+    else if (mask == false) {
+      continue;
+    }
+    this->accumulatedSize[currIdx] -= incrementSize;
+    if (this->prefetchQueue[currIdx].isValid()) {
+      if (_snoopAddr == this->prefetchQueue[currIdx].getEndAddr()) {
+        this->popEntry(currIdx);
       }
     }
   }
@@ -181,8 +189,8 @@ StreamEntry::incrementNextPrefetchAddr(Addr _snoopAddr) {
 void
 StreamEntry::printStatus() {
   if (this->count > 0) {
-    DPRINTF(PSPBackend, "## HeadEntryIdx %d TailEntryIdx %d PrefetchEnabled %d PrefetchEntryIdx %d PrefetchAddr %#x PrefetchSize %d\n",
-        this->headEntryIdx, this->tailEntryIdx, this->prefetchEnabled, this->prefetchEntryIdx, this->nextPrefetchAddr, this->nextPrefetchSize);
+    DPRINTF(PSPBackend, "## HeadEntryIdx %d TailEntryIdx %d TotalSize %d PrefetchEnabled %d PrefetchEntryIdx %d PrefetchAddr %#x PrefetchSize %d\n",
+        this->headEntryIdx, this->tailEntryIdx, this->totalSize, this->prefetchEnabled, this->prefetchEntryIdx, this->nextPrefetchAddr, this->nextPrefetchSize);
     for (int i = 0; i < this->numQueueEntry; i++) {
       int iterator = (this->headEntryIdx + i) % this->numQueueEntry;
       PSPPrefetchEntry* p = &this->prefetchQueue[iterator];
