@@ -105,12 +105,15 @@ def create_system(options, full_system, system, dma_ports, bootmem,
             l0i_cache = L0Cache(size=options.l1i_size, assoc=options.l1i_assoc,
                 is_icache=True,
                 start_index_bit=block_size_bits,
-                replacement_policy=BRRIPRP())
+                replacement_policy=LRURP())
+#                replacement_policy=BRRIPRP())
 
             l0d_cache = L0Cache(size=options.l1d_size, assoc=options.l1d_assoc, is_icache=False,
                 start_index_bit=block_size_bits,
-                replacement_policy=BRRIPRP(),
+                replacement_policy=LRURP(),
                 dataAccessLatency=options.l1d_lat)
+#                replacement_policy=BRRIPRP(),
+#                dataAccessLatency=options.l1d_lat)
 
             pspbackend = PSPBackend(
                 enabled=(options.gem_forge_psp_backend_enable),
@@ -313,8 +316,10 @@ def create_system(options, full_system, system, dma_ports, bootmem,
                                start_index_bit=block_size_bits,
                                skip_index_start_bit=l2_select_low_bit,
                                skip_index_num_bits=l2_bits,
-                               replacement_policy=BRRIPRP(),
+                               replacement_policy=LRURP(),
                                query_stream_nuca=True,
+#                               replacement_policy=BRRIPRP(),
+#                               query_stream_nuca=True,
                                )
 
             l2_cntrl = L2Cache_Controller(
