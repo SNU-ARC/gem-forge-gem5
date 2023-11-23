@@ -143,6 +143,8 @@ StreamEntry::incrementTagAddr(Addr _snoopAddr) {
       mask = true;
     }
     else if (mask == false) {
+      this->popEntry(currIdx);
+      this->headEntryIdx = currIdx;
       continue;
     }
     this->accumulatedSize[currIdx] -= this->incrementSize;
