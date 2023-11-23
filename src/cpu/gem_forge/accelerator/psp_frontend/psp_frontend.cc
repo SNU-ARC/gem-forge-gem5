@@ -11,12 +11,13 @@
 
 IndexPacketHandler::IndexPacketHandler(PSPFrontend* _pspFrontend, uint64_t _entryId,
                                        Addr _cacheBlockVAddr, Addr _vaddr,
-                                       int _size, int _additional_delay)
+                                       int _size, uint64_t _seqNum, int _additional_delay)
   : pspFrontend(_pspFrontend), entryId(_entryId), cacheBlockVAddr(_cacheBlockVAddr),
-    vaddr(_vaddr), size(_size), additionalDelay(_additional_delay) {
+    vaddr(_vaddr), size(_size), seqNum(_seqNum), additionalDelay(_additional_delay) {
 }
 
-void IndexPacketHandler::handlePacketResponse(GemForgeCPUDelegator* cpuDelegator,
+void 
+IndexPacketHandler::handlePacketResponse(GemForgeCPUDelegator* cpuDelegator,
                                               PacketPtr pkt) {
   if (this->additionalDelay != 0) {
     PSP_FE_DPRINTF("PacketResposne with additional delay. Reschedule after %d cycle.\n",
@@ -32,7 +33,8 @@ void IndexPacketHandler::handlePacketResponse(GemForgeCPUDelegator* cpuDelegator
   delete this;
 }
 
-void IndexPacketHandler::handleAddressTranslateResponse(GemForgeCPUDelegator* cpuDelegator,
+void 
+IndexPacketHandler::handleAddressTranslateResponse(GemForgeCPUDelegator* cpuDelegator,
                                               PacketPtr pkt) {
   if (this->additionalDelay != 0) {
     PSP_FE_DPRINTF("PacketResposne with additional delay. Reschedule after %d cycle.\n",
@@ -48,13 +50,15 @@ void IndexPacketHandler::handleAddressTranslateResponse(GemForgeCPUDelegator* cp
   delete this;
 }
 
-void IndexPacketHandler::issueToMemoryCallback(GemForgeCPUDelegator* cpuDelegator) {
+void
+IndexPacketHandler::issueToMemoryCallback(GemForgeCPUDelegator* cpuDelegator) {
 }
 
 PSPFrontend::PSPFrontend(Params* params)
   : GemForgeAccelerator(params), totalPatternTableEntries(params->totalPatternTableEntries),
     isPSPBackendEnabled(params->isPSPBackendEnabled), 
-    isTLBPrefetchOnly(params->isTLBPrefetchOnly) {
+    isTLBPrefetchOnly(params->isTLBPrefetchOnly),
+    seqNum(0) {
     valCurrentSize = new uint64_t[params->totalPatternTableEntries]();
     patternTable = new PatternTable(params->totalPatternTableEntries); 
     indexQueueArray = new IndexQueueArray(params->totalPatternTableEntries,
@@ -75,8 +79,9 @@ PSPFrontend::~PSPFrontend() {
 }
 
 // Take over PSP_Frontend from initial_cpu to future_cpu
-void PSPFrontend::takeOverBy(GemForgeCPUDelegator *newCpuDelegator,
-                              GemForgeAcceleratorManager *newManager) {
+void 
+PSPFrontend::takeOverBy(GemForgeCPUDelegator *newCpuDelegator,
+                        GemForgeAcceleratorManager *newManager) {
   GemForgeAccelerator::takeOverBy(newCpuDelegator, newManager);
   translationBuffer = new PSPTranslationBuffer<void*>(this->cpuDelegator->getDataTLB(),
       [this](PacketPtr pkt, ThreadContext* tc, void* ) -> void {
@@ -96,12 +101,14 @@ void PSPFrontend::takeOverBy(GemForgeCPUDelegator *newCpuDelegator,
       PSP_FE_DPRINTF("MATCH!\n");
     }
   }
- }
-
-void PSPFrontend::dump() {
 }
 
-void PSPFrontend::regStats() {
+void
+PSPFrontend::dump() {
+}
+
+void
+PSPFrontend::regStats() {
   GemForgeAccelerator::regStats();
 
 #define scalar(stat, describe)                                                 \
@@ -113,10 +120,12 @@ void PSPFrontend::regStats() {
 #undef scalar
 }
 
-void PSPFrontend::resetStats() {
+void 
+PSPFrontend::resetStats() {
 }
 
-void PSPFrontend::tick() {
+void
+PSPFrontend::tick() {
   if (this->patternTable->size() > 0)
     this->manager->scheduleTickNextCycle();
 
@@ -143,9 +152,11 @@ void PSPFrontend::tick() {
         if (this->pspBackend->canInsertEntry(i)) {
           PhysicalAddressQueue::PhysicalAddressArgs validPAQEntry;
           this->paQueueArray->read(i, &validPAQEntry);
+          if (this->seqNum < validPAQEntry.seqNum) continue;
           this->pspBackend->insertEntry(validPAQEntry.entryId, validPAQEntry.pAddr, validPAQEntry.size);
-          PSP_FE_DPRINTF("paQueueEntryId: %lu, pAddr: %#x, size: %lu, PSPBackend_canRead: %d\n",
-              validPAQEntry.entryId, validPAQEntry.pAddr, validPAQEntry.size, this->paQueueArray->canRead(i));
+          PSP_FE_DPRINTF("paQueueEntryId: %lu, pAddr: %#x, size: %lu, seqNum: %lu, PSPBackend_canRead: %d\n",
+              validPAQEntry.entryId, validPAQEntry.pAddr, validPAQEntry.size, validPAQEntry.seqNum,
+              this->paQueueArray->canRead(i));
           this->paQueueArray->pop(i);
         }
       }
@@ -166,12 +177,22 @@ void PSPFrontend::issueLoadIndex(uint64_t _validEntryId) {
   PSP_FE_DPRINTF("EntryId: %lu, IndexBaseAddress: %x, IndexAccessGranularity: %lu\n",
       _validEntryId, idxBaseAddr, idxAccessGranularity);
 
-  uint64_t offsetBegin, offsetEnd;
-  this->patternTable->getInputInfo(_validEntryId, &offsetBegin, &offsetEnd);
+  uint64_t offsetBegin, offsetEnd, seqNum;
+  this->patternTable->getInputInfo(_validEntryId, &offsetBegin, &offsetEnd, &seqNum);
 
-  PSP_FE_DPRINTF("EntryId: %lu, OffsetBegin: %lu, OffsetEnd: %lu\n",
-      _validEntryId, offsetBegin, offsetEnd);
-  assert(offsetBegin < offsetEnd);
+  PSP_FE_DPRINTF("EntryId: %lu, OffsetBegin: %lu, OffsetEnd: %lu, SeqNum: %lu\n",
+      _validEntryId, offsetBegin, offsetEnd, seqNum);
+  if (offsetBegin >= offsetEnd) {
+    if (this->seqNum > seqNum) {
+      PSP_FE_DPRINTF("Waiting for prediction result\n");
+      return;
+    }
+    else {
+      PSP_FE_DPRINTF("Pop Entry Id: %lu, Size: %lu\n", _validEntryId, this->patternTable->getInputSize(_validEntryId));
+      this->patternTable->popInput(_validEntryId);
+      return;
+    }
+  }
 
   // Generate cacheline-aware memory requests
   uint64_t currentVAddr = idxBaseAddr + offsetBegin * idxAccessGranularity;
@@ -192,7 +213,7 @@ void PSPFrontend::issueLoadIndex(uint64_t _validEntryId) {
 
   // Send load index request
   IndexPacketHandler* indexPacketHandler = new IndexPacketHandler(this, _validEntryId,
-      cacheBlockVAddr, currentVAddr, currentSize, 1 /* Latency for address compute */);
+      cacheBlockVAddr, currentVAddr, currentSize, seqNum, 1 /* Latency for address compute */);
   Request::Flags flags;
   PacketPtr pkt = GemForgePacketHandler::createGemForgePacket(
       cacheBlockPAddr, cacheLineSize, indexPacketHandler, nullptr /* Data */,
@@ -215,26 +236,27 @@ void PSPFrontend::issueLoadIndex(uint64_t _validEntryId) {
   uint32_t numInflightBytes = currentSize / idxAccessGranularity;
   offsetBegin += numInflightBytes;
   
-  if (offsetBegin < offsetEnd) {
+  if (offsetBegin < offsetEnd || seqNum > this->seqNum) {
     this->patternTable->setInputInfo(_validEntryId, offsetBegin, offsetEnd);
   }
   else {
-    this->patternTable->resetInput(_validEntryId);
+    PSP_FE_DPRINTF("Pop Entry Id: %lu, Size: %lu\n", _validEntryId, this->patternTable->getInputSize(_validEntryId));
+    this->patternTable->popInput(_validEntryId);
   }
   this->patternTableArbiter->setLastChosenEntryId(_validEntryId);
   PSP_FE_DPRINTF("EntryId: %lu, isValid: %d, NewOffsetBegin: %lu, OffsetEnd: %lu\n",
       _validEntryId, this->patternTable->isInputInfoValid(_validEntryId), offsetBegin, offsetEnd);
 
-  // Update IndexQueueArray(num of inflight load requests)
-  this->indexQueueArray->numInflightBytes[_validEntryId] += currentSize;
-  PSP_FE_DPRINTF("%luth IndexQueue with numInflightBytes: %d.\n", _validEntryId,
-      this->indexQueueArray->numInflightBytes[_validEntryId]);
+  // Update IndexQueueArray
+  this->indexQueueArray->allocate(_validEntryId, currentSize, seqNum);
+  PSP_FE_DPRINTF("Index Queue EntryId: %lu, AllocatedSize: %lu, Size: %lu\n", 
+      _validEntryId, this->indexQueueArray->getAllocatedSize(_validEntryId), this->indexQueueArray->getSize(_validEntryId));
 }
 
 void PSPFrontend::issueTranslateValueAddress(uint64_t _validEntryId) {
-  uint64_t index;
-  this->indexQueueArray->read(_validEntryId, &index);
-  PSP_FE_DPRINTF("EntryId: %lu, Index: %lu\n", _validEntryId, index);
+  uint64_t index, seqNum;
+  this->indexQueueArray->read(_validEntryId, &index, &seqNum);
+  PSP_FE_DPRINTF("EntryId: %lu, Index: %lu, SeqNum: %lu %lu\n", _validEntryId, index, seqNum, this->indexQueueArray->getSize(_validEntryId));
 
   // TODO: Implement function to get value infos (e.g., baseAddr, accessGranularity)
   uint64_t idxBaseAddr, idxAccessGranularity, valBaseAddr, valAccessGranularity;
@@ -269,7 +291,7 @@ void PSPFrontend::issueTranslateValueAddress(uint64_t _validEntryId) {
 
   // VA to PA
   IndexPacketHandler* indexPacketHandler = new IndexPacketHandler(this, _validEntryId,
-      cacheBlockVAddr, currentVAddr, currentSize, 1 /* Latency for address compute */);
+      cacheBlockVAddr, currentVAddr, currentSize, seqNum, 1 /* Latency for address compute */);
   Request::Flags flags;
   PacketPtr pkt = GemForgePacketHandler::createGemForgePacket(
       cacheBlockPAddr, cacheBlockSize, indexPacketHandler, nullptr /* Data */,
@@ -290,9 +312,10 @@ void PSPFrontend::issueTranslateValueAddress(uint64_t _validEntryId) {
   this->indexQueueArrayArbiter->setLastChosenEntryId(_validEntryId);
   
   // Update PAQueueArray(num of inflight load requests)
-  this->paQueueArray->numInflightTranslations[_validEntryId] += 1;
-  PSP_FE_DPRINTF("%luth IndexQueue with numInflightTranslations: %d.\n", _validEntryId,
-      this->paQueueArray->numInflightTranslations[_validEntryId]);
+  uint32_t paQueueId = this->paQueueArray->allocate(_validEntryId, seqNum);
+  this->inflightTranslations.emplace(cacheBlockPAddr, paQueueId);
+  PSP_FE_DPRINTF("%luth IndexQueue with numInflightTranslations: %d paQueueId: %d.\n", _validEntryId,
+      this->inflightTranslations.size(), this->inflightTranslations[cacheBlockPAddr]);
 }
 
 void PSPFrontend::handlePacketResponse(IndexPacketHandler* indexPacketHandler,
@@ -303,14 +326,11 @@ void PSPFrontend::handlePacketResponse(IndexPacketHandler* indexPacketHandler,
   void* data = pkt->getPtr<void>();
   uint64_t packetSize = pkt->getSize();
   uint64_t inputSize = indexPacketHandler->size;
-//  if (cacheBlockVAddr < vaddr) { 
-//    data += (packetSize - inputSize); 
-//  }
+  uint64_t seqNum = indexPacketHandler->seqNum;
   data += (vaddr - cacheBlockVAddr);
-  this->indexQueueArray->insert(entryId, data, inputSize);
-  this->indexQueueArray->numInflightBytes[entryId] -= inputSize;
-  PSP_FE_DPRINTF("%luth IndexQueue filled with blockVA: %#x, VA: %#x, size: %lu, data: %lu.\n", entryId,
-      cacheBlockVAddr, vaddr, inputSize, *(uint64_t*)data);
+  this->indexQueueArray->insert(entryId, data, inputSize, seqNum);
+  PSP_FE_DPRINTF("%luth IndexQueue filled with blockVA: %#x, VA: %#x, size: %lu, data: %lu, SeqNum: %lu %lu.\n", entryId,
+      cacheBlockVAddr, vaddr, inputSize, *(uint64_t*)data, seqNum, this->seqNum);
 }
 
 void PSPFrontend::handleAddressTranslateResponse(IndexPacketHandler* _indexPacketHandler,
@@ -318,12 +338,15 @@ void PSPFrontend::handleAddressTranslateResponse(IndexPacketHandler* _indexPacke
   uint64_t entryId = _indexPacketHandler->entryId;
   Addr pAddr = _pkt->getAddr();
   uint64_t size = _pkt->getSize();
-  this->paQueueArray->numInflightTranslations[entryId] -= 1;
+  uint64_t seqNum = _indexPacketHandler->seqNum;
+  uint32_t paQueueId = this->inflightTranslations[pAddr];
 
-  PhysicalAddressQueue::PhysicalAddressArgs args(entryId, pAddr, size);
-  this->paQueueArray->insert(entryId, &args);
+  PhysicalAddressQueue::PhysicalAddressArgs args(true, entryId, pAddr, size, seqNum);
+  this->paQueueArray->insert(entryId, paQueueId, args);
+  this->inflightTranslations.erase(pAddr);
   
-  PSP_FE_DPRINTF("Address translation for %luth entryId done. PA: %#x, Size: %lu, numInflightTranslations: %lu.\n", entryId, pAddr, size, this->paQueueArray->numInflightTranslations[entryId]);
+  PSP_FE_DPRINTF("Address translation for %luth entryId done. PA: %#x, Size: %lu, numInflightTranslations: %lu, SeqNum: %lu %lu.\n",
+      entryId, pAddr, size, this->inflightTranslations.size(), seqNum, this->seqNum);
 }
 
 /********************************************************************************
@@ -380,39 +403,49 @@ void PSPFrontend::rewindStreamConfig(const StreamConfigArgs &args) {
 
 bool PSPFrontend::canDispatchStreamInput(const StreamInputArgs &args) {
   uint64_t entryId = args.entryId;
-  return !(this->patternTable->isInputInfoValid(entryId));
+  return this->patternTable->canPushInputInfo(entryId);
 }
 
 void PSPFrontend::dispatchStreamInput(const StreamInputArgs &args) {
 }
 
 bool PSPFrontend::canExecuteStreamInput(const StreamInputArgs &args) {
-  return true;
+  uint64_t entryId = args.entryId;
+  return this->patternTable->canPushInputInfo(entryId);
 }
 
 void PSPFrontend::executeStreamInput(const StreamInputArgs &args) {
-}
-
-bool PSPFrontend::canCommitStreamInput(const StreamInputArgs &args) {
-  uint64_t entryId = args.entryId;
-  return this->patternTable->isInputInfoValid(entryId);
-}
-
-void PSPFrontend::commitStreamInput(const StreamInputArgs &args) {
   uint64_t entryId = args.entryId;
   uint64_t offsetBegin = args.input.at(0);
   uint64_t offsetEnd = args.input.at(1);
+  uint64_t seqNum = args.seqNum;
 
-  this->patternTable->setInputInfo(entryId, offsetBegin, offsetEnd);
+  this->patternTable->pushInputInfo(entryId, offsetBegin, offsetEnd, seqNum);
   this->manager->scheduleTickNextCycle();
-  PSP_FE_DPRINTF("commitStreamInput...Schedule next tick %d %d\n", this->indexQueueArray->getSize(0), this->indexQueueArray->numInflightBytes[0]);
-//  uint64_t entryId = args.entryId;
-//  this->patternTable->resetInput(entryId);
+  PSP_FE_DPRINTF("executeStreamInput...Schedule next tick %lu %lu %lu %lu\n", entryId, offsetBegin, offsetEnd, seqNum);
+}
+
+bool PSPFrontend::canCommitStreamInput(const StreamInputArgs &args) {
+  return true;
+}
+
+void PSPFrontend::commitStreamInput(const StreamInputArgs &args) {
+  this->seqNum = this->seqNum < args.seqNum ? args.seqNum : this->seqNum;
+  PSP_FE_DPRINTF("commitStreamInput\n");
 }
 
 void PSPFrontend::rewindStreamInput(const StreamInputArgs &args) {
   uint64_t entryId = args.entryId;
-  this->patternTable->resetInput(entryId);
+  uint64_t offsetBegin, offsetEnd, seqNum;
+  this->patternTable->getInputInfo(entryId, &offsetBegin, &offsetEnd, &seqNum);
+  if (seqNum == args.seqNum) {
+    this->patternTable->resetInput(entryId);
+  }
+  this->indexQueueArray->reset(entryId, seqNum);
+  this->paQueueArray->reset(entryId, seqNum);
+  PSP_FE_DPRINTF("rewindStreamInput %lu %lu %lu\n", 
+      this->patternTable->getInputSize(entryId), this->indexQueueArray->getSize(entryId),
+      this->paQueueArray->getSize(entryId));
 }
 
 /********************************************************************************
@@ -424,6 +457,10 @@ bool PSPFrontend::canDispatchStreamTerminate(const StreamTerminateArgs &args) {
   bool validConfig = this->patternTable->isConfigInfoValid(entryId) &&
     this->indexQueueArray->getConfigured(entryId);
   bool inputAllConsumed = !(this->patternTable->isInputInfoValid(entryId));
+  uint64_t offsetBegin, offsetEnd, seqNum;
+  this->patternTable->getInputInfo(entryId, &offsetBegin, &offsetEnd, &seqNum);
+  PSP_FE_DPRINTF("%lu %lu %lu %lu\n", offsetBegin, offsetEnd, seqNum, this->seqNum);
+
   return validConfig && inputAllConsumed;
 }
 

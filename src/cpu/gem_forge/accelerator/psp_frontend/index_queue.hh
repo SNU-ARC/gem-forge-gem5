@@ -11,6 +11,7 @@
 #include <cassert>
 #include <iostream>
 #include <vector>
+#include "base/statistics.hh"
 
 class IndexQueue {
   public:
@@ -19,20 +20,26 @@ class IndexQueue {
 
     void setConfigured(bool _isConfigured);
     bool getConfigured();
+    uint32_t getAllocatedSize();
     uint32_t getSize();
     void setAccessGranularity(uint64_t _accessGranularity);
     uint64_t getAccessGranularity();
-    void read(void* _buffer);
+    void read(void* _buffer, uint64_t* _seqNum);
     void pop();
-    void insert(void* _buffer, uint64_t _size);
+    bool canInsert(uint64_t _cacheLineSize, uint64_t _seqNum);
+    void allocate(uint64_t _size, uint64_t _seqNum);
+    void insert(void* _buffer, uint64_t _size, uint64_t _seqNum);
+    void reset(uint64_t _seqNum);
 
   private:
     void* data;
     bool isConfigured;
     uint32_t capacity;
     uint32_t front;
+    uint32_t allocatedSize;
     uint32_t size;
     uint64_t accessGranularity;
+    uint64_t seqNum;
 };
 
 class IndexQueueArray {
@@ -40,18 +47,19 @@ class IndexQueueArray {
     IndexQueueArray(uint32_t _totalIndexQueueEntries, uint32_t _capacity);
     ~IndexQueueArray();
 
-    uint32_t* numInflightBytes;
-
     void setConfigured(const uint64_t _entryId, bool _isConfigured);
     bool getConfigured(const uint64_t _entryId);
+    uint32_t getAllocatedSize(const uint64_t _entryId);
     uint32_t getSize(const uint64_t _entryId);
     void setAccessGranularity(const uint64_t _entryId, uint64_t _accessGranularity);
     uint64_t getAccessGranularity(const uint64_t _entryId);
     bool canRead(const uint64_t _entryId);
-    void read(const uint64_t _entryId, void* _buffer);
+    void read(const uint64_t _entryId, void* _buffer, uint64_t* _seqNum);
     void pop(const uint64_t _entryId);
-    bool canInsert(const uint64_t _entryId, const uint64_t _cacheLineSize);
-    void insert(const uint64_t _entryId, void* _buffer, uint64_t _size);
+    bool canInsert(const uint64_t _entryId, const uint64_t _cacheLineSize, const uint64_t _seqNum);
+    void allocate(const uint64_t _entryId, const uint64_t _size, const uint64_t _seqNum);
+    void insert(const uint64_t _entryId, void* _buffer, uint64_t _size, uint64_t _seqNum);
+    void reset(const uint64_t _entryId, const uint64_t _seqNum);
     
   private:
     std::vector<IndexQueue> indexQueue;

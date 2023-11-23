@@ -98,6 +98,7 @@ class StreamEntry {
     bool prefetchEnabled;
     Addr nextPrefetchAddr;
     int nextPrefetchSize;
+    int incrementSize;
 
     // Prefetch Queue Managing
     int headEntryIdx;

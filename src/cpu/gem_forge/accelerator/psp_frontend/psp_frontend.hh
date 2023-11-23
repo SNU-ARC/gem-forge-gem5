@@ -28,7 +28,7 @@ class IndexPacketHandler final : public GemForgePacketHandler {
 public:
   IndexPacketHandler(PSPFrontend* _pspFrontend, uint64_t _entryId,
                      Addr _cacheBlockVAddr, Addr _vaddr,
-                     int _size, int _additional_delay = 0);
+                     int _size, uint64_t _seqNum, int _additional_delay = 0);
   virtual ~IndexPacketHandler() {}
   void handlePacketResponse(GemForgeCPUDelegator* cpuDelegator,
                             PacketPtr packet);
@@ -73,6 +73,7 @@ public:
   Addr vaddr;
   int size;
   uint64_t entryId;
+  uint64_t seqNum;
   int additionalDelay;
 };
 
@@ -167,5 +168,7 @@ private:
   IndexQueueArrayRRArbiter* indexQueueArrayArbiter;
   PAQueueArray* paQueueArray;
   PSPBackend* pspBackend;
+  std::unordered_map<uint64_t, uint32_t> inflightTranslations;
+  uint64_t seqNum;
 };
 #endif

@@ -505,8 +505,10 @@ bool ISAPSPFrontend::canExecuteStreamInputReady(
   auto streamNum = this->extractImm<uint64_t>(dynInfo.staticInst);
   auto &regionInfo = this->getStreamRegionInfo(streamNum);
 
+  auto &isDispatched = regionInfo.inputInfo.dispatched;
   auto &v = regionInfo.inputInfo.executed;
-  return std::find(std::begin(v), std::end(v), false) == std::end(v);
+  return std::find(std::begin(isDispatched), std::end(isDispatched), false) == std::end(isDispatched) &&
+    std::find(std::begin(v), std::end(v), false) == std::end(v);
 }
 
 /********************************************************************************
@@ -581,6 +583,10 @@ void ISAPSPFrontend::commitStreamInputReady(const GemForgeDynInstInfo &dynInfo) 
   auto psp = this->getPSPFrontend();
   ::PSPFrontend::StreamInputArgs args(dynInfo.seqNum, streamNum, regionInfo.inputInfo.inputContents);
   psp->commitStreamInput(args);
+  regionInfo.inputInfo.dispatched[0] = 0;
+  regionInfo.inputInfo.executed[0] = 0;
+  regionInfo.inputInfo.dispatched[1] = 0;
+  regionInfo.inputInfo.executed[1] = 0;
 
   DYN_INST_DPRINTF("[commit] commitStreamInputReady\n");
 }
