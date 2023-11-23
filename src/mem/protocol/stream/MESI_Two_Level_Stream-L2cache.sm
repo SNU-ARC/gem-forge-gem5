@@ -517,13 +517,13 @@ machine(MachineType:L2Cache, "MESI Directory L2 Cache CMP", interface="AbstractS
                         in_msg.addr, cache_entry, tbe);
               } else {
                 // No room in the L2, so we need to make room before handling the request
-                Entry L2cache_entry := getCacheEntry(L2cache.cacheProbe(in_msg.addr));
+                Addr victim := L2cache.cacheProbe(in_msg.addr);
+                Entry L2cache_entry := getCacheEntry(victim);
                 if (isDirty(L2cache_entry)) {
-                  trigger(Event:L2_Replacement, L2cache.cacheProbe(in_msg.addr),
-                          L2cache_entry, TBEs[L2cache.cacheProbe(in_msg.addr)]);
+                  trigger(Event:L2_Replacement, victim, L2cache_entry, TBEs[victim]);
                 } else {
-                  trigger(Event:L2_Replacement_clean, L2cache.cacheProbe(in_msg.addr),
-                          L2cache_entry, TBEs[L2cache.cacheProbe(in_msg.addr)]);
+                  trigger(Event:L2_Replacement_clean, 
+                          victim, L2cache_entry, TBEs[victim]);
                 }
               }
             }
@@ -581,7 +581,7 @@ machine(MachineType:L2Cache, "MESI Directory L2 Cache CMP", interface="AbstractS
   // ACTIONS
 
   action(a_issueFetchToMemory, "a", desc="fetch data from memory") {
-    DPRINTF(PSPBackend, "Issue fetch to memory %#x\n", address);
+    //DPRINTF(PSPBackend, "Issue fetch to memory %#x\n", address);
 
     peek(L1RequestL2Network_in, RequestMsg) {
       enqueue(DirRequestL2Network_out, RequestMsg, l2_request_latency) {
@@ -1011,7 +1011,7 @@ machine(MachineType:L2Cache, "MESI Directory L2 Cache CMP", interface="AbstractS
 
   action(qq_allocateL2CacheBlock, "\q", desc="Set L2 cache tag equal to tag of block B.") {
     if (is_invalid(cache_entry)) {
-      DPRINTF(PSPBackend, "L2, Allocate cache block, was invalid. addr %#x\n", address);
+      //DPRINTF(PSPBackend, "L2, Allocate cache block, was invalid. addr %#x\n", address);
       set_cache_entry(L2cache.allocate(address, new Entry));
     }
   }
@@ -1339,7 +1339,7 @@ machine(MachineType:L2Cache, "MESI Directory L2 Cache CMP", interface="AbstractS
 
   transition(ISS, Mem_Data, MT_MB) {
     m_writeDataToCache;
-    set_setMRU; //
+    // set_setMRU; //
     ex_sendExclusiveDataToGetSRequestors;
     // Also sent data to possible GETU requestor.
     net_notifyStreamEngineFromTBE;
@@ -1351,7 +1351,7 @@ machine(MachineType:L2Cache, "MESI Directory L2 Cache CMP", interface="AbstractS
   // The data is not cached by upper requestor.
   transition(IVV, Mem_Data, M) {
     m_writeDataToCache;
-    set_setMRU; //
+    // set_setMRU; //
     net_notifyStreamEngineFromTBE;
     eu_sendDataToGetURequestors;
     s_deallocateTBE;

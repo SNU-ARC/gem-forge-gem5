@@ -93,10 +93,11 @@ PSPBackend::getEntry(Addr addr) {
 bool
 PSPBackend::observeHit(Addr address)
 {
+    numHits++;
     StreamEntry * se = getEntry(address);
     DPRINTF(PSPBackend, "** Observed hit for %#x, exist entry %d\n", address, se != NULL);
+    this->numValidEntry();
     if (se != NULL) {
-        DPRINTF(PSPBackend, "PSP entry exists.\n");
         return true;
     }
     return false;
@@ -105,10 +106,11 @@ PSPBackend::observeHit(Addr address)
 bool
 PSPBackend::observeMiss(Addr address)
 {
+    numMisses++;
     StreamEntry * se = getEntry(address);
     DPRINTF(PSPBackend, "** Observed miss for %#x, exist entry %d\n", address, se != NULL);
+    this->numValidEntry();
     if (se != NULL) {
-        DPRINTF(PSPBackend, "PSP entry exists.\n");
         return true;
     }
     return false;
@@ -119,8 +121,8 @@ PSPBackend::observePfHit(Addr address)
 {
     StreamEntry * se = getEntry(address);
     DPRINTF(PSPBackend, "** Observed prefetcher hit for %#x, exist entry %d\n", address, se != NULL);
+    this->numValidEntry();
     if (se != NULL) {
-        DPRINTF(PSPBackend, "PSP entry exists.\n");
         if (se->viewRequest(address)) {
             issuePrefetch(se);
             numPrefetchHits++;
@@ -135,8 +137,8 @@ PSPBackend::observePfMiss(Addr address)
 {
     StreamEntry * se = getEntry(address);
     DPRINTF(PSPBackend, "** Observed prefetcher miss for %#x, exist entry %d\n", address, se != NULL);
+    this->numValidEntry();
     if (se != NULL) {
-        DPRINTF(PSPBackend, "PSP entry exists.\n");
         if (se->viewRequest(address)) {
             issuePrefetch(se);
             numPrefetchMisses++;
@@ -171,11 +173,37 @@ StreamEntry::insertEntry(Addr addr, int size) {
 
     PSPPrefetchEntry& p = PSPPrefetchEntryTable[idx];
     p.setEntry(addr, size, getPriority());
-    DPRINTF(PSPBackend, "## Set Entry %d, address %#x.\n", idx, addr);
+    DPRINTF(PSPBackend, "## Set Entry %d, address %#x. Num inflight : %d\n", idx, addr, numInflightRequest());
 
     if (activeEntryIdx == -1) {
         DPRINTF(PSPBackend, "## Activate Entry %d, address %#x.\n", idx, addr);
         activeEntryIdx = idx;
         pb->issuePrefetch(this);
     }
+}
+
+Addr
+StreamEntry::issueRequest() {
+    assert(activeEntryIdx != -1);
+
+    PSPPrefetchEntry *pe = &PSPPrefetchEntryTable[activeEntryIdx];
+    assert(pe != NULL);
+    Addr addr = pe->issueRequest();
+    DPRINTF(PSPBackend, "## Stream : %d, Enqueue prefetch request for address %#x done.\n", stream_num, addr);
+
+    if (pe->doneIssue()) {
+        pe->deactivate();
+        DPRINTF(PSPBackend, "## Stream : %d, Deactivate Entry %d, address %#x\n", stream_num, activeEntryIdx, pe->getFirstLineAddr());
+        activeEntryIdx = -1;
+        int toActivate = entryToActivate();
+        if (toActivate != -1) {
+            activeEntryIdx = toActivate;
+            pe = &PSPPrefetchEntryTable[activeEntryIdx];
+            pe->activate();
+            DPRINTF(PSPBackend, "## Stream : %d, Activate Entry %d, address %#x.\n", stream_num, activeEntryIdx, pe->getFirstLineAddr());
+            this->pb->issuePrefetch(this);
+        }
+    }
+
+    return addr;
 }

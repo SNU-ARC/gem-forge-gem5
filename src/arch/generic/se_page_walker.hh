@@ -49,8 +49,10 @@ private:
   struct State {
     Addr pageVAddr;
     Cycles readyCycle;
+    int numAccess;
     State(Addr _pageVAddr, Cycles _readyCycle)
-        : pageVAddr(_pageVAddr), readyCycle(_readyCycle) {}
+        : pageVAddr(_pageVAddr), readyCycle(_readyCycle),
+          numAccess(0) {}
   };
 
   /**

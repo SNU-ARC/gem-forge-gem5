@@ -876,6 +876,23 @@ machine(MachineType:L0Cache, "MESI Directory L0 Cache")
     z_stallAndWaitMandatoryQueue;
   }
 
+  transition({Inst_IS, IS, IM, SM, PF_Inst_IS, PF_IS, PF_IE}, PF_L0_Replacement) {
+     z_stallAndWaitOptionalQueue;
+  }
+
+  transition({PF_IE}, {Load, Ifetch, L0_Replacement}) {
+    z_stallAndWaitMandatoryQueue;
+  }
+
+  transition({PF_Inst_IS, PF_IS}, {Store, L0_Replacement}) {
+    z_stallAndWaitMandatoryQueue;
+  }
+
+  transition({S, E, M, Inst_IS, IS, IM, SM, PF_Inst_IS, PF_IS, PF_IE},
+             {PF_Load, PF_Store, PF_Ifetch}) {
+    pq_popPrefetchQueue;
+  }
+
   // Transitions from Idle
   transition(I, Load, IS) {
     oo_allocateDCacheBlock;
@@ -1064,24 +1081,6 @@ machine(MachineType:L0Cache, "MESI Directory L0 Cache")
   }
 
   // prefetcher
-
-  transition({Inst_IS, IS, IM, SM, PF_Inst_IS, PF_IS, PF_IE}, PF_L0_Replacement) {
-     z_stallAndWaitOptionalQueue;
-  }
-
-  transition({PF_Inst_IS, PF_IS}, {Store, L0_Replacement}) {
-    z_stallAndWaitMandatoryQueue;
-  }
-
-  transition({PF_IE}, {Load, Ifetch, L0_Replacement}) {
-    z_stallAndWaitMandatoryQueue;
-  }
-
-  transition({S,E,M,Inst_IS,IS,IM,SM,PF_Inst_IS,PF_IS,PF_IE},
-             {PF_Load, PF_Store, PF_Ifetch}) {
-      pq_popPrefetchQueue;
-  }
-
   transition(I, PF_Load, PF_IS) {
     oo_allocateDCacheBlock;
     i_allocateTBE;

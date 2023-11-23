@@ -329,7 +329,7 @@ CacheMemory::allocate(Addr address, AbstractCacheEntry *entry)
             // Call reset function here to set initial value for different
             // replacement policies.
 
-            DPRINTF(PSPBackend, "Allocate cache block for addr %#x, set %d, way %d\n", address, cacheSet, i);
+            //DPRINTF(PSPBackend, "Allocate cache block for addr %#x, set %d, way %d\n", address, cacheSet, i);
 
             m_replacementPolicy_ptr->reset(replacement_data[cacheSet][i]);
             set[i]->setLastAccess(curTick());
@@ -383,7 +383,7 @@ CacheMemory::cacheProbe(Addr address) const
     uint32_t loc = m_replacementPolicy_ptr->getVictim(candidates)->getWay();
     Addr ret = m_cache[cacheSet][loc]->m_Address;
 
-    DPRINTF(PSPBackend, "Candidate size %d, cache probe for address %#x. Set %d, Way %d\n", candidates.size(), address, cacheSet, loc);
+    //DPRINTF(PSPBackend, "Evict : Set %d Way %d, Address %#x\n", ret, cacheSet, loc);
 
     return ret;
 }

@@ -323,7 +323,8 @@ machine(MachineType:L1Cache, "MESI Directory L1 Cache CMP", interface="AbstractS
   }
 
   bool inL0Cache(State state) {
-    if (state == State:S || state == State:E || state == State:M ||
+    if (state == State:S || state == State:E || 
+        state == State:M || state == State:SM ||
         state == State:S_IL0 || state == State:E_IL0 ||
         state == State:M_IL0 || state == State:SM_IL0) {
         return true;
@@ -422,26 +423,32 @@ machine(MachineType:L1Cache, "MESI Directory L1 Cache CMP", interface="AbstractS
 
         if (in_msg.Type == CoherenceRequestType:INV) {
             if (is_valid(cache_entry) && inL0Cache(cache_entry.CacheState)) {
+              DPRINTF(PSPBackend, "Request invalidation from L2, addr %#x\n", in_msg.addr);
               trigger(Event:L0_Invalidate_Else, in_msg.addr,
                       cache_entry, tbe);
             }  else {
+              DPRINTF(PSPBackend, "Request invalidation from L2, addr %#x\n", in_msg.addr);
               trigger(Event:Inv, in_msg.addr, cache_entry, tbe);
             }
         } else if (in_msg.Type == CoherenceRequestType:GETX ||
               in_msg.Type == CoherenceRequestType:UPGRADE) {
             if (is_valid(cache_entry) && inL0Cache(cache_entry.CacheState)) {
+              DPRINTF(PSPBackend, "Request invalidation from L2, addr %#x\n", in_msg.addr);
               trigger(Event:L0_Invalidate_Else, in_msg.addr,
                       cache_entry, tbe);
             } else {
+              DPRINTF(PSPBackend, "Request FWD_GETX from L2, addr %#x\n", in_msg.addr);
               trigger(Event:Fwd_GETX, in_msg.addr, cache_entry, tbe);
             }
         } else if (in_msg.Type == CoherenceRequestType:GETS ||
                    in_msg.Type == CoherenceRequestType:GETU) {
             // For a forwarded GETU request, we treat it as GETS.
             if (is_valid(cache_entry) && inL0Cache(cache_entry.CacheState)) {
+              DPRINTF(PSPBackend, "Request invalidation from L2, addr %#x %d\n", in_msg.addr, in_msg.Type == CoherenceRequestType:GETS);
               trigger(Event:L0_Invalidate_Else, in_msg.addr,
                       cache_entry, tbe);
             } else {
+              DPRINTF(PSPBackend, "Request FWD_GETX from L2, addr %#x\n", in_msg.addr);
               trigger(Event:Fwd_GETS, in_msg.addr, cache_entry, tbe);
             }
         } else {
@@ -459,6 +466,7 @@ machine(MachineType:L1Cache, "MESI Directory L1 Cache CMP", interface="AbstractS
         TBE tbe := TBEs[in_msg.addr];
 
         if(in_msg.Class == CoherenceClass:INV_DATA) {
+          DPRINTF(PSPBackend, "L1, request from L0. Invalidate addr %#x.\n", in_msg.addr);
           trigger(Event:L0_DataAck, in_msg.addr, cache_entry, tbe);
         // ! Sean: StreamAwareCache
         } else if (in_msg.Class == CoherenceClass:STREAM_CONFIG) {
@@ -521,8 +529,8 @@ machine(MachineType:L1Cache, "MESI Directory L1 Cache CMP", interface="AbstractS
            * After this point, either not stream packet,
            * or the stream is handled as normal request.
            */
-
           if (is_valid(cache_entry)) {
+            DPRINTF(PSPBackend, "Request from L0 to L1. Hit, already in L1 %#x.\n", in_msg.addr);
             // Hit.
             setHitCacheLevel(in_msg.requestStatistic, 1);
             trigger(mandatory_request_type_to_event(in_msg.Class),
@@ -530,28 +538,26 @@ machine(MachineType:L1Cache, "MESI Directory L1 Cache CMP", interface="AbstractS
           } else {
 
             if (cache.cacheAvail(in_msg.addr)) {
-              DPRINTF(PSPBackend, "Yes room in L1, addr %#x\n", in_msg.addr);
+              DPRINTF(PSPBackend, "Request from L0, miss not in L1. Yes room in L1, addr %#x\n", in_msg.addr);
 
               // L1 does't have the line, but we have space for it
               // in the L1 let's see if the L2 has it
               trigger(mandatory_request_type_to_event(in_msg.Class),
                       in_msg.addr, cache_entry, tbe);
             } else {
-              DPRINTF(PSPBackend, "No room in L1, addr %#x\n", in_msg.addr);
+              DPRINTF(PSPBackend, "Request from L0, miss not in L1. No room in L1, addr %#x\n", in_msg.addr);
 
               // No room in the L1, so we need to make room in the L1
-              Entry victim_entry :=
-                getCacheEntry(cache.cacheProbe(in_msg.addr));
-              TBE victim_tbe := TBEs[cache.cacheProbe(in_msg.addr)];
+              Addr victim := cache.cacheProbe(in_msg.addr); // Changed
+              Entry victim_entry := getCacheEntry(victim);
+              TBE victim_tbe := TBEs[victim];
 
               if (is_valid(victim_entry) && inL0Cache(victim_entry.CacheState)) {
                 trigger(Event:L0_Invalidate_Own,
-                        cache.cacheProbe(in_msg.addr),
-                        victim_entry, victim_tbe);
-              }  else {
+                        victim, victim_entry, victim_tbe);
+              } else {
                 trigger(Event:L1_Replacement,
-                        cache.cacheProbe(in_msg.addr),
-                        victim_entry, victim_tbe);
+                        victim, victim_entry, victim_tbe);
               }
             }
           }
@@ -635,9 +641,11 @@ machine(MachineType:L1Cache, "MESI Directory L1 Cache CMP", interface="AbstractS
   }
 
   // Prefetch queue between the controller and the prefetcher.
-  in_port(prefetchQueue_in, RubyRequest, prefetchQueue, desc="...", rank=0) {
+  in_port(prefetchQueue_in, RubyRequest, prefetchQueue, desc="...", rank = 0) { // Changed rank = 0
     if (prefetchQueue_in.isReady(clockEdge())) {
       peek(prefetchQueue_in, RubyRequest) {
+        //DPRINTF(PSPBackend, "Request from L1 prefetch queue from addr %#x\n", in_msg.LineAddress);
+
         /**
          * We add support for bulk prefetch.
          * NOTE: always use in_msg.addrBulk, as we can't get a reference to it.
@@ -991,6 +999,8 @@ machine(MachineType:L1Cache, "MESI Directory L1 Cache CMP", interface="AbstractS
       out_msg.DataBlk := cache_entry.DataBlk;
       out_msg.MessageSize := MessageSizeType:Response_Data;
     }
+
+    cache.setMRU(address); // Added
   }
 
   action(hh_xdata_to_l0, "\h", desc="If not prefetch, notify sequencer that store completed.") {
@@ -1004,6 +1014,8 @@ machine(MachineType:L1Cache, "MESI Directory L1 Cache CMP", interface="AbstractS
       out_msg.Dirty := cache_entry.Dirty;
       out_msg.MessageSize := MessageSizeType:Response_Data;
     }
+
+    cache.setMRU(address); // Added
   }
 
   action(h_stale_data_to_l0, "hs", desc="If not prefetch, send data to the L0 cache.") {
@@ -1109,6 +1121,7 @@ machine(MachineType:L1Cache, "MESI Directory L1 Cache CMP", interface="AbstractS
     peek(responseNetwork_in, ResponseMsg) {
       assert(is_valid(cache_entry));
       cache_entry.DataBlk := in_msg.DataBlk;
+      cache_entry.Dirty := in_msg.Dirty; // Added
     }
   }
 
@@ -1173,8 +1186,10 @@ machine(MachineType:L1Cache, "MESI Directory L1 Cache CMP", interface="AbstractS
 
   action(oo_allocateCacheBlock, "\o", desc="Set cache tag equal to tag of block B.") {
     if (is_invalid(cache_entry)) {
-      DPRINTF(PSPBackend, "L1, Allocate cache block, was invalid. addr %#x\n", address);
+      //DPRINTF(PSPBackend, "L1, Allocate cache block, was invalid. addr %#x\n", address);
       set_cache_entry(cache.allocate(address, new Entry));
+    } else {
+      //DPRINTF(PSPBackend, "L1, Allocate cache block, was valid. addr %#x\n", address);
     }
   }
 
@@ -1321,6 +1336,21 @@ machine(MachineType:L1Cache, "MESI Directory L1 Cache CMP", interface="AbstractS
     k_popL0RequestQueue;
   }
 
+  transition(I, Store, IM) {
+    oo_allocateCacheBlock;
+    i_allocateTBE;
+    trs_copyReqStatToTBE;
+    b_issueGETX;
+    uu_profileMiss;
+    pm_observeMiss;
+    k_popL0RequestQueue;
+  }
+  
+  transition(I, Inv) {
+    fi_sendInvAck;
+    l_popL2RequestQueue;
+  }
+
   transition(I, PF_Load, PF_IS) {
     oo_allocateCacheBlock;
     i_allocateTBE;
@@ -1361,39 +1391,9 @@ machine(MachineType:L1Cache, "MESI Directory L1 Cache CMP", interface="AbstractS
     k_popL0RequestQueue;
   }
 
-  transition(I, Store, IM) {
-    oo_allocateCacheBlock;
-    i_allocateTBE;
-    trs_copyReqStatToTBE;
-    b_issueGETX;
-    uu_profileMiss;
-    pm_observeMiss;
-    k_popL0RequestQueue;
-  }
-
-  transition(I, Inv) {
-    fi_sendInvAck;
-    l_popL2RequestQueue;
-  }
-
   transition(I, Data_Exclusive, I) {
     mt_multicastTestReceived;
     o_popL2ResponseQueue;
-  }
-
-  // Transitions from Shared
-  transition({S,SS}, Load, S) {
-    h_data_to_l0;
-    uu_profileHit;
-    ph_observeHit;
-    k_popL0RequestQueue;
-  }
-
-  transition(EE, Load, E) {
-    hh_xdata_to_l0;
-    uu_profileHit;
-    ph_observeHit;
-    k_popL0RequestQueue;
   }
 
   transition(EE, LoadV, EE) {
@@ -1402,18 +1402,21 @@ machine(MachineType:L1Cache, "MESI Directory L1 Cache CMP", interface="AbstractS
     ph_observeHit;
     k_popL0RequestQueue;
   }
+
   transition(SS, LoadV, SS) {
     hh_xdata_to_l0;
     uu_profileHit;
     ph_observeHit;
     k_popL0RequestQueue;
   }
+
   transition(S, LoadV, S) {
     hh_xdata_to_l0;
     uu_profileHit;
     ph_observeHit;
     k_popL0RequestQueue;
   }
+
   transition(MM, LoadV, MM) {
     hh_xdata_to_l0;
     uu_profileHit;
@@ -1428,6 +1431,7 @@ machine(MachineType:L1Cache, "MESI Directory L1 Cache CMP", interface="AbstractS
     nhs_notifyHitStreamLoadV;
     k_popL0RequestQueue;
   }
+
   transition(SS, HitStreamLoadV, SS) {
     hh_xdata_to_l0;
     uu_profileHit;
@@ -1435,6 +1439,7 @@ machine(MachineType:L1Cache, "MESI Directory L1 Cache CMP", interface="AbstractS
     nhs_notifyHitStreamLoadV;
     k_popL0RequestQueue;
   }
+
   transition(S, HitStreamLoadV, S) {
     hh_xdata_to_l0;
     uu_profileHit;
@@ -1442,11 +1447,27 @@ machine(MachineType:L1Cache, "MESI Directory L1 Cache CMP", interface="AbstractS
     nhs_notifyHitStreamLoadV;
     k_popL0RequestQueue;
   }
+
   transition(MM, HitStreamLoadV, MM) {
     hh_xdata_to_l0;
     uu_profileHit;
     ph_observeHit;
     nhs_notifyHitStreamLoadV;
+    k_popL0RequestQueue;
+  }
+
+  // Transitions from Shared
+  transition({S,SS}, Load, S) {
+    h_data_to_l0;
+    uu_profileHit;
+    ph_observeHit;
+    k_popL0RequestQueue;
+  }
+
+  transition(EE, Load, E) {
+    hh_xdata_to_l0;
+    uu_profileHit;
+    ph_observeHit;
     k_popL0RequestQueue;
   }
 

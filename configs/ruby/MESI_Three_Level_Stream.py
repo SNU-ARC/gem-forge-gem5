@@ -109,7 +109,7 @@ def create_system(options, full_system, system, dma_ports, bootmem,
 
             l0d_cache = L0Cache(size=options.l1d_size, assoc=options.l1d_assoc, is_icache=False,
                 start_index_bit=block_size_bits,
-                replacement_policy=BRRIPRP(),
+                replacement_policy=TreePLRURP(),
                 dataAccessLatency=options.l1d_lat)
 
             pspbackend = PSPBackend(
@@ -312,7 +312,7 @@ def create_system(options, full_system, system, dma_ports, bootmem,
                                start_index_bit=block_size_bits,
                                skip_index_start_bit=l2_select_low_bit,
                                skip_index_num_bits=l2_bits,
-                               replacement_policy=BRRIPRP(),
+                               replacement_policy=TreePLRURP(),
                                query_stream_nuca=True,
                                )
 

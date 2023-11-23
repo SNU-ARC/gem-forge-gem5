@@ -12,6 +12,7 @@
 #define __MEM_REQUEST_STATISTIC_HH__
 
 #include <memory>
+#include "debug/PSPBackend.hh"
 
 struct RequestStatistic {
   enum HitPlaceE {

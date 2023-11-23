@@ -54,8 +54,10 @@
 #include "mem/ruby/protocol/RubyRequestType.hh"
 #include "mem/ruby/structures/RubyPrefetcher.hh"
 #include "debug/PSPBackend.hh"
+#include "mem/ruby/system/Sequencer.hh"
 
 #include <math.h>
+
 #include <vector>
 
 class PSPPrefetchEntry
@@ -103,13 +105,18 @@ class PSPPrefetchEntry
         }
 
         int numInflightRequest() {
+            std::stringstream ss;
+            std::string print;
             int count = 0;
             for (int i = 0; i < m_size; i++) {
                 if (issued[i] && !received[i]) {
-                    DPRINTF(PSPBackend, "Inflight addr : %#x\n", m_addr + i * RubySystem::getBlockSizeBytes());
+                    ss.str("");
+                    ss << std::hex << m_addr + i * RubySystem::getBlockSizeBytes();
+                    print = print + std::string(" ") + ss.str();
                     count++;
                 }
             }
+            DPRINTF(PSPBackend, "Inflight addr : %s, total : %d\n", print, count);
             return count;
         }
 
@@ -126,7 +133,7 @@ class PSPPrefetchEntry
         bool viewRequest(Addr addr) {
             for (int i = 0; i < m_size; i++) {
                 if (m_addr + i * RubySystem::getBlockSizeBytes() == addr) {
-                    if (!received[i]) {
+                    if (issued[i] && !received[i]) {
                         received[i] = true;
                         return true;
                     }
@@ -189,15 +196,24 @@ class StreamEntry
         }
 
         int numInflightRequest() {
-            DPRINTF(PSPBackend, "Stream %d\n", stream_num);
             int total = 0;
             for (int i = 0; i < this->num_stream_entry; i++) {
                 if (this->PSPPrefetchEntryTable[i].isValid()) {
                     total = total + this->PSPPrefetchEntryTable[i].numInflightRequest();
                 }
             }
-            DPRINTF(PSPBackend, "Total inflight request %d\n", total);
+            DPRINTF(PSPBackend, "Stream %d, total inflight request %d\n", stream_num, total);
             return total;
+        }
+
+        std::string numValidEntry() {
+            int total = 0;
+            for (int i = 0; i < this->num_stream_entry; i++) {
+                if (this->PSPPrefetchEntryTable[i].isValid()) {
+                    total++;
+                }
+            }
+            return std::string(", Stream ") + std::to_string(stream_num) + std::string(" : ") + std::to_string(total);
         }
 
         int entryToActivate() {
@@ -240,37 +256,14 @@ class StreamEntry
                     bool ret = p.viewRequest(snoopAddr);
                     if (p.doneIssue() && p.donePrefetch()) {
                         DPRINTF(PSPBackend, "## Stream : %d, Invalidate Entry %d, address %#x.\n", stream_num, i, p.getFirstLineAddr());
-                        DPRINTF(PSPBackend, "##############################################################\n");
+                        //DPRINTF(PSPBackend, "##############################################################\n");
                         p.deactivate(); // Just in case
                         p.invalidate();
+                        
                     }
                     return ret;
                 }
             }
-        }
-
-        Addr issueRequest() {
-            assert(activeEntryIdx != -1);
-
-            PSPPrefetchEntry *pe = &PSPPrefetchEntryTable[activeEntryIdx];
-            assert(pe != NULL);
-            Addr addr = pe->issueRequest();
-            DPRINTF(PSPBackend, "## Stream : %d, Enqueue prefetch request for address %#x done.\n", stream_num, addr);
-
-            if (pe->doneIssue()) {
-                pe->deactivate();
-                DPRINTF(PSPBackend, "## Stream : %d, Deactivate Entry %d, address %#x\n", stream_num, activeEntryIdx, pe->getFirstLineAddr());
-                activeEntryIdx = -1;
-                int toActivate = entryToActivate();
-                if (toActivate != -1) {
-                    activeEntryIdx = toActivate;
-                    pe = &PSPPrefetchEntryTable[activeEntryIdx];
-                    pe->activate();
-                    DPRINTF(PSPBackend, "## Stream : %d, Activate Entry %d, address %#x.\n", stream_num, activeEntryIdx, pe->getFirstLineAddr());
-                }
-            }
-
-            return addr;
         }
 
         int numToPrefetch() {
@@ -284,6 +277,7 @@ class StreamEntry
         }
 
         void insertEntry(Addr addr, int size);
+        Addr issueRequest();
 
         bool hasEntry(Addr addr) {
             for (auto& pe : PSPPrefetchEntryTable) {
@@ -319,6 +313,14 @@ class PSPBackend : public SimObject
         bool canInsertEntry(uint64_t entryId) {
           assert(entryId < streamTable.size());
           return streamTable[entryId].entryToValidate() != -1;
+        }
+
+        void numValidEntry() {
+            std::string print;
+            for (int i = 0; i < this->num_streams; i++) {
+                print += streamTable[i].numValidEntry();
+            }
+            DPRINTF(PSPBackend, "Valid entries %s\n", print);
         }
 
     private:
