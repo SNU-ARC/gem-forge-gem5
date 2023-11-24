@@ -49,17 +49,15 @@ PhysicalAddressQueue::allocate(uint64_t _seqNum) {
 void
 PhysicalAddressQueue::reset(uint64_t _seqNum) {
   uint32_t idx = this->head;
-  for (uint32_t i = 0; i < this->capacity; i++) {
-    this->pkt[idx].valid = false;
-
-//    idx = (idx + i) % this->capacity;
-//    if (this->pkt[idx].seqNum >= _seqNum) {
-//      this->pkt[idx].valid = false;
-//      this->pkt[idx].seqNum = 0;
-//      this->size--;
-//    }
+  uint32_t oldSize = this->size;
+  for (uint32_t i = 0; i < oldSize; i++) {
+    idx = (idx + 1) % this->capacity;
+    if (this->pkt[idx].seqNum >= _seqNum) {
+      this->pkt[idx].valid = false;
+      this->pkt[idx].seqNum = 0;
+      this->size--;
+    }
   }
-  this->size = 0;
   this->tail = (this->head + this->size) % this->capacity;
 }
 
