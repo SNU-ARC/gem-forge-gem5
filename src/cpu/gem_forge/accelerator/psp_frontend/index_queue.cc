@@ -85,7 +85,7 @@ void IndexQueue::insert(void* _buffer, uint64_t _size, uint64_t _seqNum) {
 
 void
 IndexQueue::reset(uint64_t _seqNum) {
-  if (this->seqNum >= _seqNum) {
+  if (this->seqNum == _seqNum) {
     front = 0;
     allocatedSize = 0;
     size = 0;

@@ -84,7 +84,7 @@ struct PatternTableEntry {
     return this->tableConfigEntry.isValid();
   }
   bool isInputInfoValid() {
-    return this->tableInputEntry.front().isValid() && this->tableInputEntry.size() > 0;
+    return /* this->tableInputEntry.front().isValid() && */this->tableInputEntry.size() > 0;
   }
   void setConfigInfo(const uint64_t _idxBaseAddr, const uint64_t _idxAccessGranularity,
                      const uint64_t _valBaseAddr, const uint64_t _valAccessGranularity) {

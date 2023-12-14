@@ -146,7 +146,6 @@ PSPFrontend::tick() {
 
   /* Issue PA packets to PSP Backend*/
   for (uint32_t i = 0; i < this->totalPatternTableEntries; i++) {
-    //PSP_FE_DPRINTF("PSPBackend_canInsert: %d / %d\n", this->pspBackend->canInsertEntry(i), this->totalPatternTableEntries);
     if (this->paQueueArray->canRead(i)) {
       if (this->isPSPBackendEnabled) {
         if (this->pspBackend->canInsertEntry(i)) {
@@ -267,7 +266,7 @@ void PSPFrontend::issueTranslateValueAddress(uint64_t _validEntryId) {
   uint64_t currentVAddr = valBaseAddr + (index + 1) * valAccessGranularity - this->valCurrentSize[_validEntryId];
   uint64_t currentSize = this->valCurrentSize[_validEntryId];
   uint64_t cacheLineSize = this->cpuDelegator->cacheLineSize();
-  uint64_t pageSize = 1 << 12;
+  uint64_t pageSize = TheISA::PageBytes;
 
   uint64_t cacheBlockVAddr = currentVAddr & (~(cacheLineSize - 1));
   uint64_t cacheBlockSize = currentSize; 
@@ -297,8 +296,8 @@ void PSPFrontend::issueTranslateValueAddress(uint64_t _validEntryId) {
       cacheBlockPAddr, cacheBlockSize, indexPacketHandler, nullptr /* Data */,
       cpuDelegator->dataMasterId(), 0 /* ContextId */, 0 /* PC */, flags);
   pkt->req->setVirt(cacheBlockVAddr);
-  PSP_FE_DPRINTF("Address translation for %luth entryId (size: %lu). VA: %#x, BlockVA: %#x PA: %#x Size: %d.\n", _validEntryId,
-      this->indexQueueArray->getSize(_validEntryId), currentVAddr, cacheBlockVAddr, pkt->getAddr(), pkt->getSize());
+  PSP_FE_DPRINTF("Address translation for %luth entryId (size: %lu). VA: %#x, BlockVA: %#x PA: %#x Size: %d, PageSize: %lu.\n", _validEntryId,
+      this->indexQueueArray->getSize(_validEntryId), currentVAddr, cacheBlockVAddr, pkt->getAddr(), pkt->getSize(), pageSize);
  
   if (cpuDelegator->cpuType == GemForgeCPUDelegator::ATOMIC_SIMPLE) {
     // No requests sent to memory for atomic cpu.
@@ -480,10 +479,10 @@ void PSPFrontend::executeStreamTerminate(const StreamTerminateArgs &args) {
 
 bool PSPFrontend::canCommitStreamTerminate(const StreamTerminateArgs &args) {
   uint64_t entryId = args.entryId;
-  bool invalidConfig = !(this->patternTable->isConfigInfoValid(entryId) &&
+  bool validConfig = (this->patternTable->isConfigInfoValid(entryId) &&
       this->indexQueueArray->getConfigured(entryId));
   bool invalidInput = !(this->patternTable->isInputInfoValid(entryId));
-  return invalidConfig && invalidInput;
+  return validConfig && invalidInput;
 }
 
 void PSPFrontend::commitStreamTerminate(const StreamTerminateArgs &args) {
