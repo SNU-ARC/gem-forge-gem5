@@ -28,13 +28,14 @@ PhysicalAddressQueue::read(PhysicalAddressArgs* _pkt) {
 void
 PhysicalAddressQueue::pop() {
   this->pkt[this->head].valid = false;
+  this->pkt[this->head].seqNum = 0;
   this->head = (this->head + 1) % this->capacity;
   this->size--;
 }
 
 bool
 PhysicalAddressQueue::canInsert() {
-  return this->size + 1 < this->capacity;
+  return (this->size + 1 < this->capacity) && (this->pkt[this->tail].seqNum == 0);
 }
 
 uint32_t
@@ -65,6 +66,9 @@ void
 PhysicalAddressQueue::insert(uint32_t _id, PhysicalAddressArgs _pkt) {
   if (this->pkt[_id].seqNum == _pkt.seqNum) {
     this->pkt[_id] = _pkt;
+  }
+  else {
+    this->size--;
   }
 }
 

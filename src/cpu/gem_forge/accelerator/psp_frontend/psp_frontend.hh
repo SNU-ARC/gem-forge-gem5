@@ -168,7 +168,7 @@ private:
   IndexQueueArrayRRArbiter* indexQueueArrayArbiter;
   PAQueueArray* paQueueArray;
   PSPBackend* pspBackend;
-  std::unordered_map<uint64_t, uint32_t> inflightTranslations;
+  std::multimap<uint64_t, uint32_t> inflightTranslations;
   uint64_t seqNum;
 };
 #endif
