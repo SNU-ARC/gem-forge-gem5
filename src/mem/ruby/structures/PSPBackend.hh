@@ -68,7 +68,7 @@ class PSPPrefetchEntry {
     void setEntry(Addr _baseAddr, int _size) {
       this->valid = true;
       this->baseAddr = makeLineAddress(_baseAddr);
-      this->endAddr = makeLineAddress(_baseAddr) + _size - RubySystem::getBlockSizeBytes();
+      this->endAddr = makeLineAddress(_baseAddr) + _size;
       this->size = _size;
     }
 
@@ -82,7 +82,7 @@ class PSPPrefetchEntry {
     Addr getEndAddr() { return this->endAddr; }
     int getSize() { return this->size; }
     bool isHit(Addr _addr) {
-      return (this->valid && (_addr >= this->baseAddr) && (_addr <= this->endAddr));
+      return (this->valid && (_addr >= this->baseAddr) && (_addr < this->endAddr));
     }
 };
 

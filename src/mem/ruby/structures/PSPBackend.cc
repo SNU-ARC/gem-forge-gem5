@@ -93,7 +93,7 @@ StreamEntry::insertEntry(Addr _addr, int _size) {
   }
 
   // Set inserted packet as Tag Address if not set
-  DPRINTF(PSPBackend, "## Activate Entry %d, address %#x.\n", this->tailEntryIdx, _addr);
+  DPRINTF(PSPBackend, "## Activate Entry %d, address %#x, size %d.\n", this->tailEntryIdx, _addr, _size);
 
   PSPPrefetchEntry* p = &prefetchQueue[this->tailEntryIdx];
   p->setEntry(_addr, _size);
@@ -111,27 +111,32 @@ StreamEntry::popEntry(int _entryIdx) {
   DPRINTF(PSPBackend, "##############################################################\n");
   queue->invalidate();
   
-  if (this->headEntryIdx == _entryIdx) {
-    this->headEntryIdx = (this->headEntryIdx + this->headEntryForward + 1) % this->numQueueEntry;
-    this->count -= (this->headEntryForward + 1);
-    this->headEntryForward = 0;
-  }
-  else {
-    this->headEntryForward++;
-  }
+//  if (this->headEntryIdx == _entryIdx) {
+//    this->headEntryIdx = (this->headEntryIdx + this->headEntryForward + 1) % this->numQueueEntry;
+//    this->count -= (this->headEntryForward + 1);
+//    this->headEntryForward = 0;
+//  }
+//  else {
+//    this->headEntryForward++;
+//  }
+  this->headEntryIdx = (this->headEntryIdx + 1) % this->numQueueEntry;
+  this->count--;
 }
 
 void
 StreamEntry::incrementTagAddr(Addr _snoopAddr) {
-  int hitIdx = 0;
+  int hitIdx = this->headEntryIdx;
   this->incrementSize = 0;
+  uint64_t incrementAccumSize = 0;
   // Get which index is hit and increment baseAddr
   for (int i = 0; i < this->numQueueEntry; i++) {
-    if (this->prefetchQueue[i].isHit(_snoopAddr)) {
+    hitIdx = (hitIdx + 1) % this->numQueueEntry;
+    if (this->prefetchQueue[hitIdx].isHit(_snoopAddr)) {
       this->incrementSize = 
-        _snoopAddr - this->prefetchQueue[i].getBaseAddr() + RubySystem::getBlockSizeBytes();
-      this->prefetchQueue[i].incrementBaseAddr(this->incrementSize);
-      hitIdx = i;
+        _snoopAddr - this->prefetchQueue[hitIdx].getBaseAddr() + RubySystem::getBlockSizeBytes();
+      incrementAccumSize = this->accumulatedSize[hitIdx] - this->prefetchQueue[hitIdx].getSize() + this->incrementSize;
+      this->prefetchQueue[hitIdx].incrementBaseAddr(this->incrementSize);
+      break;
     }
   }
 
@@ -141,20 +146,17 @@ StreamEntry::incrementTagAddr(Addr _snoopAddr) {
     int currIdx = (currHead + i) % this->numQueueEntry;
     if (currIdx == hitIdx) {
       mask = true;
-    }
-    else if (mask == false) {
-      this->popEntry(currIdx);
-      this->headEntryIdx = currIdx;
-      continue;
-    }
-    this->accumulatedSize[currIdx] -= this->incrementSize;
-    if (this->prefetchQueue[currIdx].isValid()) {
-      if (_snoopAddr == this->prefetchQueue[currIdx].getEndAddr()) {
+      if (this->prefetchQueue[currIdx].getBaseAddr() >= this->prefetchQueue[currIdx].getEndAddr()) {
         this->popEntry(currIdx);
       }
     }
+    else if (mask == false) {
+      this->popEntry(currIdx);
+      continue;
+    }
+    this->accumulatedSize[currIdx] -= incrementAccumSize;
   }
-  this->totalSize -= this->incrementSize;
+  this->totalSize -= incrementAccumSize;
 }
 
 void
