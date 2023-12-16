@@ -270,7 +270,11 @@ void PSPFrontend::issueTranslateValueAddress(uint64_t _validEntryId) {
   uint64_t pageSize = TheISA::PageBytes;
 
   uint64_t cacheBlockVAddr = currentVAddrBegin & (~(cacheLineSize - 1));
-  currentSize += (currentVAddrBegin - cacheBlockVAddr);
+//  currentSize += (currentVAddrBegin - cacheBlockVAddr);
+//  // This is hack for cacheline granularity size
+//  if (currentSize % cacheLineSize > 0)
+//    currentSize += (cacheLineSize - currentSize % cacheLineSize);
+
   uint64_t cacheBlockSize;// = currentSize; 
 
   // Address translation (Does not consume tick)
