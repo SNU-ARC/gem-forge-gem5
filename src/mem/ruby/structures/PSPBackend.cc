@@ -162,29 +162,44 @@ StreamEntry::incrementTagAddr(Addr _snoopAddr) {
 
 void
 StreamEntry::incrementNextPrefetchAddr(Addr _snoopAddr) {
-  if (this->prefetchDistance <= this->prefetchQueue[this->headEntryIdx].getSize()) {
-    this->prefetchEnabled = true;
-    this->prefetchEntryIdx = this->headEntryIdx;
-    this->nextPrefetchAddr = _snoopAddr + this->prefetchDistance;
-    this->nextPrefetchSize = this->prefetchQueue[this->headEntryIdx].getSize() - this->prefetchDistance;
-    DPRINTF(PSPBackend, "## Prefetch Info %d %lu %#x %lu %lu\n", this->prefetchEnabled, this->prefetchEntryIdx,
-        this->nextPrefetchAddr, this->nextPrefetchSize, this->prefetchDistance);
-  }
-  else {
-    for (int i = 1; i < this->numQueueEntry; i++) {
-      int prefIdx = (this->headEntryIdx + i) % this->numQueueEntry;
-      if (this->prefetchDistance < this->accumulatedSize[prefIdx]) {
-        this->prefetchEnabled = true;
-        this->prefetchEntryIdx = prefIdx;
-        this->nextPrefetchAddr =
-          this->prefetchQueue[prefIdx].getBaseAddr() + this->prefetchDistance -  (this->accumulatedSize[prefIdx] - this->prefetchQueue[prefIdx].getSize());
-        this->nextPrefetchSize = this->accumulatedSize[prefIdx] - this->prefetchDistance;
-      }
-      else {
-        this->prefetchEnabled = false;
-      }
+  int tmpIdx = this->prefetchEntryIdx;
+  while (tmpIdx != this->tailEntryIdx) {
+    if (this->prefetchDistance < this->accumulatedSize[tmpIdx]) {
+      this->prefetchEnabled = true;
+      this->prefetchEntryIdx = tmpIdx;
+      this->nextPrefetchAddr =
+        this->prefetchQueue[tmpIdx].getBaseAddr() + this->prefetchDistance -  (this->accumulatedSize[tmpIdx] - this->prefetchQueue[tmpIdx].getSize());
+      this->nextPrefetchSize = this->accumulatedSize[tmpIdx] - this->prefetchDistance;
+      return;
     }
+    tmpIdx = (tmpIdx + 1) % this->numQueueEntry;
   }
+  this->prefetchEnabled = false;
+
+//  if (this->prefetchDistance <= this->prefetchQueue[this->headEntryIdx].getSize()) {
+//    this->prefetchEnabled = true;
+//    this->prefetchEntryIdx = this->headEntryIdx;
+//    this->nextPrefetchAddr = _snoopAddr + this->prefetchDistance;
+//    this->nextPrefetchSize = this->prefetchQueue[this->headEntryIdx].getSize() - this->prefetchDistance;
+//    DPRINTF(PSPBackend, "## Prefetch Info %d %lu %#x %lu %lu\n", this->prefetchEnabled, this->prefetchEntryIdx,
+//        this->nextPrefetchAddr, this->nextPrefetchSize, this->prefetchDistance);
+//  }
+//  else {
+//    for (int i = 1; i < this->numQueueEntry; i++) {
+//      int prefIdx = (this->headEntryIdx + i) % this->numQueueEntry;
+//      if (this->prefetchDistance < this->accumulatedSize[prefIdx]) {
+//        this->prefetchEnabled = true;
+//        this->prefetchEntryIdx = prefIdx;
+//        this->nextPrefetchAddr =
+//          this->prefetchQueue[prefIdx].getBaseAddr() + this->prefetchDistance -  (this->accumulatedSize[prefIdx] - this->prefetchQueue[prefIdx].getSize());
+//        this->nextPrefetchSize = this->accumulatedSize[prefIdx] - this->prefetchDistance;
+//        break;
+//      }
+//      else {
+//        this->prefetchEnabled = false;
+//      }
+//    }
+//  }
 
 //  PSPPrefetchEntry* prefetchHead = &this->prefetchQueue[this->prefetchEntryIdx];
 //  int nextPrefetchEntryIdx = (this->prefetchEntryIdx + 1) % this->numQueueEntry;
