@@ -157,7 +157,6 @@ PSPFrontend::tick() {
               validPAQEntry.entryId, validPAQEntry.pAddr, validPAQEntry.size, validPAQEntry.seqNum,
               this->paQueueArray->canRead(i));
           this->paQueueArray->pop(i);
-//          this->pspBackend->printStatus();
         }
       }
       else {
@@ -166,6 +165,7 @@ PSPFrontend::tick() {
       }
     }
   }
+  this->pspBackend->printStatus();
 }
 
 void PSPFrontend::issueLoadIndex(uint64_t _validEntryId) {
@@ -431,7 +431,7 @@ void PSPFrontend::executeStreamInput(const StreamInputArgs &args) {
   PSP_FE_DPRINTF("executeStreamInput...Schedule next tick %lu %lu %lu %lu %lu %lu %lu\n",
       entryId, offsetBegin, offsetEnd, seqNum, this->indexQueueArray->getAllocatedSize(entryId),
       this->indexQueueArray->getSize(entryId), this->paQueueArray->getSize(entryId));
-  this->pspBackend->printStatus();
+//  this->pspBackend->printStatus();
 }
 
 bool PSPFrontend::canCommitStreamInput(const StreamInputArgs &args) {
