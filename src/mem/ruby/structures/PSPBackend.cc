@@ -163,7 +163,8 @@ StreamEntry::incrementTagAddr(Addr _snoopAddr) {
 void
 StreamEntry::incrementNextPrefetchAddr(Addr _snoopAddr) {
   int tmpIdx = this->prefetchEntryIdx;
-  while (tmpIdx != this->tailEntryIdx) {
+  int cnt = 0;
+  while (cnt < this->count) {
     if (this->prefetchDistance < this->accumulatedSize[tmpIdx]) {
       this->prefetchEnabled = true;
       this->prefetchEntryIdx = tmpIdx;
@@ -173,6 +174,7 @@ StreamEntry::incrementNextPrefetchAddr(Addr _snoopAddr) {
       return;
     }
     tmpIdx = (tmpIdx + 1) % this->numQueueEntry;
+    cnt++;
   }
   this->prefetchEnabled = false;
 
