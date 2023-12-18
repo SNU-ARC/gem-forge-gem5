@@ -245,6 +245,11 @@ StreamEntry::printStatus() {
   }
 }
 
+int
+StreamEntry::getTotalSize() {
+  return this->totalSize;
+}
+
 PSPBackend::PSPBackend(const Params *p)
   : SimObject(p), enabled(p->enabled), tlbPrefetchOnly(p->tlb_prefetch_only),
     numStreams(p->num_streams), prefetchDistance(p->prefetch_distance) { 
@@ -403,6 +408,11 @@ PSPBackend::printStatus() {
     DPRINTF(PSPBackend, "## stream : %d\n", i);
     this->streamTable[i].printStatus();
   }
+}
+
+int
+PSPBackend::getTotalSize(uint64_t _entryId) {
+  return this->streamTable[_entryId].getTotalSize();
 }
 
 PSPBackend*

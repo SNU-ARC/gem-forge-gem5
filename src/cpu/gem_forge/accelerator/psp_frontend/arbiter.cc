@@ -51,12 +51,12 @@ IndexQueueArrayRRArbiter::IndexQueueArrayRRArbiter(uint32_t _totalIndexQueueArra
 IndexQueueArrayRRArbiter::~IndexQueueArrayRRArbiter() {
 }
 
-bool IndexQueueArrayRRArbiter::getValidEntryId(uint32_t* _entryId) {
+bool IndexQueueArrayRRArbiter::getValidEntryId(uint32_t* _entryId, bool _bypassPAQueue) {
   for (uint32_t i = 1; i < this->getTotalPatternTableEntries() + 1; i++) {
     uint32_t entryId = (this->getLastChosenEntryId() + i) % this->getTotalPatternTableEntries();
     if (this->indexQueueArray->getConfigured(entryId) &&
         this->indexQueueArray->canRead(entryId) &&
-        this->paQueueArray->canInsert(entryId)) {
+        (this->paQueueArray->canInsert(entryId) || _bypassPAQueue)) {
       *_entryId = entryId;
       return true;
     }

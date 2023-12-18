@@ -126,6 +126,7 @@ class StreamEntry {
     void incrementTagAddr(Addr _snoopAddr);
     void incrementNextPrefetchAddr(Addr _snoopAddr);
     void printStatus();
+    int getTotalSize();
 };
 
 class PSPBackend : public SimObject {
@@ -165,6 +166,7 @@ class PSPBackend : public SimObject {
     bool observeMiss(Addr address);
 
     void printStatus();
+    int getTotalSize(uint64_t _entryId);
 };
 
 #endif // __MEM_RUBY_STRUCTURES_PSPBackend_HH__
