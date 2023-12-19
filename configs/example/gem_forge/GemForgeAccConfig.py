@@ -97,6 +97,7 @@ def initializePSPFrontend(options):
     psp.paQueueCapacity = options.gem_forge_psp_frontend_pa_queue_capacity
     psp.isPSPBackendEnabled = options.gem_forge_psp_backend_enable
     psp.isTLBPrefetchOnly = options.gem_forge_psp_tlb_prefetch_only
+    psp.isDataPrefetchOnly = options.gem_forge_psp_data_prefetch_only
 
     return psp
 
