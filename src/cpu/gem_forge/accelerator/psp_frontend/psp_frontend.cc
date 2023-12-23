@@ -350,10 +350,10 @@ void PSPFrontend::issueTranslateValueAddress(uint64_t _validEntryId) {
                                     &valBaseAddr, &valAccessGranularity);
 
   // Generate 4KB aligned address translation requests
+  uint64_t cacheLineSize = this->cpuDelegator->cacheLineSize();
   uint64_t currentVAddrBegin = valBaseAddr + (index + 1) * valAccessGranularity - this->valCurrentSize[_validEntryId];
   uint64_t currentVAddrEnd = valBaseAddr + (index + 1) * valAccessGranularity;
-  uint64_t currentSize = this->valCurrentSize[_validEntryId];
-  uint64_t cacheLineSize = this->cpuDelegator->cacheLineSize();
+  uint64_t currentSize = (this->valCurrentSize[_validEntryId] + (cacheLineSize - 1)) & (~(cacheLineSize - 1));
   uint64_t pageSize = TheISA::PageBytes;
 
   uint64_t cacheBlockVAddr = currentVAddrBegin & (~(cacheLineSize - 1));
@@ -422,10 +422,15 @@ void PSPFrontend::handlePacketResponse(IndexPacketHandler* indexPacketHandler,
   uint64_t inputSize = indexPacketHandler->size;
   uint64_t seqNum = indexPacketHandler->seqNum;
   data += (vaddr - cacheBlockVAddr);
+  uint64_t debug_address;
   if (indexPacketHandler->isIndex) {
-    this->indexQueueArray->insert(entryId, data, inputSize, seqNum);
-    PSP_FE_DPRINTF("%luth IndexQueue filled with blockVA: %#x, VA: %#x, size: %lu, data: %lu, SeqNum: %lu %lu.\n", entryId,
-        cacheBlockVAddr, vaddr, inputSize, *(uint64_t*)data, seqNum, this->seqNum);
+    this->indexQueueArray->insert(entryId, data, inputSize, debug_address, seqNum);
+    PSP_FE_DPRINTF("%luth IndexQueue filled with blockVA: %#x, VA: %#x, size: %lu, debug_address, %#x, SeqNum: %lu %lu\n", entryId,
+        cacheBlockVAddr, vaddr, inputSize, debug_address, seqNum, this->seqNum);
+    for (int i = 0; i < inputSize / 8; i++) {
+      PSP_FE_DPRINTF("data[%d]: %lu\n", i, ((uint64_t*)data)[i]);
+    }
+    PSP_FE_DPRINTF("\n");
   }
 //  else {
 //    Addr pAddr = pkt->getAddr();

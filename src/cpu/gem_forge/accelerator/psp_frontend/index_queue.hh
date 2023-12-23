@@ -28,11 +28,11 @@ class IndexQueue {
     void pop();
     bool canInsert(uint64_t _cacheLineSize, uint64_t _seqNum);
     void allocate(uint64_t _size, uint64_t _seqNum);
-    void insert(void* _buffer, uint64_t _size, uint64_t _seqNum);
+    void insert(void* _buffer, uint64_t _size, uint64_t _data_address, uint64_t _seqNum);
     void reset(uint64_t _seqNum);
 
   private:
-    void* data;
+    std::vector<void*> data;
     bool isConfigured;
     uint32_t capacity;
     uint32_t front;
@@ -58,7 +58,7 @@ class IndexQueueArray {
     void pop(const uint64_t _entryId);
     bool canInsert(const uint64_t _entryId, const uint64_t _cacheLineSize, const uint64_t _seqNum);
     void allocate(const uint64_t _entryId, const uint64_t _size, const uint64_t _seqNum);
-    void insert(const uint64_t _entryId, void* _buffer, uint64_t _size, uint64_t _seqNum);
+    void insert(const uint64_t _entryId, void* _buffer, uint64_t _size, uint64_t _data_address, uint64_t _seqNum);
     void reset(const uint64_t _entryId, const uint64_t _seqNum);
     
   private:

@@ -9,11 +9,13 @@
 
 IndexQueue::IndexQueue(uint32_t _capacity)
   : isConfigured(false), capacity(_capacity), front(0), allocatedSize(0), size(0), accessGranularity(0) {
-  data = malloc(_capacity);
+  this->data.emplace_back();
+  data[0] = malloc(_capacity);
+//  data = malloc(_capacity);
 }
 
 IndexQueue::~IndexQueue() {
-  free(data);
+//  free(data);
 }
 
 void IndexQueue::setConfigured(bool _isConfigured) {
@@ -41,7 +43,7 @@ uint64_t IndexQueue::getAccessGranularity() {
 }
 
 void IndexQueue::read(void* _buffer, uint64_t* _seqNum) {
-  memcpy(_buffer, data + this->front, this->accessGranularity);
+  memcpy(_buffer, data[0] + this->front, this->accessGranularity);
   *_seqNum = this->seqNum;
 }
 
@@ -65,19 +67,20 @@ IndexQueue::allocate(uint64_t _size, uint64_t _seqNum) {
   this->seqNum = _seqNum;
 }
 
-void IndexQueue::insert(void* _buffer, uint64_t _size, uint64_t _seqNum) {
+void IndexQueue::insert(void* _buffer, uint64_t _size, uint64_t _data_address, uint64_t _seqNum) {
   if (this->seqNum != _seqNum) {
     return;
   }
   else {
     uint64_t back = (this->front + this->size) % this->capacity;
+    _data_address = (uint64_t)data[0] + back;
     if (this->capacity - back >= _size) {
-      memcpy(data + back, _buffer, _size);
+      memcpy(data[0] + back, _buffer, _size);
     }
     else {
       uint64_t remainder = this->capacity - back;
-      memcpy(data + back, _buffer, remainder);
-      memcpy(data, _buffer + remainder, _size - remainder);
+      memcpy(data[0] + back, _buffer, remainder);
+      memcpy(data[0], _buffer + remainder, _size - remainder);
     }
     this->size += _size;
   }
@@ -158,8 +161,8 @@ IndexQueueArray::allocate(const uint64_t _entryId, const uint64_t _size, const u
   this->indexQueue[_entryId].allocate(_size, _seqNum);
 }
 
-void IndexQueueArray::insert(const uint64_t _entryId, void* _buffer, uint64_t _size, uint64_t _seqNum) {
-  this->indexQueue[_entryId].insert(_buffer, _size, _seqNum);
+void IndexQueueArray::insert(const uint64_t _entryId, void* _buffer, uint64_t _size, uint64_t _data_address, uint64_t _seqNum) {
+  this->indexQueue[_entryId].insert(_buffer, _size, _data_address, _seqNum);
 }
 
 void
