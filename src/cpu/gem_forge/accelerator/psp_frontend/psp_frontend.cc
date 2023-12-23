@@ -370,7 +370,7 @@ void PSPFrontend::issueTranslateValueAddress(uint64_t _validEntryId) {
       "Page Fault is not we intend");
 
   uint64_t pageRemain = pageSize - (cacheBlockPAddr % pageSize);
-  if (currentSize < pageRemain) {
+  if (currentSize <= pageRemain) {
     // Proceed to next index
     this->indexQueueArray->pop(_validEntryId);
     this->valCurrentSize[_validEntryId] = valAccessGranularity;
