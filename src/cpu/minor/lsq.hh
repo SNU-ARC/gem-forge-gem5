@@ -730,6 +730,9 @@ class LSQ : public Named
      *  issuing an isMemRef instruction */
     bool canRequest() { return requests.unreservedRemainingSpace() != 0; }
 
+    bool canTransfer() { return transfers.unreservedRemainingSpace() != 0; }
+    int numTransfer() { return transfers.unreservedRemainingSpace(); }
+
     /** Returns a response if it's at the head of the transfers queue and
      *  it's either complete or can be sent on to the store buffer.  After
      *  calling, the request still remains on the transfer queue until

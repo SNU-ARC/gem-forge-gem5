@@ -28,11 +28,11 @@ IndexPacketHandler::handlePacketResponse(GemForgeCPUDelegator* cpuDelegator,
     return;
   }
   
-  if (this->isDataPrefetchOnly) {
-    delete pkt;
-    delete this;
-    return;
-  }
+//  if (this->isDataPrefetchOnly) {
+//    delete pkt;
+//    delete this;
+//    return;
+//  }
   this->pspFrontend->handlePacketResponse(this, pkt);
 
   delete pkt;
@@ -52,10 +52,10 @@ IndexPacketHandler::handleAddressTranslateResponse(GemForgeCPUDelegator* cpuDele
   }
   this->pspFrontend->handleAddressTranslateResponse(this, pkt);
 
-  if (!this->isDataPrefetchOnly) {
+//  if (!this->isDataPrefetchOnly) {
     delete pkt;
     delete this;
-  }
+//  }
 }
 
 void
@@ -150,18 +150,20 @@ PSPFrontend::tick() {
   /* Issue feature vector address translation */
   uint32_t validIQEntryId;
   // TODO: Should I check the availability of TLB? (e.g., pending translation by PTW)
-  if (this->indexQueueArrayArbiter->getValidEntryId(&validIQEntryId, this->isDataPrefetchOnly)) {
-    if (this->isDataPrefetchOnly) {
-      if (this->paQueueArray->getSize(validIQEntryId) + this->pspBackend->getTotalSize(validIQEntryId) < this->paQueueCapacity) {
-        this->issueLoadValue(validIQEntryId);
-      }
-      else { // If cannot issue prefetch, pass chance to next entry
-        this->indexQueueArrayArbiter->setLastChosenEntryId(validIQEntryId);
-      }
-    }
-    else {
+  if (this->indexQueueArrayArbiter->getValidEntryId(&validIQEntryId, false)) {
+//  if (this->indexQueueArrayArbiter->getValidEntryId(&validIQEntryId, this->isDataPrefetchOnly)) {
+//    if (this->isDataPrefetchOnly) {
+//      if (this->paQueueArray->getSize(validIQEntryId) + this->pspBackend->getTotalSize(validIQEntryId) < this->paQueueCapacity &&
+//          this->inflightTranslations.size() < 4) {
+//        this->issueLoadValue(validIQEntryId);
+//      }
+//      else { // If cannot issue prefetch, pass chance to next entry
+//        this->indexQueueArrayArbiter->setLastChosenEntryId(validIQEntryId);
+//      }
+//    }
+//    else {
       this->issueTranslateValueAddress(validIQEntryId);
-    }
+//    }
   }
 
   /* Issue PA packets to PSP Backend*/
@@ -354,7 +356,7 @@ void PSPFrontend::issueTranslateValueAddress(uint64_t _validEntryId) {
   uint64_t currentVAddrBegin = valBaseAddr + (index + 1) * valAccessGranularity - this->valCurrentSize[_validEntryId];
   uint64_t currentVAddrEnd = valBaseAddr + (index + 1) * valAccessGranularity;
   uint64_t currentSize = (this->valCurrentSize[_validEntryId] + (cacheLineSize - 1)) & (~(cacheLineSize - 1));
-  uint64_t pageSize = TheISA::PageBytes;
+  uint64_t pageSize = this->isDataPrefetchOnly ? cacheLineSize : TheISA::PageBytes;
 
   uint64_t cacheBlockVAddr = currentVAddrBegin & (~(cacheLineSize - 1));
 //  currentSize += (currentVAddrBegin - cacheBlockVAddr);
@@ -461,9 +463,9 @@ void PSPFrontend::handleAddressTranslateResponse(IndexPacketHandler* _indexPacke
       entryId, pAddr, size, this->inflightTranslations.size(), seqNum, this->seqNum);
   PSP_FE_DPRINTF("PAQeueuArray_canRead(%lu): %d, PSPBackend_canInsertEntry(%lu): %d\n", entryId, this->paQueueArray->canRead(entryId), entryId, this->pspBackend->canInsertEntry(entryId));
 
-  if (this->isDataPrefetchOnly) {
-    this->cpuDelegator->sendRequest(_pkt);
-  }
+//  if (this->isDataPrefetchOnly) {
+//    this->cpuDelegator->sendRequest(_pkt);
+//  }
 }
 
 /********************************************************************************
