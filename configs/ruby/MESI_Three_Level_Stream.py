@@ -127,7 +127,7 @@ def create_system(options, full_system, system, dma_ports, bootmem,
                 num_streams=16,
                 unit_filter=256,
                 nonunit_filter=256,
-                train_misses=3,
+                train_misses=5,
                 num_startup_pfs=options.gem_forge_prefetch_dist,
                 cross_page=True
             )

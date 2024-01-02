@@ -1004,7 +1004,6 @@ machine(MachineType:L0Cache, "MESI Directory L0 Cache", interface="AbstractStrea
           if (pspbackend.observePfHit(req_address)) {
             cache_entry.isPrefetch := false;
           }
-//          else if (enable_prefetch) {
           if (enable_prefetch) {
             prefetcher.observePfHit(req_address);
             cache_entry.isPrefetch := false;
@@ -1040,7 +1039,6 @@ machine(MachineType:L0Cache, "MESI Directory L0 Cache", interface="AbstractStrea
         if (pspbackend.observeMiss(req_address)) {
           // empty
         }
-//        else if (enable_prefetch) {
         if (enable_prefetch) {
           prefetcher.observeMiss(req_address, in_msg.Type);
         }
@@ -1062,7 +1060,6 @@ machine(MachineType:L0Cache, "MESI Directory L0 Cache", interface="AbstractStrea
         if (pspbackend.observePfMiss(in_msg.LineAddress)) {
           // empty
         }
-//        else if (enable_prefetch) {
         if (enable_prefetch) {
           prefetcher.observePfMiss(in_msg.LineAddress);
         }

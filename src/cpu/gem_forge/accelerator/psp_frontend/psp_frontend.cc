@@ -100,7 +100,9 @@ PSPFrontend::takeOverBy(GemForgeCPUDelegator *newCpuDelegator,
       ((IndexPacketHandler*)indexPacketHandler)->handleAddressTranslateResponse(this->cpuDelegator, pkt); },
       false /* AccessLastLevelTLBOnly */, true /* MustDoneInOrder */);
 
-  char pspbackend_name[100] = "system.ruby.l0_cntrl";
+  // For Two level cache
+  char pspbackend_name[100] = "system.ruby.l1_cntrl";
+//  char pspbackend_name[100] = "system.ruby.l0_cntrl";
   char cpuId = (this->cpuDelegator->cpuId() + '0');
   strncat(pspbackend_name, &cpuId, 1);
   strcat(pspbackend_name, ".pspbackend");

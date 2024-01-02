@@ -29,7 +29,7 @@ LLCStreamAtomicLockManager::LLCStreamAtomicLockManager(LLCStreamEngine *_se)
   } else if (lockType == "single") {
     this->lockType = LockType::SingleLock;
   } else {
-    panic("Unknown StreamAtomicLockType %s.", lockType);
+//    panic("Unknown StreamAtomicLockType %s.", lockType);
   }
 }
 
