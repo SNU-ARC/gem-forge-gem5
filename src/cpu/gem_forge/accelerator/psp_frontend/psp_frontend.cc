@@ -28,11 +28,11 @@ IndexPacketHandler::handlePacketResponse(GemForgeCPUDelegator* cpuDelegator,
     return;
   }
   
-//  if (this->isDataPrefetchOnly) {
-//    delete pkt;
-//    delete this;
-//    return;
-//  }
+  if (this->isDataPrefetchOnly) {
+    delete pkt;
+    delete this;
+    return;
+  }
   this->pspFrontend->handlePacketResponse(this, pkt);
 
   delete pkt;
@@ -52,10 +52,10 @@ IndexPacketHandler::handleAddressTranslateResponse(GemForgeCPUDelegator* cpuDele
   }
   this->pspFrontend->handleAddressTranslateResponse(this, pkt);
 
-//  if (!this->isDataPrefetchOnly) {
+  if (!this->isDataPrefetchOnly) {
     delete pkt;
     delete this;
-//  }
+  }
 }
 
 void
