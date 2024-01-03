@@ -75,11 +75,11 @@ namespace X86ISA
         void takeOverFrom(BaseTLB *otlb) override {}
 
         TlbEntry *lookupL1(Addr va, bool isLastLevel,
-            bool updateStats, bool updateLRU);
+            bool updateStats, bool updateLRU, bool isPrefetch = false);
         TlbEntry *lookupL2(Addr va, bool isLastLevel,
-            bool updateStats, bool updateLRU);
+            bool updateStats, bool updateLRU, bool isPrefetch = false);
         TlbEntry *lookup(Addr va, bool isLastLevel,
-            bool updateStats, bool updateLRU, int &hitLevel);
+            bool updateStats, bool updateLRU, int &hitLevel, bool isPrefetch = false);
 
         void setConfigAddress(uint32_t addr);
 
@@ -143,11 +143,11 @@ namespace X86ISA
         Fault translate(const RequestPtr &req, ThreadContext *tc,
                 Translation *translation, Mode mode,
                 bool &delayedResponse, Cycles &delayedResponseCycles,
-                bool timing, bool isLastLeve, bool updateStats);
+                bool timing, bool isLastLeve, bool updateStats, bool isPrefetch = false);
 
         void translateTimingImpl(
             const RequestPtr &req, ThreadContext *tc,
-            Translation *translation, Mode mode, bool isLastLevel);
+            Translation *translation, Mode mode, bool isLastLevel, bool isPrefetch = false);
 
       public:
 
@@ -157,8 +157,8 @@ namespace X86ISA
             const RequestPtr &req, ThreadContext *tc, Mode mode) override;
         void translateTiming(
             const RequestPtr &req, ThreadContext *tc,
-            Translation *translation, Mode mode) override {
-            translateTimingImpl(req, tc, translation, mode, false);
+            Translation *translation, Mode mode, bool isPrefetch = false) override {
+            translateTimingImpl(req, tc, translation, mode, false, isPrefetch);
         }
         void translateTimingAtLastLevel(
             const RequestPtr &req, ThreadContext *tc,

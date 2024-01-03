@@ -59,7 +59,7 @@ private:
                                             translation->tc, translation, mode);
     } else {
       this->tlb->translateTiming(translation->pkt->req, translation->tc,
-                                 translation, mode);
+                                 translation, mode, true /* isPrefetch */);
     }
   }
   void finishTranslation(PSPTranslation *translation) {

@@ -118,7 +118,7 @@ TLB::insert(Addr vpn, const TlbEntry &entry, bool isLastLevel)
 
 TlbEntry *
 TLB::lookupL1(Addr va, bool isLastLevel, bool updateStats,
-    bool updateLRU) {
+    bool updateLRU, bool isPrefetch) {
     if (isLastLevel && this->l2tlb) {
         // Goes directly to L2TLB.
         return nullptr;
@@ -129,7 +129,7 @@ TLB::lookupL1(Addr va, bool isLastLevel, bool updateStats,
     } else {
         entry = this->tlbCache.lookup(va, updateLRU);
     }
-    if (updateStats) {
+    if (updateStats && !isPrefetch) {
         this->l1Accesses++;
         if (!entry) this->l1Misses++;
     }
@@ -138,11 +138,11 @@ TLB::lookupL1(Addr va, bool isLastLevel, bool updateStats,
 
 TlbEntry *
 TLB::lookupL2(Addr va, bool isLastLevel, bool updateStats,
-    bool updateLRU) {
+    bool updateLRU, bool isPrefetch) {
     TlbEntry *entry = nullptr;
     if (this->l2tlb) {
         entry = this->l1tlb->lookup(va, updateLRU);
-        if (updateStats) {
+        if (updateStats && !isPrefetch) {
             this->l2Accesses++;
             if (!entry) this->l2Misses++;
         }
@@ -152,16 +152,16 @@ TLB::lookupL2(Addr va, bool isLastLevel, bool updateStats,
 
 TlbEntry *
 TLB::lookup(Addr va, bool isLastLevel, bool updateStats,
-    bool updateLRU, int &hitLevel)
+    bool updateLRU, int &hitLevel, bool isPrefetch)
 {
     hitLevel = 0;
     TlbEntry *entry = this->lookupL1(
-        va, isLastLevel, updateStats, updateLRU);
+        va, isLastLevel, updateStats, updateLRU, isPrefetch);
     // Look up in L2 if we miss in L1.
     if (!entry) {
         hitLevel++;
         entry = this->lookupL2(
-            va, isLastLevel, updateStats, updateLRU);
+            va, isLastLevel, updateStats, updateLRU, isPrefetch);
         if (!entry) {
             // Miss in L2.
             hitLevel++;
@@ -367,7 +367,7 @@ Fault
 TLB::translate(const RequestPtr &req,
         ThreadContext *tc, Translation *translation,
         Mode mode, bool &delayedResponse, Cycles &delayedResponseCycles,
-        bool timing, bool isLastLevel, bool updateStats)
+        bool timing, bool isLastLevel, bool updateStats, bool isPrefetch)
 {
     Request::Flags flags = req->getFlags();
     int seg = flags & SegmentFlagMask;
@@ -435,15 +435,15 @@ TLB::translate(const RequestPtr &req,
             // The vaddr already has the segment base applied.
             int hitLevel = 0;
             TlbEntry *entry = lookup(vaddr, isLastLevel,
-                updateStats, true /* UpdateLRU */, hitLevel);
-            if (updateStats) {
+                updateStats, true /* UpdateLRU */, hitLevel, isPrefetch);
+            if (updateStats && !isPrefetch) {
                 if (mode == Read) rdAccesses++;
                 else wrAccesses++;
             }
             if (!entry) {
                 DPRINTF(TLB, "Handling a TLB miss for address %#x at pc %#x.\n",
                         vaddr, tc->instAddr());
-                if (updateStats) {
+                if (updateStats && !isPrefetch) {
                     if (mode == Read) rdMisses++;
                     else wrMisses++;
                 }
@@ -496,21 +496,23 @@ TLB::translate(const RequestPtr &req,
                         pageVAddr, this->walker->curCycle());
                     if (delayedResponseCycles > this->l2HitLatency) {
                       // This is not L2TLB hit, it is page table walking
-                      this->l2Misses++;
-                      delayedResponseCycles = delayedResponseCycles;
+                      if (!isPrefetch)
+                        this->l2Misses++;
                     }
-                    else {
-                      // This is not L1TLB hit, it is page table walking
-                      this->l1Misses++;
-                      this->l2Accesses++;
-                      this->l2Misses++;
-                      delayedResponseCycles = this->l2HitLatency;
-                    }
+                    delayedResponseCycles += this->l2HitLatency;
                     break;
                 case 0:
                     delayedResponseCycles = this->sePageWalker->lookup(
                         pageVAddr, this->walker->curCycle());
                     delayedResponse = delayedResponseCycles > 0;
+                    if (delayedResponseCycles > 0) {
+                      // This is not L1TLB hit, it is page table walking
+                      if (!isPrefetch) {
+                        this->l1Misses++;
+                        this->l2Accesses++;
+                        this->l2Misses++;
+                      }
+                    }
                     break;
                 default: panic("Illegal TLB HitLevel %d.\n", hitLevel);
                 }
@@ -606,14 +608,14 @@ TLB::translateFunctional(const RequestPtr &req, ThreadContext *tc, Mode mode)
 
 void
 TLB::translateTimingImpl(const RequestPtr &req, ThreadContext *tc,
-        Translation *translation, Mode mode, bool isLastLevel)
+        Translation *translation, Mode mode, bool isLastLevel, bool isPrefetch)
 {
     bool delayedResponse;
     Cycles delayedResponseCycles = Cycles(0);
     bool updateStats = true;
     assert(translation);
     Fault fault = TLB::translate(req, tc, translation, mode, delayedResponse,
-            delayedResponseCycles, true, isLastLevel, updateStats);
+            delayedResponseCycles, true, isLastLevel, updateStats, isPrefetch);
     if (!delayedResponse) {
         translation->finish(fault, req, tc, mode);
     } else {

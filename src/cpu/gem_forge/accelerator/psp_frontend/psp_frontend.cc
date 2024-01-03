@@ -152,20 +152,21 @@ PSPFrontend::tick() {
   /* Issue feature vector address translation */
   uint32_t validIQEntryId;
   // TODO: Should I check the availability of TLB? (e.g., pending translation by PTW)
-  if (this->indexQueueArrayArbiter->getValidEntryId(&validIQEntryId, false)) {
-//  if (this->indexQueueArrayArbiter->getValidEntryId(&validIQEntryId, this->isDataPrefetchOnly)) {
-//    if (this->isDataPrefetchOnly) {
-//      if (this->paQueueArray->getSize(validIQEntryId) + this->pspBackend->getTotalSize(validIQEntryId) < this->paQueueCapacity &&
-//          this->inflightTranslations.size() < 4) {
-//        this->issueLoadValue(validIQEntryId);
-//      }
-//      else { // If cannot issue prefetch, pass chance to next entry
-//        this->indexQueueArrayArbiter->setLastChosenEntryId(validIQEntryId);
-//      }
-//    }
-//    else {
+//  if (this->indexQueueArrayArbiter->getValidEntryId(&validIQEntryId, false)) {
+  if (this->indexQueueArrayArbiter->getValidEntryId(&validIQEntryId, this->isDataPrefetchOnly)) {
+    if (this->isDataPrefetchOnly) {
+      if (((this->paQueueArray->getSize(validIQEntryId) * 64 + this->pspBackend->getTotalSize(validIQEntryId)) < (this->paQueueCapacity * 64))) {
+        PSP_FE_DPRINTF("paQueueArray[%lu].size: %lu , pspBackend[%lu].size: %lu, paQueueCapacity: %lu\n",
+            validIQEntryId, this->paQueueArray->getSize(validIQEntryId) * 64, validIQEntryId, this->pspBackend->getTotalSize(validIQEntryId), this->paQueueCapacity * 64);
+        this->issueLoadValue(validIQEntryId);
+      }
+      else { // If cannot issue prefetch, pass chance to next entry
+        this->indexQueueArrayArbiter->setLastChosenEntryId(validIQEntryId);
+      }
+    }
+    else {
       this->issueTranslateValueAddress(validIQEntryId);
-//    }
+    }
   }
 
   /* Issue PA packets to PSP Backend*/
@@ -181,6 +182,8 @@ PSPFrontend::tick() {
               validPAQEntry.entryId, validPAQEntry.pAddr, validPAQEntry.size, validPAQEntry.seqNum,
               this->paQueueArray->canRead(i));
           this->paQueueArray->pop(i);
+          PSP_FE_DPRINTF("NEW paQueueArray[%lu].size: %lu , pspBackend[%lu].size: %lu, paQueueCapacity: %lu\n",
+              i, this->paQueueArray->getSize(i) * 64, i, this->pspBackend->getTotalSize(i), this->paQueueCapacity * 64);
         }
       }
       else {
