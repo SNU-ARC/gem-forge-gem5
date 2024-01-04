@@ -496,8 +496,10 @@ TLB::translate(const RequestPtr &req,
                         pageVAddr, this->walker->curCycle());
                     if (delayedResponseCycles > this->l2HitLatency) {
                       // This is not L2TLB hit, it is page table walking
-                      if (!isPrefetch)
+                      if (!isPrefetch) {
+                        if (mode == Read && updateStats && entry) rdMisses++;
                         this->l2Misses++;
+                      }
                     }
                     delayedResponseCycles += this->l2HitLatency;
                     break;
@@ -508,6 +510,7 @@ TLB::translate(const RequestPtr &req,
                     if (delayedResponseCycles > 0) {
                       // This is not L1TLB hit, it is page table walking
                       if (!isPrefetch) {
+                        if (mode == Read && updateStats && entry) rdMisses++;
                         this->l1Misses++;
                         this->l2Accesses++;
                         this->l2Misses++;

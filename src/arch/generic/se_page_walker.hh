@@ -60,6 +60,7 @@ private:
    */
   std::list<State> inflyState;
   std::map<Addr, State *> pageVAddrToStateMap;
+  std::map<Cycles, Addr> responseSchedule;
 
   /**
    * Clear any infly states that are earlier than curCycle.
