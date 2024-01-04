@@ -330,14 +330,22 @@ PSPBackend::observeMiss(Addr address)
 {
   StreamEntry * se = getEntry(address);
   if (se != NULL) {
-    // This should have been hit, but miss because of invalidation
-    numMisses++;
-    DPRINTF(PSPBackend, "** Observed miss for %#x\n", address);
-    se->incrementTagAddr(address);
-    if (!this->tlbPrefetchOnly) {
-      issuePrefetch(se, address);
+    if (this->dataPrefetchOnly) {
+      // For Stream Engine proxy, Pf Miss
+      numPrefetchMisses++;
+      DPRINTF(PSPBackend, "** Observed StreamEngine partial miss for %#x\n", address);
+      return true;
     }
-    return true;
+    else {
+      // This should have been hit, but miss because of invalidation
+      numMisses++;
+      DPRINTF(PSPBackend, "** Observed miss for %#x\n", address);
+      se->incrementTagAddr(address);
+      if (!this->tlbPrefetchOnly) {
+        issuePrefetch(se, address);
+      }
+      return true;
+    }
   }
   return false;
 }
@@ -387,6 +395,7 @@ PSPBackend::observePfMiss(Addr address)
     // This is miss for cache, but hit by MSHR
     numPrefetchMisses++;
     DPRINTF(PSPBackend, "** Observed PSP prefetcher partial miss for %#x\n", address);
+    if (this->dataPrefetchOnly) return true;
     se->incrementTagAddr(address);
     if (!this->tlbPrefetchOnly) {
       issuePrefetch(se, address);
@@ -403,6 +412,7 @@ PSPBackend::popResponse(Addr address)
 {
   StreamEntry * se = getEntry(address);
   if (se != NULL) {
+    DPRINTF(PSPBackend, "** Response match!! %#x\n", address);
     se->incrementTagAddr(address);
   }
 }

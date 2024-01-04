@@ -345,7 +345,7 @@ machine(MachineType:L1Cache, "MESI Directory L1 Cache CMP")
                       // cache. We should drop this request.
                       DPRINTF(PSPBackend, "Drop request, already cached : %#x, TBE_hit : %d\n",
                           in_msg.LineAddress, TBEs.isPresent(in_msg.LineAddress));
-                      if (pspbackend.isEnabled() && !(pspbackend.isDataPrefetchOnly())) {
+                      if (pspbackend.isEnabled()) {
                         pspbackend.observePfInCache(in_msg.LineAddress);
                       }
 
@@ -984,7 +984,7 @@ machine(MachineType:L1Cache, "MESI Directory L1 Cache CMP")
 
   action(po_observeMiss, "\po", desc="Inform the prefetcher about the miss") {
       peek(mandatoryQueue_in, RubyRequest) {
-          if (pspbackend.isEnabled() && !(pspbackend.isDataPrefetchOnly())) {
+          if (pspbackend.isEnabled()) {
             if (pspbackend.observeMiss(in_msg.LineAddress)) {}
           }
           if (enable_prefetch) {
@@ -996,7 +996,7 @@ machine(MachineType:L1Cache, "MESI Directory L1 Cache CMP")
   action(ppm_observePfMiss, "\ppm",
          desc="Inform the prefetcher about the partial miss") {
       peek(mandatoryQueue_in, RubyRequest) {
-          if (pspbackend.isEnabled() && !(pspbackend.isDataPrefetchOnly())) {
+          if (pspbackend.isEnabled()) {
             if (pspbackend.observePfMiss(in_msg.LineAddress)) {}
           }
           prefetcher.observePfMiss(in_msg.LineAddress);
