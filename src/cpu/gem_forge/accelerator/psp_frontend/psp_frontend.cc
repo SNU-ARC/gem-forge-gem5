@@ -335,7 +335,7 @@ PSPFrontend::issueLoadValue(uint64_t _validEntryId) {
   else {
     // Send the pkt to translation. (Translation consume tick)
     this->translationBuffer->addTranslation(
-        pkt, cpuDelegator->getSingleThreadContext(), (void*)indexPacketHandler, true /* VA to PA only */);
+        pkt, cpuDelegator->getSingleThreadContext(), (void*)indexPacketHandler, false /* isPrefetch */, true /* VA to PA only */);
   }
   this->indexQueueArrayArbiter->setLastChosenEntryId(_validEntryId);
   
@@ -408,7 +408,7 @@ void PSPFrontend::issueTranslateValueAddress(uint64_t _validEntryId) {
     // Send the pkt to translation. (Translation consume tick)
     this->translationBuffer->addTranslation(
         pkt, cpuDelegator->getSingleThreadContext(), (void*)indexPacketHandler,
-        true /* VA to PA only */);
+        false /* isPrefetch */, true /* VA to PA only */);
   }
   this->indexQueueArrayArbiter->setLastChosenEntryId(_validEntryId);
   

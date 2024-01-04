@@ -25,9 +25,10 @@ public:
         mustDoneInOrder(_mustDoneInOrder) {}
 
   void addTranslation(PacketPtr pkt, ThreadContext *tc, T data,
+                      bool isPrefetch = true,
                       bool addressTranslationOnly = false) {
     auto translation = new PSPTranslation(pkt, tc, data, this,
-        addressTranslationOnly);
+        isPrefetch, addressTranslationOnly);
     this->inflyTranslationQueue.push(translation);
 
     // Start translation.
@@ -59,7 +60,7 @@ private:
                                             translation->tc, translation, mode);
     } else {
       this->tlb->translateTiming(translation->pkt->req, translation->tc,
-                                 translation, mode, true /* isPrefetch */);
+                                 translation, mode, translation->isPrefetch /* isPrefetch */);
     }
   }
   void finishTranslation(PSPTranslation *translation) {
@@ -105,6 +106,7 @@ private:
     T data;
     PSPTranslationBuffer *buffer;
     bool addressTranslationOnly;
+    bool isPrefetch;
     enum State {
       INITIATED,
       STARTED,
@@ -114,9 +116,11 @@ private:
     State state = INITIATED;
     PSPTranslation(PacketPtr _pkt, ThreadContext *_tc, T _data,
                    PSPTranslationBuffer *_buffer,
+                   bool _isPrefetch = false,
                    bool _addressTranslationOnly = false)
         : pkt(_pkt), tc(_tc), data(_data), buffer(_buffer),
-          addressTranslationOnly(_addressTranslationOnly) {}
+          addressTranslationOnly(_addressTranslationOnly),
+          isPrefetch(_isPrefetch) {}
 
     /**
      * Implement translation interface.
