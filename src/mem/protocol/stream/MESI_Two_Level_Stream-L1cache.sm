@@ -345,7 +345,7 @@ machine(MachineType:L1Cache, "MESI Directory L1 Cache CMP")
                       // cache. We should drop this request.
                       DPRINTF(PSPBackend, "Drop request, already cached : %#x, TBE_hit : %d\n",
                           in_msg.LineAddress, TBEs.isPresent(in_msg.LineAddress));
-                      if (pspbackend.isEnabled()) {
+                      if (pspbackend.isEnabled() && !(pspbackend.isDataPrefetchOnly())) {
                         pspbackend.observePfInCache(in_msg.LineAddress);
                       }
 
@@ -984,7 +984,7 @@ machine(MachineType:L1Cache, "MESI Directory L1 Cache CMP")
 
   action(po_observeMiss, "\po", desc="Inform the prefetcher about the miss") {
       peek(mandatoryQueue_in, RubyRequest) {
-          if (pspbackend.isEnabled()) {
+          if (pspbackend.isEnabled() && !(pspbackend.isDataPrefetchOnly())) {
             if (pspbackend.observeMiss(in_msg.LineAddress)) {}
           }
           if (enable_prefetch) {
@@ -996,7 +996,7 @@ machine(MachineType:L1Cache, "MESI Directory L1 Cache CMP")
   action(ppm_observePfMiss, "\ppm",
          desc="Inform the prefetcher about the partial miss") {
       peek(mandatoryQueue_in, RubyRequest) {
-          if (pspbackend.isEnabled()) {
+          if (pspbackend.isEnabled() && !(pspbackend.isDataPrefetchOnly())) {
             if (pspbackend.observePfMiss(in_msg.LineAddress)) {}
           }
           prefetcher.observePfMiss(in_msg.LineAddress);
@@ -1010,6 +1010,12 @@ machine(MachineType:L1Cache, "MESI Directory L1 Cache CMP")
   action(mp_markPrefetched, "mp", desc="Set the isPrefetch flag") {
       assert(is_valid(cache_entry));
       cache_entry.isPrefetch := true;
+  }
+
+  action(pop_PSPBackend, "pop_PSP", desc="Pop the PSPBackend for Data Stream scheme") {
+    if (pspbackend.isDataPrefetchOnly()) {
+      pspbackend.popResponse(address);
+    }
   }
 
 
@@ -1269,6 +1275,7 @@ machine(MachineType:L1Cache, "MESI Directory L1 Cache CMP")
     hx_load_hit;
     s_deallocateTBE;
     o_popIncomingResponseQueue;
+    pop_PSPBackend;
     kd_wakeUpDependents;
   }
 
@@ -1277,6 +1284,7 @@ machine(MachineType:L1Cache, "MESI Directory L1 Cache CMP")
     s_deallocateTBE;
     mp_markPrefetched;
     o_popIncomingResponseQueue;
+    pop_PSPBackend;
     kd_wakeUpDependents;
   }
 
@@ -1285,12 +1293,14 @@ machine(MachineType:L1Cache, "MESI Directory L1 Cache CMP")
     hx_load_hit;
     s_deallocateTBE;
     o_popIncomingResponseQueue;
+    pop_PSPBackend;
     kd_wakeUpDependents;
   }
 
   transition(PF_IS_I, Data_all_Acks, I) {
     s_deallocateTBE;
     o_popIncomingResponseQueue;
+    pop_PSPBackend;
     kd_wakeUpDependents;
   }
 
@@ -1300,6 +1310,7 @@ machine(MachineType:L1Cache, "MESI Directory L1 Cache CMP")
     hx_load_hit;
     s_deallocateTBE;
     o_popIncomingResponseQueue;
+    pop_PSPBackend;
     kd_wakeUpDependents;
   }
 
@@ -1308,6 +1319,7 @@ machine(MachineType:L1Cache, "MESI Directory L1 Cache CMP")
     j_sendUnblock;
     s_deallocateTBE;
     o_popIncomingResponseQueue;
+    pop_PSPBackend;
     kd_wakeUpDependents;
   }
 
@@ -1317,6 +1329,7 @@ machine(MachineType:L1Cache, "MESI Directory L1 Cache CMP")
     hx_load_hit;
     s_deallocateTBE;
     o_popIncomingResponseQueue;
+    pop_PSPBackend;
     kd_wakeUpDependents;
   }
 
@@ -1324,6 +1337,7 @@ machine(MachineType:L1Cache, "MESI Directory L1 Cache CMP")
     j_sendUnblock;
     s_deallocateTBE;
     o_popIncomingResponseQueue;
+    pop_PSPBackend;
     kd_wakeUpDependents;
   }
 
@@ -1334,6 +1348,7 @@ machine(MachineType:L1Cache, "MESI Directory L1 Cache CMP")
     jj_sendExclusiveUnblock;
     s_deallocateTBE;
     o_popIncomingResponseQueue;
+    pop_PSPBackend;
     kd_wakeUpDependents;
   }
 
@@ -1343,6 +1358,7 @@ machine(MachineType:L1Cache, "MESI Directory L1 Cache CMP")
     jj_sendExclusiveUnblock;
     s_deallocateTBE;
     o_popIncomingResponseQueue;
+    pop_PSPBackend;
     kd_wakeUpDependents;
   }
 
@@ -1352,6 +1368,7 @@ machine(MachineType:L1Cache, "MESI Directory L1 Cache CMP")
     jj_sendExclusiveUnblock;
     s_deallocateTBE;
     o_popIncomingResponseQueue;
+    pop_PSPBackend;
     kd_wakeUpDependents;
   }
 
@@ -1361,6 +1378,7 @@ machine(MachineType:L1Cache, "MESI Directory L1 Cache CMP")
     s_deallocateTBE;
     mp_markPrefetched;
     o_popIncomingResponseQueue;
+    pop_PSPBackend;
     kd_wakeUpDependents;
   }
 
@@ -1393,6 +1411,7 @@ machine(MachineType:L1Cache, "MESI Directory L1 Cache CMP")
     jj_sendExclusiveUnblock;
     s_deallocateTBE;
     o_popIncomingResponseQueue;
+    pop_PSPBackend;
     kd_wakeUpDependents;
   }
 
@@ -1402,6 +1421,7 @@ machine(MachineType:L1Cache, "MESI Directory L1 Cache CMP")
     s_deallocateTBE;
     mp_markPrefetched;
     o_popIncomingResponseQueue;
+    pop_PSPBackend;
     kd_wakeUpDependents;
   }
 
@@ -1423,6 +1443,7 @@ machine(MachineType:L1Cache, "MESI Directory L1 Cache CMP")
     hhx_store_hit;
     s_deallocateTBE;
     o_popIncomingResponseQueue;
+    pop_PSPBackend;
     kd_wakeUpDependents;
   }
 
@@ -1431,6 +1452,7 @@ machine(MachineType:L1Cache, "MESI Directory L1 Cache CMP")
     s_deallocateTBE;
     mp_markPrefetched;
     o_popIncomingResponseQueue;
+    pop_PSPBackend;
     kd_wakeUpDependents;
   }
 

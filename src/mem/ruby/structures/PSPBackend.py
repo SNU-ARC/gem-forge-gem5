@@ -49,6 +49,7 @@ class PSPBackend(SimObject):
 
     enabled = Param.Bool(False, "Is PSP backend enabled?")
     tlb_prefetch_only = Param.Bool(False, "Is TLB prefetch only? = Cache prefetch off")
+    data_prefetch_only = Param.Bool(False, "Is data prefetch only? = UVE proxy on")
     num_streams = Param.Int(4, "Number of max streams")
     prefetch_distance = Param.Int(4, "Prefetch distance")
     num_stream_entry = Param.Int(4, "Number of entries in a stream")

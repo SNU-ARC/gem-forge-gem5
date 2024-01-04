@@ -87,6 +87,7 @@ def create_system(options, full_system, system, dma_ports, bootmem,
         pspbackend = PSPBackend(
             enabled=(options.gem_forge_psp_backend_enable),
             tlb_prefetch_only=(options.gem_forge_psp_tlb_prefetch_only),
+            data_prefetch_only=(options.gem_forge_psp_data_prefetch_only),
             num_streams=(options.gem_forge_psp_frontend_total_pattern_table_entries),
             prefetch_distance=(options.gem_forge_psp_backend_prefetch_distance),
             num_stream_entry=(options.gem_forge_psp_backend_num_stream_entry)

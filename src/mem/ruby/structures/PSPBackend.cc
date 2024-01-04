@@ -252,11 +252,7 @@ StreamEntry::getTotalSize() {
 
 PSPBackend::PSPBackend(const Params *p)
   : SimObject(p), enabled(p->enabled), tlbPrefetchOnly(p->tlb_prefetch_only),
-    numStreams(p->num_streams), prefetchDistance(p->prefetch_distance) { 
-  prefetchedDistance = new int[p->num_streams];
-  for (int i = 0; i < p->num_streams; i++) {
-    prefetchedDistance[i] = 0;
-  }
+    numStreams(p->num_streams), dataPrefetchOnly(p->data_prefetch_only) { 
   this->streamTable.resize(p->num_streams, StreamEntry(p->num_stream_entry, p->prefetch_distance));
   numPrefetchHits = 0;
   numPrefetchMisses = 0;
@@ -400,6 +396,15 @@ PSPBackend::observePfMiss(Addr address)
   }
   //DPRINTF(PSPBackend, "** Observed OTHER prefetcher miss for %#x\n", address);
   return false;
+}
+
+void
+PSPBackend::popResponse(Addr address)
+{
+  StreamEntry * se = getEntry(address);
+  if (se != NULL) {
+    se->incrementTagAddr(address);
+  }
 }
 
 void

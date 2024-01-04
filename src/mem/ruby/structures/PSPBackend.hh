@@ -133,6 +133,7 @@ class PSPBackend : public SimObject {
   private:
     bool enabled;
     bool tlbPrefetchOnly;
+    bool dataPrefetchOnly;
     int numStreams;
     int prefetchDistance;
     AbstractController *mController;
@@ -154,7 +155,7 @@ class PSPBackend : public SimObject {
     void insertEntry(uint64_t _entryId, uint64_t _pAddr, uint64_t _size);
 
     // For UVE-proxy
-    int* prefetchedDistance;
+    bool isDataPrefetchOnly() { return this->dataPrefetchOnly; }
 
     // For Ruby State Machine
     bool isEnabled() const { return this->enabled; }
@@ -164,6 +165,7 @@ class PSPBackend : public SimObject {
     bool observePfMiss(Addr address);
     bool observeHit(Addr address);
     bool observeMiss(Addr address);
+    void popResponse(Addr address);
 
     void printStatus();
     int getTotalSize(uint64_t _entryId);
