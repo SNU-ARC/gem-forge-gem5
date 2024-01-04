@@ -408,7 +408,7 @@ void PSPFrontend::issueTranslateValueAddress(uint64_t _validEntryId) {
     // Send the pkt to translation. (Translation consume tick)
     this->translationBuffer->addTranslation(
         pkt, cpuDelegator->getSingleThreadContext(), (void*)indexPacketHandler,
-        false /* isPrefetch */, true /* VA to PA only */);
+        true /* isPrefetch */, true /* VA to PA only */);
   }
   this->indexQueueArrayArbiter->setLastChosenEntryId(_validEntryId);
   
