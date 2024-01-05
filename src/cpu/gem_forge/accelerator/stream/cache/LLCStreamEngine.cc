@@ -2112,7 +2112,7 @@ void LLCStreamEngine::issueStreamMsgToMLC(ResponseMsgPtr msg, bool forceIdea) {
         AbstractStreamAwareController::getController(mlcMachineId);
     auto mlcSE = mlcController->getMLCStreamEngine();
     // StreamAck is also disguised as StreamData.
-    mlcSE->receiveStreamData(*msg);
+//    mlcSE->receiveStreamData(*msg);
     LLC_SLICE_DPRINTF(sliceId, "Send ideal %s to MLC.\n",
                       CoherenceResponseType_to_string(msg->m_Type));
   } else {
@@ -2259,8 +2259,8 @@ void LLCStreamEngine::sendOffloadedLoopBoundRetToMLC(LLCDynamicStreamPtr stream,
                                                      Addr brokenPAddr) {
   auto mlcSE = stream->getMLCController()->getMLCStreamEngine();
   assert(mlcSE && "Missing MLC SE.");
-  mlcSE->receiveStreamTotalTripCount(stream->getDynamicStreamId(),
-                                     totalTripCount, brokenPAddr);
+//  mlcSE->receiveStreamTotalTripCount(stream->getDynamicStreamId(),
+//                                     totalTripCount, brokenPAddr);
 }
 
 void LLCStreamEngine::findMigratingStreams() {

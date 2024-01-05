@@ -41,7 +41,7 @@ public:
                            IndexQueueArray* _indexQueueArray,
                            PAQueueArray* _paQueueArray);
   ~IndexQueueArrayRRArbiter();
-  bool getValidEntryId(uint32_t* _entryId);
+  bool getValidEntryId(uint32_t* _entryId, bool _bypassPAQueue);
 
 private:
   IndexQueueArray* indexQueueArray;

@@ -105,15 +105,19 @@ def create_system(options, full_system, system, dma_ports, bootmem,
             l0i_cache = L0Cache(size=options.l1i_size, assoc=options.l1i_assoc,
                 is_icache=True,
                 start_index_bit=block_size_bits,
-                replacement_policy=BRRIPRP())
+                replacement_policy=LRURP())
+#                replacement_policy=BRRIPRP())
 
             l0d_cache = L0Cache(size=options.l1d_size, assoc=options.l1d_assoc, is_icache=False,
                 start_index_bit=block_size_bits,
-                replacement_policy=BRRIPRP(),
+                replacement_policy=LRURP(),
                 dataAccessLatency=options.l1d_lat)
+#                replacement_policy=BRRIPRP(),
+#                dataAccessLatency=options.l1d_lat)
 
             pspbackend = PSPBackend(
                 enabled=(options.gem_forge_psp_backend_enable),
+                tlb_prefetch_only=(options.gem_forge_psp_tlb_prefetch_only),
                 num_streams=(options.gem_forge_psp_frontend_total_pattern_table_entries),
                 prefetch_distance=(options.gem_forge_psp_backend_prefetch_distance),
                 num_stream_entry=(options.gem_forge_psp_backend_num_stream_entry)
@@ -123,9 +127,9 @@ def create_system(options, full_system, system, dma_ports, bootmem,
                 num_streams=16,
                 unit_filter=256,
                 nonunit_filter=256,
-                train_misses=3,
+                train_misses=5,
                 num_startup_pfs=options.gem_forge_prefetch_dist,
-                cross_page=False #True
+                cross_page=True
             )
 
             bingo_prefetcher = RubyBingoPrefetcher(
@@ -219,7 +223,7 @@ def create_system(options, full_system, system, dma_ports, bootmem,
                 nonunit_filter=256,
                 train_misses=3,
                 num_startup_pfs=options.gem_forge_l2_prefetch_dist,
-                cross_page=False, #True,
+                cross_page=True,
                 bulk_prefetch_size=options.gem_forge_l2_bulk_prefetch_size,
             )
 
@@ -312,8 +316,10 @@ def create_system(options, full_system, system, dma_ports, bootmem,
                                start_index_bit=block_size_bits,
                                skip_index_start_bit=l2_select_low_bit,
                                skip_index_num_bits=l2_bits,
-                               replacement_policy=BRRIPRP(),
+                               replacement_policy=LRURP(),
                                query_stream_nuca=True,
+#                               replacement_policy=BRRIPRP(),
+#                               query_stream_nuca=True,
                                )
 
             l2_cntrl = L2Cache_Controller(

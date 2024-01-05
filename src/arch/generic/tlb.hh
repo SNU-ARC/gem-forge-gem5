@@ -91,7 +91,7 @@ class BaseTLB : public SimObject
             const RequestPtr &req, ThreadContext *tc, Mode mode) = 0;
     virtual void translateTiming(
             const RequestPtr &req, ThreadContext *tc,
-            Translation *translation, Mode mode) = 0;
+            Translation *translation, Mode mode, bool isPrefetch = false) = 0;
     /**
      * ! GemForge
      * Translate at last level TLB. Used for StreamFloating.

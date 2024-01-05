@@ -49,8 +49,10 @@ private:
   struct State {
     Addr pageVAddr;
     Cycles readyCycle;
+    int numAccess;
     State(Addr _pageVAddr, Cycles _readyCycle)
-        : pageVAddr(_pageVAddr), readyCycle(_readyCycle) {}
+        : pageVAddr(_pageVAddr), readyCycle(_readyCycle),
+          numAccess(0) {}
   };
 
   /**
@@ -58,6 +60,7 @@ private:
    */
   std::list<State> inflyState;
   std::map<Addr, State *> pageVAddrToStateMap;
+  std::map<Cycles, Addr> responseSchedule;
 
   /**
    * Clear any infly states that are earlier than curCycle.

@@ -688,7 +688,8 @@ void MinorCPUDelegator::drainPendingPackets() {
   auto &lsq = pimpl->cpu->pipeline->execute.getLSQ();
   auto &storeBuffer = lsq.storeBuffer;
   auto &pendingPkts = pimpl->pendingPkts;
-  while (!pendingPkts.empty()) {
+  DPRINTF(MinorCPUDelegator, "transfers.unreservedRemainingSpace = %d.\n", lsq.numTransfer());
+  while (!pendingPkts.empty() && lsq.canTransfer()) {
     auto &pkt = pendingPkts.front();
     /**
      * Create the fake LSQRequest for the storeBuffer. It needs:

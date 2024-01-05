@@ -17,12 +17,14 @@ class PhysicalAddressQueue {
     ~PhysicalAddressQueue();
 
     struct PhysicalAddressArgs {
+      bool valid;
       uint64_t entryId;
       uint64_t pAddr;
       uint64_t size;
+      uint64_t seqNum;
 
-      PhysicalAddressArgs(uint64_t _entryId = 0, uint64_t _pAddr = 0, uint64_t _size = 0)
-        : entryId(_entryId), pAddr(_pAddr), size(_size) {}
+      PhysicalAddressArgs(bool _valid = false, uint64_t _entryId = 0, uint64_t _pAddr = 0, uint64_t _size = 0, uint64_t _seqNum = 0)
+        : valid(_valid), entryId(_entryId), pAddr(_pAddr), size(_size), seqNum(_seqNum) {}
     };
 
     uint32_t getSize();
@@ -30,10 +32,15 @@ class PhysicalAddressQueue {
     void read(PhysicalAddressArgs* _pkt);
     void pop();
     bool canInsert();
-    void insert(PhysicalAddressArgs* _pkt);
+    uint32_t allocate(uint64_t _seqNum);
+    void insert(uint32_t _id, PhysicalAddressArgs _pkt);
+    void reset(uint64_t _seqNum);
 
   private:
-    std::queue<PhysicalAddressArgs> pkt;
+    std::vector<PhysicalAddressArgs> pkt;
+    uint32_t head;
+    uint32_t tail;
+    uint32_t size;
     uint32_t capacity;
 };
 
@@ -42,14 +49,14 @@ class PAQueueArray {
     PAQueueArray(uint32_t _totalValueQueueEntries, uint32_t _capacity);
     ~PAQueueArray();
 
-    uint32_t* numInflightTranslations;
-
     uint32_t getSize(const uint64_t _entryId);
     bool canRead(const uint64_t _entryId);
     void read(const uint64_t _entryId, PhysicalAddressQueue::PhysicalAddressArgs* _pkt);
     void pop(const uint64_t _entryId);
     bool canInsert(const uint64_t _entryId);
-    void insert(const uint64_t _entryId, PhysicalAddressQueue::PhysicalAddressArgs* _pkt);
+    uint32_t allocate(const uint64_t _entryId, const uint64_t _seqNum);
+    void insert(const uint64_t _entryId, const uint32_t _id, PhysicalAddressQueue::PhysicalAddressArgs _pkt);
+    void reset(const uint64_t _entryId, const uint64_t _seqNum);
     
   private:
     std::vector<PhysicalAddressQueue> paQueue;

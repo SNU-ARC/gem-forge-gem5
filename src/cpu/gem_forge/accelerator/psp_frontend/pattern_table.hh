@@ -4,6 +4,7 @@
 #include "base/statistics.hh"
 
 #include <vector>
+#include <list>
 #include <iostream>
 
 struct TableConfigEntry {
@@ -47,8 +48,11 @@ struct TableInputEntry {
   bool valid;
   uint64_t offsetBegin;
   uint64_t offsetEnd;
+  uint64_t seqNum;
 
-  TableInputEntry() : valid(false), offsetBegin(0), offsetEnd(0) {}
+  TableInputEntry(bool _valid = false, uint64_t _offsetBegin = 0, uint64_t _offsetEnd = 0,
+                  uint64_t _seqNum = 0)
+    : valid(_valid), offsetBegin(_offsetBegin), offsetEnd(_offsetEnd), seqNum(_seqNum) {}
 
   bool isValid() { return this->valid; }
   void setInputInfo(const uint64_t _offsetBegin, const uint64_t _offsetEnd) {
@@ -56,9 +60,10 @@ struct TableInputEntry {
     this->offsetBegin = _offsetBegin;
     this->offsetEnd = _offsetEnd;
   }
-  bool getInputInfo(uint64_t* _offsetBegin, uint64_t* _offsetEnd) {
+  bool getInputInfo(uint64_t* _offsetBegin, uint64_t* _offsetEnd, uint64_t* _seqNum) {
     *_offsetBegin = this->offsetBegin;
     *_offsetEnd = this->offsetEnd;
+    *_seqNum = this->seqNum;
     return this->valid;
   }
   void reset() {
@@ -71,7 +76,7 @@ struct TableInputEntry {
 
 struct PatternTableEntry {
   TableConfigEntry tableConfigEntry;
-  TableInputEntry tableInputEntry;
+  std::list<TableInputEntry> tableInputEntry;
 
   PatternTableEntry() : tableConfigEntry(), tableInputEntry() {}
 
@@ -79,7 +84,7 @@ struct PatternTableEntry {
     return this->tableConfigEntry.isValid();
   }
   bool isInputInfoValid() {
-    return this->tableInputEntry.isValid();
+    return /* this->tableInputEntry.front().isValid() && */this->tableInputEntry.size() > 0;
   }
   void setConfigInfo(const uint64_t _idxBaseAddr, const uint64_t _idxAccessGranularity,
                      const uint64_t _valBaseAddr, const uint64_t _valAccessGranularity) {
@@ -91,11 +96,17 @@ struct PatternTableEntry {
     return tableConfigEntry.getConfigInfo(_idxBaseAddr, _idxAccessGranularity,
                                           _valBaseAddr, _valAccessGranularity);
   }
-  void setInputInfo(const uint64_t _offsetBegin, uint64_t _offsetEnd) {
-    this->tableInputEntry.setInputInfo(_offsetBegin, _offsetEnd);
+  bool canPushInputInfo() {
+    return this->tableInputEntry.size() <= 2;
   }
-  bool getInputInfo(uint64_t* _offsetBegin, uint64_t* _offsetEnd) {
-    return tableInputEntry.getInputInfo(_offsetBegin, _offsetEnd);
+  void pushInputInfo(const uint64_t _offsetBegin, const uint64_t _offsetEnd, const uint64_t _seqNum) {
+    this->tableInputEntry.emplace_back(true, _offsetBegin, _offsetEnd, _seqNum);
+  }
+  void setInputInfo(const uint64_t _offsetBegin, uint64_t _offsetEnd) {
+    this->tableInputEntry.front().setInputInfo(_offsetBegin, _offsetEnd);
+  }
+  bool getInputInfo(uint64_t* _offsetBegin, uint64_t* _offsetEnd, uint64_t* _seqNum) {
+    return tableInputEntry.front().getInputInfo(_offsetBegin, _offsetEnd, _seqNum);
   }
   void resetConfig() {
     this->tableConfigEntry.reset();
@@ -103,19 +114,25 @@ struct PatternTableEntry {
   void resetConfigUndo() {
     this->tableConfigEntry.resetUndo();
   }
+  void popInput() {
+    this->tableInputEntry.pop_front();
+  }
   void resetInput() {
-    this->tableInputEntry.reset();
+    this->tableInputEntry.pop_back();
   }
   void resetInputUndo() {
-    this->tableInputEntry.resetUndo();
+    this->tableInputEntry.front().resetUndo();
   }
   void resetAll() {
     this->tableConfigEntry.reset();
-    this->tableInputEntry.reset();
+    this->tableInputEntry.front().reset();
   }
   void resetUndoAll() {
     this->tableConfigEntry.resetUndo();
-    this->tableInputEntry.resetUndo();
+    this->tableInputEntry.front().resetUndo();
+  }
+  size_t getInputSize() {
+    return this->tableInputEntry.size();
   }
 };
 
@@ -133,13 +150,19 @@ class PatternTable {
     bool getConfigInfo(const uint64_t _entryId, 
                        uint64_t* _idxBaseAddr, uint64_t* _idxAccessGranularity, 
                        uint64_t* _valBaseAddr, uint64_t* _valAccessGranularity);
+    bool canPushInputInfo(const uint64_t _entryId);
+    void pushInputInfo(const uint64_t _entryId, 
+                      const uint64_t _offsetBegin, const uint64_t _offsetEnd,
+                      const uint64_t _seqNum);
     void setInputInfo(const uint64_t _entryId, 
                       const uint64_t _offsetBegin, const uint64_t _offsetEnd);
-    bool getInputInfo(const uint64_t _entryId, uint64_t* _offsetBegin, uint64_t* _offsetEnd);
+    bool getInputInfo(const uint64_t _entryId, uint64_t* _offsetBegin, uint64_t* _offsetEnd, uint64_t* _seqNum);
     void resetConfig(uint64_t entryId);
     void resetConfigUndo(uint64_t entryId);
+    void popInput(uint64_t entryId);
     void resetInput(uint64_t entryId);
     void resetInputUndo(uint64_t entryId);
+    size_t getInputSize(uint64_t entryId);
 
   private:
     uint32_t totalPatternTableEntries;

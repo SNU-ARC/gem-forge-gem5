@@ -41,6 +41,8 @@ class L1Cache(RubyCache): pass
 class L2Cache(RubyCache): pass
 
 def define_options(parser):
+    parser.add_option("--l1-transitions-per-cycle", type="int", default=32)
+    parser.add_option("--l2-transitions-per-cycle", type="int", default=4)
     return
 
 def create_system(options, full_system, system, dma_ports, bootmem,
@@ -74,13 +76,31 @@ def create_system(options, full_system, system, dma_ports, bootmem,
         l1i_cache = L1Cache(size = options.l1i_size,
                             assoc = options.l1i_assoc,
                             start_index_bit = block_size_bits,
+                            replacement_policy=LRURP(),
                             is_icache = True)
         l1d_cache = L1Cache(size = options.l1d_size,
                             assoc = options.l1d_assoc,
                             start_index_bit = block_size_bits,
+                            replacement_policy=LRURP(),
                             is_icache = False)
 
-        prefetcher = RubyPrefetcher.Prefetcher()
+        pspbackend = PSPBackend(
+            enabled=(options.gem_forge_psp_backend_enable),
+            tlb_prefetch_only=(options.gem_forge_psp_tlb_prefetch_only),
+            data_prefetch_only=(options.gem_forge_psp_data_prefetch_only),
+            num_streams=(options.gem_forge_psp_frontend_total_pattern_table_entries),
+            prefetch_distance=(options.gem_forge_psp_backend_prefetch_distance),
+            num_stream_entry=(options.gem_forge_psp_backend_num_stream_entry)
+        )
+
+        prefetcher = RubyPrefetcher(
+                num_streams=16,
+                unit_filter=256,
+                nonunit_filter=256,
+                train_misses=5,
+                num_startup_pfs=options.gem_forge_prefetch_dist,
+                cross_page=True
+        )
 
         # the ruby random tester reuses num_cpus to specify the
         # number of cpu ports connected to the tester object, which
@@ -99,10 +119,16 @@ def create_system(options, full_system, system, dma_ports, bootmem,
                                       l2_select_num_bits = l2_bits,
                                       send_evictions = send_evicts(options),
                                       prefetcher = prefetcher,
+                                      pspbackend = pspbackend,
                                       ruby_system = ruby_system,
                                       clk_domain = clk_domain,
-                                      transitions_per_cycle = options.ports,
-                                      enable_prefetch = False)
+                                      transitions_per_cycle = options.l1_transitions_per_cycle,
+                                      number_of_TBEs=options.l1d_mshrs,
+                                      l1_request_latency=options.l1d_lat,
+                                      l1_response_latency=options.l1d_lat,
+                                      enable_prefetch = (options.gem_forge_prefetcher == 'stride'),
+
+                                     )
 
         cpu_seq = RubySequencer(version = i, icache = l1i_cache,
                                 dcache = l1d_cache, clk_domain = clk_domain,
@@ -141,12 +167,18 @@ def create_system(options, full_system, system, dma_ports, bootmem,
         #
         l2_cache = L2Cache(size = options.l2_size,
                            assoc = options.l2_assoc,
-                           start_index_bit = l2_index_start)
+                           start_index_bit = l2_index_start,
+                           replacment_policy=LRURP()
+                          )
 
         l2_cntrl = L2Cache_Controller(version = i,
                                       L2cache = l2_cache,
-                                      transitions_per_cycle = options.ports,
-                                      ruby_system = ruby_system)
+                                      transitions_per_cycle = options.l2_transitions_per_cycle,
+                                      ruby_system = ruby_system,
+                                      l2_request_latency=options.l2_lat,
+                                      l2_response_latency=options.l2_lat,
+                                      to_l1_latency=options.l2_lat,
+                                     )
 
         exec("ruby_system.l2_cntrl%d = l2_cntrl" % i)
         l2_cntrl_nodes.append(l2_cntrl)
@@ -165,6 +197,17 @@ def create_system(options, full_system, system, dma_ports, bootmem,
         l2_cntrl.L1RequestToL2Cache.slave = ruby_system.network.master
         l2_cntrl.responseToL2Cache = MessageBuffer()
         l2_cntrl.responseToL2Cache.slave = ruby_system.network.master
+
+        # ! Sean: StreamAwareCache
+        l2_cntrl.streamMigrateToL2Cache = MessageBuffer()
+        l2_cntrl.streamMigrateToL2Cache.master = ruby_system.network.slave
+        l2_cntrl.streamMigrateFromL2Cache = MessageBuffer()
+        l2_cntrl.streamMigrateFromL2Cache.slave = ruby_system.network.master
+
+        l2_cntrl.streamIndirectToL2Cache = MessageBuffer()
+        l2_cntrl.streamIndirectToL2Cache.master = ruby_system.network.slave
+        l2_cntrl.streamIndirectFromL2Cache = MessageBuffer()
+        l2_cntrl.streamIndirectFromL2Cache.slave = ruby_system.network.master
 
 
     # Run each of the ruby memory controllers at a ratio of the frequency of
@@ -187,7 +230,21 @@ def create_system(options, full_system, system, dma_ports, bootmem,
         dir_cntrl.responseToDir.slave = ruby_system.network.master
         dir_cntrl.responseFromDir = MessageBuffer()
         dir_cntrl.responseFromDir.master = ruby_system.network.slave
+        dir_cntrl.requestFromDir = MessageBuffer()
+        dir_cntrl.requestFromDir.master = ruby_system.network.slave
+        dir_cntrl.requestToMemory = MessageBuffer()
         dir_cntrl.responseFromMemory = MessageBuffer()
+
+        # ! Sean: StreamAwareCache
+        dir_cntrl.streamMigrateFromMem = MessageBuffer()
+        dir_cntrl.streamMigrateFromMem.master = ruby_system.network.slave
+        dir_cntrl.streamMigrateToMem = MessageBuffer()
+        dir_cntrl.streamMigrateToMem.slave = ruby_system.network.master
+
+        dir_cntrl.streamIndirectFromMem = MessageBuffer()
+        dir_cntrl.streamIndirectFromMem.master = ruby_system.network.slave
+        dir_cntrl.streamIndirectToMem = MessageBuffer()
+        dir_cntrl.streamIndirectToMem.slave = ruby_system.network.master
 
 
     for i, dma_port in enumerate(dma_ports):
@@ -233,6 +290,6 @@ def create_system(options, full_system, system, dma_ports, bootmem,
 
         all_cntrls = all_cntrls + [io_controller]
 
-    ruby_system.network.number_of_virtual_networks = 3
+    ruby_system.network.number_of_virtual_networks = 5
     topology = create_topology(all_cntrls, options)
     return (cpu_sequencers, mem_dir_cntrl_nodes, topology)

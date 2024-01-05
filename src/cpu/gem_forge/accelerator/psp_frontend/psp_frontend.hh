@@ -28,7 +28,7 @@ class IndexPacketHandler final : public GemForgePacketHandler {
 public:
   IndexPacketHandler(PSPFrontend* _pspFrontend, uint64_t _entryId,
                      Addr _cacheBlockVAddr, Addr _vaddr,
-                     int _size, int _additional_delay = 0);
+                     int _size, uint64_t _seqNum, bool _isIndex = true, bool _isDataPrefetchOnly = false, int _additional_delay = 0);
   virtual ~IndexPacketHandler() {}
   void handlePacketResponse(GemForgeCPUDelegator* cpuDelegator,
                             PacketPtr packet);
@@ -73,6 +73,9 @@ public:
   Addr vaddr;
   int size;
   uint64_t entryId;
+  uint64_t seqNum;
+  bool isIndex;
+  bool isDataPrefetchOnly;
   int additionalDelay;
 };
 
@@ -93,6 +96,7 @@ public:
   void resetStats() override;
 
   void issueLoadIndex(uint64_t _validEntryId);
+  void issueLoadValue(uint64_t _validEntryId);
   void issueTranslateValueAddress(uint64_t _validEntryId);
   void handlePacketResponse(IndexPacketHandler* indexPacketHandler, 
                             PacketPtr pkt);
@@ -158,6 +162,8 @@ public:
   mutable Stats::Scalar numConfigured;
 private:
   bool isPSPBackendEnabled;
+  bool isTLBPrefetchOnly;
+  bool isDataPrefetchOnly; // SJ: This is for UVE proxy;
   unsigned totalPatternTableEntries;
   PatternTable* patternTable;
   IndexQueueArray* indexQueueArray;
@@ -166,5 +172,8 @@ private:
   IndexQueueArrayRRArbiter* indexQueueArrayArbiter;
   PAQueueArray* paQueueArray;
   PSPBackend* pspBackend;
+  std::multimap<uint64_t, uint32_t> inflightTranslations;
+  uint64_t seqNum;
+  uint64_t paQueueCapacity;
 };
 #endif

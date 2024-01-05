@@ -25,7 +25,7 @@ bool IndexLoadUnit::issueLoadIndex(uint64_t _validEntryId) {
 //      _validEntryId, idxBaseAddr, idxAccessGranularity);
 
   uint64_t offsetBegin, offsetEnd;
-  this->patternTable->getInputInfo(_validEntryId, &offsetBegin, &offsetEnd);
+//  this->patternTable->getInputInfo(_validEntryId, &offsetBegin, &offsetEnd);
 //  warn("EntryId: %lu, OffsetBegin: %lu, OffsetEnd: %lu\n",
 //      _validEntryId, offsetBegin, offsetEnd);
   assert(offsetBegin < offsetEnd);

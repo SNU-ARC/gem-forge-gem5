@@ -45,6 +45,10 @@ parser.add_option("--gem-forge-psp-backend-prefetch-distance", action="store", t
                   help="""PSP Backend prefetch distance.""")
 parser.add_option("--gem-forge-psp-backend-num-stream-entry", action="store", type="int", default=4,
                   help="""PSP Backend num stream entries.""")
+parser.add_option("--gem-forge-psp-tlb-prefetch-only", action="store_true", default=False,
+                  help="""Enable PSP Frontend TLB prefetch.""")
+parser.add_option("--gem-forge-psp-data-prefetch-only", action="store_true", default=False,
+                  help="""Enable PSP Frontend Cache prefetch (UVE proxy).""")
 
 parser.add_option("--gem-forge-work-mark-history", action="store", type="string",
                   help="""work mark history""")

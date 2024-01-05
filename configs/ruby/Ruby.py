@@ -119,6 +119,7 @@ def setup_memory_controllers(system, ruby, dir_cntrls, options):
 
         dir_ranges = []
         for r in system.mem_ranges:
+            print("SJ debug %s %s " % (r, system.mem_ranges))
             mem_type = ObjectList.mem_list.get(options.mem_type)
             mem_ctrl = MemConfig.create_mem_ctrl(mem_type, r, index,
                 options.num_dirs, int(math.log(options.num_dirs, 2)),

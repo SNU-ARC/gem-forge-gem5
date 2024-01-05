@@ -6,16 +6,16 @@ DebugFlag('L0RubyStreamLife')
 CompoundFlag('L0RubyStream',
              ['L0RubyStreamBase', 'L0RubyStreamLife'])
 
-DebugFlag('MLCRubyStreamBase')
-DebugFlag('MLCRubyStreamLife')
-DebugFlag('MLCRubyStreamReuse')
-DebugFlag('MLCRubyStreamReduce')
-DebugFlag('MLCStreamLoopBound')
-CompoundFlag('MLCRubyStream', [
-    'MLCRubyStreamBase', 'MLCRubyStreamLife', 'MLCRubyStreamReuse',
-    'MLCRubyStreamReduce', 'MLCStreamLoopBound',
-    'StreamRangeSync',
-])
+#DebugFlag('MLCRubyStreamBase')
+#DebugFlag('MLCRubyStreamLife')
+#DebugFlag('MLCRubyStreamReuse')
+#DebugFlag('MLCRubyStreamReduce')
+#DebugFlag('MLCStreamLoopBound')
+#CompoundFlag('MLCRubyStream', [
+#    'MLCRubyStreamBase', 'MLCRubyStreamLife', 'MLCRubyStreamReuse',
+#    'MLCRubyStreamReduce', 'MLCStreamLoopBound',
+#    'StreamRangeSync',
+#])
 DebugFlag('LLCRubyStreamBase')
 DebugFlag('LLCRubyStreamLife')
 DebugFlag('LLCRubyStreamReduce')
@@ -33,7 +33,8 @@ CompoundFlag('LLCRubyStream', [
     'RemoteStreamReuse',
 ])
 CompoundFlag('RubyStreamLife',
-             ['CoreRubyStreamLife', 'L0RubyStreamLife', 'MLCRubyStreamLife', 'LLCRubyStreamLife'])
+             ['CoreRubyStreamLife', 'L0RubyStreamLife', 'LLCRubyStreamLife'])
+#             ['CoreRubyStreamLife', 'L0RubyStreamLife', 'MLCRubyStreamLife', 'LLCRubyStreamLife'])
 DebugFlag('SlicedDynamicStream')
 
 Source('DynamicStreamId.cc')
@@ -42,11 +43,11 @@ Source('DynamicStreamAddressRange.cc')
 Source('DynamicStreamSliceId.cc')
 Source('DynamicStreamSliceIdVec.cc')
 Source('L0StreamEngine.cc')
-Source('MLCDynamicStream.cc')
-Source('MLCDynamicDirectStream.cc')
-Source('MLCDynamicIndirectStream.cc')
-Source('MLCStreamNDCController.cc')
-Source('MLCStreamEngine.cc')
+#Source('MLCDynamicStream.cc')
+#Source('MLCDynamicDirectStream.cc')
+#Source('MLCDynamicIndirectStream.cc')
+#Source('MLCStreamNDCController.cc')
+#Source('MLCStreamEngine.cc')
 Source('LLCStreamSlice.cc')
 Source('LLCStreamElement.cc')
 Source('LLCStreamRangeBuilder.cc')

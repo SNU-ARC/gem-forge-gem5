@@ -455,10 +455,10 @@ void LLCDynamicStream::initNextElement(Addr vaddr) {
           }
         }
         auto MLCSE = this->getMLCController()->getMLCStreamEngine();
-        auto MLCDynS =
-            MLCSE->getStreamFromDynamicId(this->getDynamicStreamId());
+        auto MLCDynS = false;
+//            MLCSE->getStreamFromDynamicId(this->getDynamicStreamId());
         if (MLCDynS) {
-          MLCDynS->panicDump();
+//          MLCDynS->panicDump();
         } else {
           LLC_S_HACK(this->getDynamicStreamId(),
                      "LLCElement Overflow, but MLCDynS Released?");
