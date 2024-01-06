@@ -99,7 +99,7 @@ def create_system(options, full_system, system, dma_ports, bootmem,
                 nonunit_filter=256,
                 train_misses=5,
                 num_startup_pfs=options.gem_forge_prefetch_dist,
-                cross_page=True
+                cross_page=False
         )
 
         # the ruby random tester reuses num_cpus to specify the
@@ -152,6 +152,7 @@ def create_system(options, full_system, system, dma_ports, bootmem,
         l1_cntrl.unblockFromL1Cache.master = ruby_system.network.slave
 
         l1_cntrl.optionalQueue = MessageBuffer()
+        l1_cntrl.pagewalkQueue = MessageBuffer()
 
         l1_cntrl.requestToL1Cache = MessageBuffer()
         l1_cntrl.requestToL1Cache.slave = ruby_system.network.master

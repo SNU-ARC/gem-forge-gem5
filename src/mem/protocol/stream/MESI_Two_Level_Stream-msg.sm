@@ -52,6 +52,8 @@ enumeration(CoherenceRequestType, desc="...") {
   STREAM_FORWARD, desc="Stream data forwarded from L2 to L2";
   STREAM_COMMIT,  desc="Stream commit message from L1 to L2";
   STREAM_NDC,     desc="Stream near-data computing request";
+
+  PTW,            desc="PTW request";
 }
 
 // CoherenceResponseType
@@ -69,6 +71,8 @@ enumeration(CoherenceResponseType, desc="...") {
   STREAM_RANGE,       desc="range-sychronization message";
   STREAM_DONE,        desc="Stream commit done message from L2 to L1";
   STREAM_NDC,         desc="Stream near-data computing response";
+
+  PTW,                desc="PTW request";
 }
 
 // RequestMsg

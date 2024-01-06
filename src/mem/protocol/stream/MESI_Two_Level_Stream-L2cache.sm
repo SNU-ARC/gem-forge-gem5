@@ -450,6 +450,17 @@ machine(MachineType:L2Cache, "MESI Directory L2 Cache CMP", interface="AbstractS
           } else if(in_msg.Type == CoherenceResponseType:INV) {
               DPRINTF(RubySlicc, "Addr: %#x MemInv TBEs %d.\n", in_msg.addr, TBEs.size());
               trigger(Event:MEM_Inv, in_msg.addr, cache_entry, tbe);
+          } else if(in_msg.Type == CoherenceResponseType:PTW) {
+            enqueue(responseL2Network_out, ResponseMsg, to_l1_latency) {
+              out_msg.addr := in_msg.addr;
+              out_msg.Type := CoherenceResponseType:PTW;
+              out_msg.Sender := machineID;
+              out_msg.Destination := in_msg.Destination;
+              out_msg.DataBlk := in_msg.DataBlk;
+              out_msg.MessageSize := MessageSizeType:Response_Data;
+            }
+            Tick delay := responseL2Network_in.dequeue(clockEdge());
+            profileMsgDelay(1, ticksToCycles(delay));
           } else {
             error("unknown message type");
           }
@@ -493,6 +504,18 @@ machine(MachineType:L2Cache, "MESI Directory L2 Cache CMP", interface="AbstractS
             trigger(Event:STREAM_COMMIT, in_msg.addr, cache_entry, tbe);
           } else if (in_msg.Type == CoherenceRequestType:STREAM_END) {
             trigger(Event:STREAM_END, in_msg.addr, cache_entry, tbe);
+          } else if (in_msg.Type == CoherenceRequestType:PTW) {
+            peek(L1RequestL2Network_in, RequestMsg) {
+              enqueue(DirRequestL2Network_out, RequestMsg, l2_request_latency) {
+                out_msg.addr := in_msg.addr;
+                out_msg.Type := CoherenceRequestType:PTW;
+                out_msg.Requestors.add(machineID);
+                out_msg.Destination.add(mapAddressToMachine(in_msg.addr, MachineType:Directory));
+                out_msg.MessageSize := MessageSizeType:Control;
+              }
+              Tick delay := L1RequestL2Network_in.dequeue(clockEdge());
+              profileMsgDelay(0, ticksToCycles(delay));
+            }
           } else {
 
             if (is_valid(cache_entry)) {
