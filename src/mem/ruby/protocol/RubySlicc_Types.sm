@@ -295,7 +295,7 @@ structure (RequestStatisticPtr, external="yes") {
  * Sungjun Jung: PSPBackend
  */
 structure(PSPBackend, desc="Backend of PSP module", external="yes") {
-  bool isDataPrefetchOnly();
+  bool isUVEProxy();
   bool isEnabled();
   bool observeHit(Addr);
   bool observeMiss(Addr);

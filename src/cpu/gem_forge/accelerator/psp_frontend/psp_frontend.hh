@@ -5,7 +5,7 @@
 #ifndef __CPU_GEM_FORGE_ACCELERATOR_PSP_FRONTEND_HH__
 #define __CPU_GEM_FORGE_ACCELERATOR_PSP_FRONTEND_HH__
 
-#include <string.h>
+#include <string>
 #include "cpu/gem_forge/llvm_insts.hh"
 #include "base/statistics.hh"
 
@@ -28,7 +28,7 @@ class IndexPacketHandler final : public GemForgePacketHandler {
 public:
   IndexPacketHandler(PSPFrontend* _pspFrontend, uint64_t _entryId,
                      Addr _cacheBlockVAddr, Addr _vaddr,
-                     int _size, uint64_t _seqNum, bool _isIndex = true, bool _isDataPrefetchOnly = false, int _additional_delay = 0);
+                     int _size, uint64_t _seqNum, bool _isIndex = true, bool _isUVEProxy = false, int _additional_delay = 0);
   virtual ~IndexPacketHandler() {}
   void handlePacketResponse(GemForgeCPUDelegator* cpuDelegator,
                             PacketPtr packet);
@@ -75,7 +75,7 @@ public:
   uint64_t entryId;
   uint64_t seqNum;
   bool isIndex;
-  bool isDataPrefetchOnly;
+  bool isUVEProxy;
   int additionalDelay;
 };
 
@@ -163,7 +163,8 @@ public:
 private:
   bool isPSPBackendEnabled;
   bool isTLBPrefetchOnly;
-  bool isDataPrefetchOnly; // SJ: This is for UVE proxy;
+  bool isDataPrefetchOnly;
+  bool isUVEProxy;
   unsigned totalPatternTableEntries;
   PatternTable* patternTable;
   IndexQueueArray* indexQueueArray;
@@ -175,5 +176,6 @@ private:
   std::multimap<uint64_t, uint32_t> inflightTranslations;
   uint64_t seqNum;
   uint64_t paQueueCapacity;
+  uint64_t prefetchDistance;
 };
 #endif

@@ -252,7 +252,7 @@ StreamEntry::getTotalSize() {
 
 PSPBackend::PSPBackend(const Params *p)
   : SimObject(p), enabled(p->enabled), tlbPrefetchOnly(p->tlb_prefetch_only),
-    numStreams(p->num_streams), dataPrefetchOnly(p->data_prefetch_only) { 
+    numStreams(p->num_streams), UVEProxy(p->uve_proxy) { 
   this->streamTable.resize(p->num_streams, StreamEntry(p->num_stream_entry, p->prefetch_distance));
   numPrefetchHits = 0;
   numPrefetchMisses = 0;
@@ -330,7 +330,7 @@ PSPBackend::observeMiss(Addr address)
 {
   StreamEntry * se = getEntry(address);
   if (se != NULL) {
-    if (this->dataPrefetchOnly) {
+    if (this->UVEProxy) {
       // For Stream Engine proxy, Pf Miss
       numPrefetchMisses++;
       DPRINTF(PSPBackend, "** Observed StreamEngine partial miss for %#x\n", address);
@@ -395,7 +395,7 @@ PSPBackend::observePfMiss(Addr address)
     // This is miss for cache, but hit by MSHR
     numPrefetchMisses++;
     DPRINTF(PSPBackend, "** Observed PSP prefetcher partial miss for %#x\n", address);
-    if (this->dataPrefetchOnly) return true;
+    if (this->UVEProxy) return true;
     se->incrementTagAddr(address);
     if (!this->tlbPrefetchOnly) {
       issuePrefetch(se, address);

@@ -1047,7 +1047,7 @@ machine(MachineType:L1Cache, "MESI Directory L1 Cache CMP")
   }
 
   action(pop_PSPBackend, "pop_PSP", desc="Pop the PSPBackend for Data Stream scheme") {
-    if (pspbackend.isDataPrefetchOnly()) {
+    if (pspbackend.isUVEProxy()) {
       pspbackend.popResponse(address);
     }
   }

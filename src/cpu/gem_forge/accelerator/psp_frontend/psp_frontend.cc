@@ -11,9 +11,9 @@
 
 IndexPacketHandler::IndexPacketHandler(PSPFrontend* _pspFrontend, uint64_t _entryId,
                                        Addr _cacheBlockVAddr, Addr _vaddr,
-                                       int _size, uint64_t _seqNum, bool _isIndex, bool _isDataPrefetchOnly, int _additional_delay)
+                                       int _size, uint64_t _seqNum, bool _isIndex, bool _isUVEProxy, int _additional_delay)
   : pspFrontend(_pspFrontend), entryId(_entryId), cacheBlockVAddr(_cacheBlockVAddr),
-    vaddr(_vaddr), size(_size), seqNum(_seqNum), isIndex(_isIndex), isDataPrefetchOnly(_isDataPrefetchOnly), additionalDelay(_additional_delay) {
+    vaddr(_vaddr), size(_size), seqNum(_seqNum), isIndex(_isIndex), isUVEProxy(_isUVEProxy), additionalDelay(_additional_delay) {
 }
 
 void 
@@ -28,7 +28,7 @@ IndexPacketHandler::handlePacketResponse(GemForgeCPUDelegator* cpuDelegator,
     return;
   }
   
-  if (this->isDataPrefetchOnly) {
+  if (this->isUVEProxy) {
     delete pkt;
     delete this;
     return;
@@ -52,7 +52,7 @@ IndexPacketHandler::handleAddressTranslateResponse(GemForgeCPUDelegator* cpuDele
   }
   this->pspFrontend->handleAddressTranslateResponse(this, pkt);
 
-  if (!this->isDataPrefetchOnly) {
+  if (!this->isUVEProxy) {
     delete pkt;
     delete this;
   }
@@ -67,7 +67,9 @@ PSPFrontend::PSPFrontend(Params* params)
     isPSPBackendEnabled(params->isPSPBackendEnabled), 
     isTLBPrefetchOnly(params->isTLBPrefetchOnly),
     isDataPrefetchOnly(params->isDataPrefetchOnly),
+    isUVEProxy(params->isUVEProxy),
     paQueueCapacity(params->paQueueCapacity),
+    prefetchDistance(params->prefetchDistance),
     seqNum(0) {
     valCurrentSize = new uint64_t[params->totalPatternTableEntries]();
     patternTable = new PatternTable(params->totalPatternTableEntries); 
@@ -101,11 +103,11 @@ PSPFrontend::takeOverBy(GemForgeCPUDelegator *newCpuDelegator,
       false /* AccessLastLevelTLBOnly */, true /* MustDoneInOrder */);
 
   // For Two level cache
-  char pspbackend_name[100] = "system.ruby.l1_cntrl";
-//  char pspbackend_name[100] = "system.ruby.l0_cntrl";
-  char cpuId = (this->cpuDelegator->cpuId() + '0');
-  strncat(pspbackend_name, &cpuId, 1);
-  strcat(pspbackend_name, ".pspbackend");
+  std::string pspbackend_name = "system.ruby.l1_cntrl";
+//  std::string pspbackend_name = "system.ruby.l0_cntrl";
+  std::string cpuId = std::to_string(this->cpuDelegator->cpuId());
+  pspbackend_name += cpuId;
+  pspbackend_name += ".pspbackend";
   PSP_FE_DPRINTF("Matching %s...\n", pspbackend_name);
   for (auto so : SimObject::getSimObjectList()) {
     if (so->name() == pspbackend_name) {
@@ -124,7 +126,7 @@ PSPFrontend::regStats() {
   GemForgeAccelerator::regStats();
 
 #define scalar(stat, describe)                                                 \
-  this->stat.name(this->manager->name() + (".psp." #stat))                      \
+  this->stat.name(this->manager->name() + (".pspfrontend." #stat))             \
       .desc(describe)                                                          \
       .prereq(this->stat)
 
@@ -152,13 +154,20 @@ PSPFrontend::tick() {
   /* Issue feature vector address translation */
   uint32_t validIQEntryId;
   // TODO: Should I check the availability of TLB? (e.g., pending translation by PTW)
-//  if (this->indexQueueArrayArbiter->getValidEntryId(&validIQEntryId, false)) {
-  if (this->indexQueueArrayArbiter->getValidEntryId(&validIQEntryId, this->isDataPrefetchOnly)) {
-    if (this->isDataPrefetchOnly) {
+  if (this->indexQueueArrayArbiter->getValidEntryId(&validIQEntryId, false)) {
+    if (this->isUVEProxy) {
       if (((this->paQueueArray->getSize(validIQEntryId) * 64 + this->pspBackend->getTotalSize(validIQEntryId)) < (this->paQueueCapacity * 64))) {
         PSP_FE_DPRINTF("paQueueArray[%lu].size: %lu , pspBackend[%lu].size: %lu, paQueueCapacity: %lu\n",
             validIQEntryId, this->paQueueArray->getSize(validIQEntryId) * 64, validIQEntryId, this->pspBackend->getTotalSize(validIQEntryId), this->paQueueCapacity * 64);
         this->issueLoadValue(validIQEntryId);
+      }
+      else { // If cannot issue prefetch, pass chance to next entry
+        this->indexQueueArrayArbiter->setLastChosenEntryId(validIQEntryId);
+      }
+    }
+    else if (this->isDataPrefetchOnly) {
+      if (this->pspBackend->getTotalSize(validIQEntryId) <= this->prefetchDistance) {
+        this->issueTranslateValueAddress(validIQEntryId);
       }
       else { // If cannot issue prefetch, pass chance to next entry
         this->indexQueueArrayArbiter->setLastChosenEntryId(validIQEntryId);
@@ -239,7 +248,7 @@ void PSPFrontend::issueLoadIndex(uint64_t _validEntryId) {
 
   // Send load index request
   IndexPacketHandler* indexPacketHandler = new IndexPacketHandler(this, _validEntryId,
-      cacheBlockVAddr, currentVAddr, currentSize, seqNum, true /* isIndex? */, false /* isDataPrefetchOnly */, 1 /* Latency for address compute */);
+      cacheBlockVAddr, currentVAddr, currentSize, seqNum, true /* isIndex? */, false /* isUVEProxy */, 1 /* Latency for address compute */);
   Request::Flags flags;
   PacketPtr pkt = GemForgePacketHandler::createGemForgePacket(
       cacheBlockPAddr, cacheLineSize, indexPacketHandler, nullptr /* Data */,
@@ -319,7 +328,7 @@ PSPFrontend::issueLoadValue(uint64_t _validEntryId) {
 
   // VA to PA
   IndexPacketHandler* indexPacketHandler = new IndexPacketHandler(this, _validEntryId,
-      cacheBlockVAddr, currentVAddrBegin, currentSize, seqNum, false /* isIndex? */, true /* isDataPrefetchOnly? */, 1 /* Latency for address compute */);
+      cacheBlockVAddr, currentVAddrBegin, currentSize, seqNum, false /* isIndex? */, true /* isUVEProxy? */, 1 /* Latency for address compute */);
   Request::Flags flags;
   PacketPtr pkt = GemForgePacketHandler::createGemForgePacket(
       cacheBlockPAddr, cacheBlockSize, indexPacketHandler, nullptr /* Data */,
@@ -361,7 +370,7 @@ void PSPFrontend::issueTranslateValueAddress(uint64_t _validEntryId) {
   uint64_t currentVAddrBegin = valBaseAddr + (index + 1) * valAccessGranularity - this->valCurrentSize[_validEntryId];
   uint64_t currentVAddrEnd = valBaseAddr + (index + 1) * valAccessGranularity;
   uint64_t currentSize = (this->valCurrentSize[_validEntryId] + (cacheLineSize - 1)) & (~(cacheLineSize - 1));
-  uint64_t pageSize = this->isDataPrefetchOnly ? cacheLineSize : TheISA::PageBytes;
+  uint64_t pageSize = TheISA::PageBytes;
 
   uint64_t cacheBlockVAddr = currentVAddrBegin & (~(cacheLineSize - 1));
 //  currentSize += (currentVAddrBegin - cacheBlockVAddr);
@@ -392,7 +401,7 @@ void PSPFrontend::issueTranslateValueAddress(uint64_t _validEntryId) {
 
   // VA to PA
   IndexPacketHandler* indexPacketHandler = new IndexPacketHandler(this, _validEntryId,
-      cacheBlockVAddr, currentVAddrBegin, currentSize, seqNum, false /* isIndex? */, false /* isDataPrefetchOnly */, 1 /* Latency for address compute */);
+      cacheBlockVAddr, currentVAddrBegin, currentSize, seqNum, false /* isIndex? */, false /* isUVEProxy */, 1 /* Latency for address compute */);
   Request::Flags flags;
   PacketPtr pkt = GemForgePacketHandler::createGemForgePacket(
       cacheBlockPAddr, cacheBlockSize, indexPacketHandler, nullptr /* Data */,

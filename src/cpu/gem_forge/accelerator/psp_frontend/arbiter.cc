@@ -56,7 +56,7 @@ bool IndexQueueArrayRRArbiter::getValidEntryId(uint32_t* _entryId, bool _bypassP
     uint32_t entryId = (this->getLastChosenEntryId() + i) % this->getTotalPatternTableEntries();
     if (this->indexQueueArray->getConfigured(entryId) &&
         this->indexQueueArray->canRead(entryId) &&
-        (this->paQueueArray->canInsert(entryId) || _bypassPAQueue)) {
+        (this->paQueueArray->canInsert(entryId))) {
       *_entryId = entryId;
       return true;
     }

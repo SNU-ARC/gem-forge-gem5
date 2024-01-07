@@ -49,12 +49,16 @@ class PSPFrontend(GemForgeAccelerator):
         64, "Capacity per index queue. Unit is Byte")
     paQueueCapacity = Param.Unsigned(
         4, "Capacity per PA Queue.")
+    prefetchDistance = Param.Unsigned(
+        8, "Prefetch distance.")
     isPSPBackendEnabled = Param.Bool(
         True, "Is PSPBackend enabled.")
     isTLBPrefetchOnly = Param.Bool(
         False, "Is TLBPrefetch only = Cache prefetch off.")
     isDataPrefetchOnly = Param.Bool(
-        False, "Is UVE proxy? = Cache prefetch only.")
+        False, "Is Cache prefetch only.")
+    isUVEProxy = Param.Bool(
+        False, "Is UVE proxy?")
 
 class StreamEngine(GemForgeAccelerator):
     type = "StreamEngine"
