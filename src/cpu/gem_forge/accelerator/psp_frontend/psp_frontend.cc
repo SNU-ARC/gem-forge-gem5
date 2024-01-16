@@ -28,11 +28,6 @@ IndexPacketHandler::handlePacketResponse(GemForgeCPUDelegator* cpuDelegator,
     return;
   }
   
-  if (this->isUVEProxy) {
-    delete pkt;
-    delete this;
-    return;
-  }
   this->pspFrontend->handlePacketResponse(this, pkt);
 
   delete pkt;
@@ -52,6 +47,7 @@ IndexPacketHandler::handleAddressTranslateResponse(GemForgeCPUDelegator* cpuDele
   }
   this->pspFrontend->handleAddressTranslateResponse(this, pkt);
 
+  PSP_FE_DPRINTF("isUVEProxy %d.\n", this->isUVEProxy);
   if (!this->isUVEProxy) {
     delete pkt;
     delete this;
@@ -201,7 +197,7 @@ PSPFrontend::tick() {
       }
     }
   }
-  this->pspBackend->printStatus();
+//  this->pspBackend->printStatus();
 }
 
 void PSPFrontend::issueLoadIndex(uint64_t _validEntryId) {
@@ -344,7 +340,7 @@ PSPFrontend::issueLoadValue(uint64_t _validEntryId) {
   else {
     // Send the pkt to translation. (Translation consume tick)
     this->translationBuffer->addTranslation(
-        pkt, cpuDelegator->getSingleThreadContext(), (void*)indexPacketHandler, false /* isPrefetch */, true /* VA to PA only */);
+        pkt, cpuDelegator->getSingleThreadContext(), (void*)indexPacketHandler, false /* isPrefetch */, false /* VA to PA only */);
   }
   this->indexQueueArrayArbiter->setLastChosenEntryId(_validEntryId);
   
@@ -433,6 +429,7 @@ void PSPFrontend::handlePacketResponse(IndexPacketHandler* indexPacketHandler,
   uint64_t entryId = indexPacketHandler->entryId;
   Addr cacheBlockVAddr = indexPacketHandler->cacheBlockVAddr;
   Addr vaddr = indexPacketHandler->vaddr;
+  Addr pAddr = pkt->getAddr();
   void* data = pkt->getPtr<void>();
   uint64_t packetSize = pkt->getSize();
   uint64_t inputSize = indexPacketHandler->size;
@@ -447,6 +444,12 @@ void PSPFrontend::handlePacketResponse(IndexPacketHandler* indexPacketHandler,
       PSP_FE_DPRINTF("data[%d]: %lu\n", i, ((uint64_t*)data)[i]);
     }
     PSP_FE_DPRINTF("\n");
+  }
+  else if (this->isUVEProxy) {
+    uint32_t paQueueId = this->inflightTranslations.find(pAddr)->second;
+    PhysicalAddressQueue::PhysicalAddressArgs args(true, entryId, pAddr, packetSize, seqNum);
+    this->paQueueArray->insert(entryId, paQueueId, args);
+    this->inflightTranslations.erase(this->inflightTranslations.find(pAddr));
   }
 //  else {
 //    Addr pAddr = pkt->getAddr();
