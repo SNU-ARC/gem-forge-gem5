@@ -243,6 +243,7 @@ public:
   mutable Stats::Scalar numLoadElementsStepped;
   mutable Stats::Scalar numLoadElementsUsed;
   mutable Stats::Scalar numLoadElementWaitCycles;
+  mutable Stats::Scalar numLoadWaitElements;
   mutable Stats::Scalar numLoadCacheLineFetched;
   mutable Stats::Scalar numLoadCacheLineUsed;
   /**

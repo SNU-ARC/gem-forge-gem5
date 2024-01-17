@@ -164,6 +164,8 @@ void StreamEngine::regStats() {
   scalar(numLoadElementsUsed, "Number of load stream elements used.");
   scalar(numLoadElementWaitCycles,
          "Number of cycles from first check to ready for load element.");
+  scalar(numLoadWaitElements,
+         "Number of load stream elements not ready from first check.");
   scalar(numLoadCacheLineUsed, "Number of cache line used.");
   scalar(numLoadCacheLineFetched, "Number of cache line fetched.");
   scalar(streamUserNotDispatchedByLoadQueue,
@@ -2119,6 +2121,7 @@ void StreamEngine::releaseElementStepped(DynamicStream *dynS, bool isEnd,
           releaseElement->firstValueCheckCycle) {
         waitedCycles = releaseElement->valueReadyCycle -
                        releaseElement->firstValueCheckCycle;
+        this->numLoadWaitElements++;
       }
       this->numLoadElementWaitCycles += waitedCycles;
     }
