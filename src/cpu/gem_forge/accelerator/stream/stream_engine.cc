@@ -135,6 +135,7 @@ void StreamEngine::takeOverBy(GemForgeCPUDelegator *newCpuDelegator,
                               GemForgeAcceleratorManager *newManager) {
   GemForgeAccelerator::takeOverBy(newCpuDelegator, newManager);
   this->regionController->takeOverBy(newCpuDelegator);
+  this->translationBuffer->takeOverBy(newCpuDelegator->getDataTLB());
 }
 
 void StreamEngine::regStats() {
@@ -1862,6 +1863,26 @@ Stream *StreamEngine::tryGetStream(uint64_t streamId) const {
 }
 
 void StreamEngine::tick() {
+  auto unassignedBytes = this->totalRunAheadBytes;
+  auto assignedBytes = 0;
+  for (const auto &IdStream : this->streamMap) {
+    auto S = IdStream.second;
+    if (!S->isConfigured()) {
+      continue;
+    }
+    if (S->isLoadStream()) {
+      assignedBytes +=
+          S->maxSize * S->getLastDynamicStream().getBytesPerMemElement();
+    }
+  }
+  unassignedBytes -= assignedBytes;
+  SE_DPRINTF("unassignedBytes %d, assignedBytes: %d, numInflyStreamRequests: %d, numFreeFIFOEntries: %llu\n",
+      unassignedBytes, assignedBytes, this->numInflyStreamRequests, this->numFreeFIFOEntries);
+  if (unassignedBytes <= 0) {
+    this->manager->scheduleTickNextCycle();
+    return;
+  }
+
   this->regionController->tick();
   this->issueElements();
   this->computeEngine->startComputation();
@@ -2483,6 +2504,7 @@ void StreamEngine::issueElements() {
       }
       // Issue the element.
       this->issueElement(element);
+      break;
     }
   }
 }
@@ -2540,6 +2562,7 @@ void StreamEngine::issueElement(StreamElement *element) {
    */
   this->coalesceContinuousDirectMemStreamElement(element);
 
+  SE_DPRINTF("element->cacheBlocks: %llu\n", element->cacheBlocks);
   for (size_t i = 0; i < element->cacheBlocks; ++i) {
     auto &cacheBlockBreakdown = element->cacheBlockBreakdownAccesses[i];
 
@@ -2556,6 +2579,11 @@ void StreamEngine::issueElement(StreamElement *element) {
       continue;
     }
 
+//    int32_t size = element->size;
+//    int32_t offset = element->stream->aliasOffset;
+//    const auto streamId = element->FIFOIdx.streamId.staticId;
+//    S->getCoalescedOffsetAndSize(streamId, offset, size);
+//    const auto cacheLineVAddr = cacheBlockBreakdown.cacheBlockVAddr + offset;
     const auto cacheLineVAddr = cacheBlockBreakdown.cacheBlockVAddr;
     const auto cacheLineSize = cpuDelegator->cacheLineSize();
     if ((cacheLineVAddr % cacheLineSize) != 0) {
@@ -2710,6 +2738,7 @@ void StreamEngine::issueElement(StreamElement *element) {
       this->cpuDelegator->sendRequest(pkt);
     } else {
       // Send the pkt to translation.
+      SE_DPRINTF("lineVaddr: %#x\n", cacheLineVAddr);
       this->translationBuffer->addTranslation(
           pkt, cpuDelegator->getSingleThreadContext(), nullptr);
     }

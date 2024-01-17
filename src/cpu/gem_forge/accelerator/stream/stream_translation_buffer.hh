@@ -31,6 +31,10 @@ public:
     this->startTranslation(translation);
   }
 
+  void takeOverBy(BaseTLB* _tlb) {
+    tlb = _tlb;
+  }
+
 private:
   BaseTLB *tlb;
   TranslationDoneCallback doneCallback;
