@@ -18,6 +18,7 @@ public:
   }
 
   bool translateVAddrOracle(Addr vaddr, Addr &paddr) override;
+  int remainSendRequest() override { return 0; }
   void sendRequest(PacketPtr pkt) override { this->cpu->sendRequest(pkt); }
 
   void recordStatsForFakeExecutedInst(const StaticInstPtr &inst) override;

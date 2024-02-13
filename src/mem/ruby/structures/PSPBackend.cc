@@ -74,6 +74,24 @@ StreamEntry::hasEntry(Addr _addr) {
   return false;
 }
 
+void
+StreamEntry::setRequested(Addr _addr) {
+  for (int i = 0; i < this->numQueueEntry; i++) {
+      if (this->prefetchQueue[i].isHit(_addr)) {
+        this->prefetchQueue[i].setRequested();
+        return;
+      }
+  }
+}
+
+bool
+StreamEntry::isRequested(Addr _addr) {
+  for (int i = 0; i < this->numQueueEntry; i++) {
+      if (this->prefetchQueue[i].isRequested()) return true;
+  }
+  return false;
+}
+
 void 
 StreamEntry::insertEntry(Addr _addr, int _size) {
   // Must have invalid entry for insertion when call this function 
@@ -316,7 +334,7 @@ PSPBackend::observeHit(Addr address) {
     numHits++;
     DPRINTF(PSPBackend, "** Observed hit for %#x\n", address);
     se->incrementTagAddr(address);
-    if (!this->tlbPrefetchOnly) {
+    if (!this->tlbPrefetchOnly && !this->UVEProxy) {
       issuePrefetch(se, address);
       return true;
     }
@@ -332,6 +350,7 @@ PSPBackend::observeMiss(Addr address)
   if (se != NULL) {
     if (this->UVEProxy) {
       // For Stream Engine proxy, Pf Miss
+      se->setRequested(address);
       numPrefetchMisses++;
       DPRINTF(PSPBackend, "** Observed StreamEngine partial miss for %#x\n", address);
       return true;
@@ -341,7 +360,7 @@ PSPBackend::observeMiss(Addr address)
       numMisses++;
       DPRINTF(PSPBackend, "** Observed miss for %#x\n", address);
       se->incrementTagAddr(address);
-      if (!this->tlbPrefetchOnly) {
+      if (!this->tlbPrefetchOnly && !this->UVEProxy) {
         issuePrefetch(se, address);
       }
       return true;
@@ -377,7 +396,7 @@ PSPBackend::observePfHit(Addr address)
     numPrefetchHits++;
     DPRINTF(PSPBackend, "** Observed PSP prefetcher hit for %#x\n", address);
     se->incrementTagAddr(address);
-    if (!this->tlbPrefetchOnly) {
+    if (!this->tlbPrefetchOnly && !this->UVEProxy) {
       issuePrefetch(se, address);
       return true;
     }
@@ -395,9 +414,12 @@ PSPBackend::observePfMiss(Addr address)
     // This is miss for cache, but hit by MSHR
     numPrefetchMisses++;
     DPRINTF(PSPBackend, "** Observed PSP prefetcher partial miss for %#x\n", address);
-    if (this->UVEProxy) return true;
+    if (this->UVEProxy) {
+      se->setRequested(address);
+      return true;
+    }
     se->incrementTagAddr(address);
-    if (!this->tlbPrefetchOnly) {
+    if (!this->tlbPrefetchOnly && !this->UVEProxy) {
       issuePrefetch(se, address);
       return true;
     }
@@ -413,7 +435,8 @@ PSPBackend::popResponse(Addr address)
   StreamEntry * se = getEntry(address);
   if (se != NULL) {
     DPRINTF(PSPBackend, "** Response match!! %#x\n", address);
-    se->incrementTagAddr(address);
+    if (se->isRequested(address))
+      se->incrementTagAddr(address);
   }
 }
 

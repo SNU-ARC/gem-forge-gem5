@@ -1326,6 +1326,8 @@ LSQ::tryToSend(LSQRequestPtr request)
             }
 
             state = MemoryRunning;
+            DPRINTF(MinorMem, "transfers.unreservedRemainingSpace = %d, numAccessesInMemorySystem = %d\n",
+                transfers.unreservedRemainingSpace(), numAccessesInMemorySystem);
         } else {
             DPRINTF(MinorMem,
                 "Sending data memory request - needs retry\n");
@@ -1381,6 +1383,14 @@ LSQ::canSendToMemorySystem()
 {
     return state == MemoryRunning &&
         numAccessesInMemorySystem < inMemorySystemLimit;
+}
+
+bool
+LSQ::canGemForgeSendToMemorySystem()
+{
+    return state == MemoryRunning &&
+        remainPSPTransfer > 0 &&
+        numAccessesInMemorySystem + transfers.unreservedRemainingSpace() < inMemorySystemLimit;
 }
 
 bool
@@ -1495,7 +1505,8 @@ LSQ::LSQ(std::string name_, std::string dcache_port_name_,
     unsigned int in_memory_system_limit, unsigned int line_width,
     unsigned int requests_queue_size, unsigned int transfers_queue_size,
     unsigned int store_buffer_size,
-    unsigned int store_buffer_cycle_store_limit) :
+    unsigned int store_buffer_cycle_store_limit,
+    unsigned int psp_queue_size) :
     Named(name_),
     cpu(cpu_),
     execute(execute_),
@@ -1515,6 +1526,7 @@ LSQ::LSQ(std::string name_, std::string dcache_port_name_,
     numAccessesInDTLB(0),
     numStoresInTransfers(0),
     numAccessesIssuedToMemory(0),
+    remainPSPTransfer(psp_queue_size),
     retryRequest(NULL),
     cacheBlockMask(~(cpu_.cacheLineSize() - 1))
 {
@@ -1545,6 +1557,12 @@ LSQ::LSQ(std::string name_, std::string dcache_port_name_,
 
     if ((lineWidth & (lineWidth - 1)) != 0) {
         fatal("%s: lineWidth: %d must be a power of 2\n", name(), lineWidth);
+    }
+    
+    numPSPRequest = 0;
+    if (remainPSPTransfer > in_memory_system_limit - transfers_queue_size) {
+        fatal("%s: PSPQueueSize must be"
+            " <= in_memory_system_limit - transfers_queue_size (%d)\n", name_, in_memory_system_limit - transfers_queue_size);
     }
 }
 

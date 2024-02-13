@@ -26,7 +26,7 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-machine(MachineType:L1Cache, "MESI Directory L1 Cache CMP")
+machine(MachineType:L1Cache, "MESI Directory L1 Cache CMP", interface="AbstractStreamAwareController")
  : Sequencer * sequencer;
    CacheMemory * L1Icache;
    CacheMemory * L1Dcache;
@@ -996,6 +996,13 @@ machine(MachineType:L1Cache, "MESI Directory L1 Cache CMP")
 
   action(uu_profileDataHit, "\udh", desc="Profile the demand hit") {
       ++L1Dcache.demand_hits;
+      peek(mandatoryQueue_in, RubyRequest) {
+        Addr req_address := in_msg.LineAddress;
+        RubyRequestType type := in_msg.Type;
+        if (cache_entry.isPrefetch) {
+          ++L1Dcache.demand_hits_prefetched;
+        }
+      }
   }
 
   action(po_observeHit, "\ph", desc="Inform the prefetcher about the hit") {
@@ -1010,7 +1017,12 @@ machine(MachineType:L1Cache, "MESI Directory L1 Cache CMP")
             cache_entry.isPrefetch := false;
           } else {
             if (pspbackend.isEnabled()) {
-              pspbackend.observeHit(in_msg.LineAddress);
+              if (pspbackend.isUVEProxy()) {
+                pspbackend.observePfHit(in_msg.LineAddress);
+              }
+              else {
+                pspbackend.observeHit(in_msg.LineAddress);
+              }
             }
           }
       }

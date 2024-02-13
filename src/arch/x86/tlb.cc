@@ -383,7 +383,7 @@ TLB::translate(const RequestPtr &req,
     }
 
     Addr vaddr = req->getVaddr();
-    DPRINTF(TLB, "Translating %#x, LastLevel %d.\n", vaddr, isLastLevel);
+    DPRINTF(TLB, "Translating %#x, LastLevel %d, timing %d timingSE %d.\n", vaddr, isLastLevel, timing, this->timingSE);
 
     HandyM5Reg m5Reg = tc->readMiscRegNoEffect(MISCREG_M5_REG);
 

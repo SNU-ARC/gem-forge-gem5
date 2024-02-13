@@ -612,6 +612,12 @@ bool MinorCPUDelegator::translateVAddrOracle(Addr vaddr, Addr &paddr) {
   return true;
 }
 
+int
+MinorCPUDelegator::remainSendRequest() {
+  auto &lsq = pimpl->cpu->pipeline->execute.getLSQ();
+  return lsq.remainPSPTransfer - pimpl->pendingPkts.size();
+}
+
 void MinorCPUDelegator::sendRequest(PacketPtr pkt) {
   // If this is not a load request, we should send immediately.
   // e.g. StreamConfig/End packet.
@@ -688,8 +694,12 @@ void MinorCPUDelegator::drainPendingPackets() {
   auto &lsq = pimpl->cpu->pipeline->execute.getLSQ();
   auto &storeBuffer = lsq.storeBuffer;
   auto &pendingPkts = pimpl->pendingPkts;
-  DPRINTF(MinorCPUDelegator, "transfers.unreservedRemainingSpace = %d.\n", lsq.numTransfer());
-  while (!pendingPkts.empty() && lsq.canTransfer()) {
+  DPRINTF(MinorCPUDelegator, "[BEFORE_0] requests.unreservedRemainingSpace = %d\n",
+      lsq.numRequest());
+  DPRINTF(MinorCPUDelegator, "[BEFORE_1] transfers.unreservedRemainingSpace = %d, lsq.numAccessesInMemorySystem = %d, pendingPkts.size() = %d, lsq.remainPSPTransfer = %d.\n", 
+      lsq.numTransfer(), lsq.numAccessesInMemorySystem, pendingPkts.size(), lsq.remainPSPTransfer);
+//  while (!pendingPkts.empty() && lsq.canGemForgeSendToMemorySystem()) {
+  while (!pendingPkts.empty() && lsq.canGemForgeIssue()) {
     auto &pkt = pendingPkts.front();
     /**
      * Create the fake LSQRequest for the storeBuffer. It needs:
@@ -707,22 +717,33 @@ void MinorCPUDelegator::drainPendingPackets() {
         storeBuffer.canForwardDataToLoad(&fakeLSQRequest, forwardSlot);
     bool issued = false;
     switch (addrRange) {
-    case Minor::LSQ::AddrRangeCoverage::NoAddrRangeCoverage: {
-      // This packet can be sent to dcache port.
-      assert(lsq.dcachePort->sendTimingReqVirtual(pkt, false /* isCore */));
-      issued = true;
-      break;
-    }
-    case Minor::LSQ::AddrRangeCoverage::FullAddrRangeCoverage:
-    case Minor::LSQ::AddrRangeCoverage::PartialAddrRangeCoverage: {
-      // For far we will wait until there is no alised store.
-      issued = false;
-      break;
-    }
+      case Minor::LSQ::AddrRangeCoverage::NoAddrRangeCoverage: {
+        // This packet can be sent to dcache port.
+        if (this->canInsertLSQ(fakeDynInst)) {
+          auto isFault = this->insertLSQ(fakeDynInst);
+          issued = isFault == NoFault;
+          if (issued) {
+            assert(lsq.dcachePort->sendTimingReqVirtual(pkt, false /* isCore */));
+            DPRINTF(MinorCPUDelegator, "[AFTER] transfers.unreservedRemainingSpace = %d, lsq.numAccessesInMemorySystem = %d, lsq.remainPSPTransfer = %d, pkt.paddr = %#x.\n", 
+                lsq.numTransfer(), lsq.numAccessesInMemorySystem, lsq.remainPSPTransfer, pkt->getAddr());
+          }
+        }
+        else {
+          issued = true;
+        }
+        break;
+      }
+      case Minor::LSQ::AddrRangeCoverage::FullAddrRangeCoverage:
+      case Minor::LSQ::AddrRangeCoverage::PartialAddrRangeCoverage: {
+        // For far we will wait until there is no alised store.
+        issued = false;
+        break;
+      }
     }
 
     if (issued) {
       pendingPkts.pop_front();
+      break;
     } else {
       break;
     }

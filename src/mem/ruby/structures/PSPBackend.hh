@@ -63,6 +63,7 @@ class PSPPrefetchEntry {
     Addr baseAddr; // Line address
     Addr endAddr; // Line address
     int size;
+    bool requested;
 
   public:
     void setEntry(Addr _baseAddr, int _size) {
@@ -70,6 +71,7 @@ class PSPPrefetchEntry {
       this->baseAddr = makeLineAddress(_baseAddr);
       this->endAddr = makeLineAddress(_baseAddr) + _size;
       this->size = _size;
+      this->requested = false;
     }
 
     bool isValid() { return this->valid; }
@@ -84,6 +86,8 @@ class PSPPrefetchEntry {
     bool isHit(Addr _addr) {
       return (this->valid && (_addr >= this->baseAddr) && (_addr < this->endAddr));
     }
+    void setRequested() { this->requested = true; }
+    bool isRequested() { return this->requested; }
 };
 
 class StreamEntry {
@@ -127,6 +131,8 @@ class StreamEntry {
     void incrementNextPrefetchAddr(Addr _snoopAddr);
     void printStatus();
     int getTotalSize();
+    void setRequested(Addr _addr);
+    bool isRequested(Addr _addr);
 };
 
 class PSPBackend : public SimObject {

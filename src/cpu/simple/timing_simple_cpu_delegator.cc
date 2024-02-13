@@ -8,6 +8,10 @@ TimingSimpleCPUDelegator::TimingSimpleCPUDelegator(TimingSimpleCPU *_cpu)
     : SimpleCPUDelegator(CPUTypeE::TIMING_SIMPLE, _cpu) {}
 TimingSimpleCPUDelegator::~TimingSimpleCPUDelegator() = default;
 
+int TimingSimpleCPUDelegator::remainSendRequest() {
+  return true;
+}
+
 void TimingSimpleCPUDelegator::sendRequest(PacketPtr pkt) {
   // The CPU's port should already be a GemForgeDcachePort.
   auto cpu = dynamic_cast<TimingSimpleCPU *>(this->baseCPU);

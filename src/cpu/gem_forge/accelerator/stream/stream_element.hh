@@ -207,6 +207,7 @@ struct StreamElement {
   static constexpr int MAX_CACHE_BLOCKS = 24;
   int cacheBlocks = 0;
   CacheBlockBreakdownAccess cacheBlockBreakdownAccesses[MAX_CACHE_BLOCKS];
+  int numValueReady = 0;
   /**
    * Small vector stores all the data.
    * * The value should be indexed in cache line granularity.

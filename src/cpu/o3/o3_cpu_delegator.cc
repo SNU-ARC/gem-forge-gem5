@@ -219,6 +219,11 @@ bool DefaultO3CPUDelegator<CPUImpl>::translateVAddrOracle(Addr vaddr,
 }
 
 template <class CPUImpl>
+int DefaultO3CPUDelegator<CPUImpl>::remainSendRequest() {
+  return 0;
+}
+
+template <class CPUImpl>
 void DefaultO3CPUDelegator<CPUImpl>::sendRequest(PacketPtr pkt) {
   auto lineBytes = this->cacheLineSize();
   if ((pkt->getAddr() % lineBytes) + pkt->getSize() > lineBytes) {

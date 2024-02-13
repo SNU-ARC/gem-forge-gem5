@@ -68,6 +68,9 @@ public:
     this->baseCPU->schedule(event, this->baseCPU->clockEdge(latency));
   }
   void deschedule(Event *event) { this->baseCPU->deschedule(event); }
+  void reschedule(Event *event, Cycles latency) {
+    this->baseCPU->reschedule(event, this->baseCPU->clockEdge(latency));
+  }
 
   /**
    * Get the ThreadContext.
@@ -110,7 +113,8 @@ public:
   /**
    * Send a packet through the cpu.
    * If the CPU has a store buffer, it should be searched.
-   */
+     */
+  virtual int remainSendRequest() = 0;
   virtual void sendRequest(PacketPtr pkt) = 0;
 
   /**

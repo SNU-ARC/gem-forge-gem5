@@ -11,6 +11,7 @@ namespace Minor {
 bool LSQ::GemForgeDcachePort::recvTimingResp(PacketPtr pkt) {
   // Intercept the GemForgePackets.
   if (GemForgePacketHandler::isGemForgePacket(pkt)) {
+    LSQ::GemForgeDcachePort::decrementNumAccessesInMemorySystem();
     GemForgePacketHandler::handleGemForgePacketResponse(cpu.getCPUDelegator(),
                                                         pkt);
     return true;

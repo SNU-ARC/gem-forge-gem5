@@ -177,5 +177,6 @@ private:
   uint64_t seqNum;
   uint64_t paQueueCapacity;
   uint64_t prefetchDistance;
+  uint64_t inflightLoadTranslations;
 };
 #endif

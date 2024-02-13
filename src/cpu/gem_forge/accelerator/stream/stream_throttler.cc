@@ -229,6 +229,7 @@ bool StreamThrottler::tryGlobalThrottle(Stream *S) {
             assignedBasicEntries, availableEntries, upperBoundEntries,
             totalIncrementEntries, totalIncrementBytes, currentAliveStreams,
             totalAliveStreams);
+  assert(unassignedBytes >= 0 && "FIFO overflow");
 
   if (availableEntries < totalIncrementEntries) {
     S_DPRINTF(S, "[Not Throttle]: Not enough available entries.\n");

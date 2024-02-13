@@ -13,6 +13,7 @@ public:
   AtomicSimpleCPUDelegator(AtomicSimpleCPU *_cpu);
   ~AtomicSimpleCPUDelegator() override;
 
+  int remainSendRequest() override;
   void sendRequest(PacketPtr pkt) override;
 };
 

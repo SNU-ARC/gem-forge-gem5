@@ -10,6 +10,10 @@ AtomicSimpleCPUDelegator::AtomicSimpleCPUDelegator(AtomicSimpleCPU *_cpu)
     : SimpleCPUDelegator(CPUTypeE::ATOMIC_SIMPLE, _cpu) {}
 AtomicSimpleCPUDelegator::~AtomicSimpleCPUDelegator() = default;
 
+int AtomicSimpleCPUDelegator::remainSendRequest() {
+  return 0;
+}
+
 void AtomicSimpleCPUDelegator::sendRequest(PacketPtr pkt) {
   // In atomic mode we can directly send the packet.
   auto cpu = dynamic_cast<AtomicSimpleCPU *>(this->baseCPU);

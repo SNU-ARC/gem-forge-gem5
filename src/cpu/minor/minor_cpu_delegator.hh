@@ -40,6 +40,7 @@ public:
 
   const std::string &getTraceExtraFolder() const override;
   bool translateVAddrOracle(Addr vaddr, Addr &paddr) override;
+  int remainSendRequest() override;
   void sendRequest(PacketPtr pkt) override;
 
   /**

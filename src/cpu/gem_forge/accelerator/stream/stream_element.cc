@@ -112,6 +112,7 @@ void StreamMemAccess::handlePacketResponse(GemForgeCPUDelegator *cpuDelegator,
     return;
   }
 
+  S_ELEMENT_DPRINTF(this->element, "hasStatistic: %d\n", pkt->req->hasStatistic());
   // Handle the request statistic.
   if (pkt->req->hasStatistic()) {
     bool hitInPrivateCache = false;
@@ -119,6 +120,7 @@ void StreamMemAccess::handlePacketResponse(GemForgeCPUDelegator *cpuDelegator,
     switch (statistic->hitCacheLevel) {
     case RequestStatistic::HitPlaceE::INVALID: {
       // Invalid.
+      S_ELEMENT_DPRINTF(this->element, "hasStatistic: %d, INVALID\n", pkt->req->hasStatistic());
       break;
     }
     case RequestStatistic::HitPlaceE::MEM: // Hit in mem.
@@ -126,24 +128,29 @@ void StreamMemAccess::handlePacketResponse(GemForgeCPUDelegator *cpuDelegator,
       this->stream->statistic.numMissL1++;
       this->stream->statistic.numMissL0++;
       hitInPrivateCache = false;
+      S_ELEMENT_DPRINTF(this->element, "hasStatistic: %d, MEM\n", pkt->req->hasStatistic());
       break;
     case RequestStatistic::HitPlaceE::L1_STREAM_BUFFER:
       // This is considered hit in L2.
       this->stream->statistic.numMissL1++;
       this->stream->statistic.numMissL0++;
       hitInPrivateCache = false;
+      S_ELEMENT_DPRINTF(this->element, "hasStatistic: %d, L1_STREAM_BUFFER\n", pkt->req->hasStatistic());
       break;
     case RequestStatistic::HitPlaceE::L2_CACHE:
       this->stream->statistic.numMissL1++;
       this->stream->statistic.numMissL0++;
       hitInPrivateCache = false;
+      S_ELEMENT_DPRINTF(this->element, "hasStatistic: %d, L2_CACHE\n", pkt->req->hasStatistic());
       break;
     case RequestStatistic::HitPlaceE::L1_CACHE:
       this->stream->statistic.numMissL0++;
       hitInPrivateCache = true;
+      S_ELEMENT_DPRINTF(this->element, "hasStatistic: %d, L1_CACHE\n", pkt->req->hasStatistic());
       break;
     case RequestStatistic::HitPlaceE::L0_CACHE: { // Hit in first level cache.
       hitInPrivateCache = true;
+      S_ELEMENT_DPRINTF(this->element, "hasStatistic: %d, L0_CACHE\n", pkt->req->hasStatistic());
       break;
     }
     default: {
@@ -646,6 +653,12 @@ void StreamElement::splitIntoCacheBlocks() {
   // TODO: Initialize this only once.
   this->cacheBlockSize = this->se->getCPUDelegator()->cacheLineSize();
 
+  // SJ's bug fix. baseAddr + offset
+  int32_t size = this->size;
+  int32_t offset = this->stream->aliasOffset;
+  const auto streamId = this->FIFOIdx.streamId.staticId;
+  //    this->stream->getCoalescedOffsetAndSize(streamId, offset, size);
+    
   for (int currentSize, totalSize = 0; totalSize < this->size;
        totalSize += currentSize) {
     if (this->cacheBlocks >= StreamElement::MAX_CACHE_BLOCKS) {
@@ -660,7 +673,11 @@ void StreamElement::splitIntoCacheBlocks() {
       currentSize = cacheBlockSize - (currentAddr % cacheBlockSize);
     }
     // Create the breakdown.
+    S_ELEMENT_DPRINTF(this, "SJ debug size: %d, offset: %d, streamId: %llu\n",
+        size, offset, streamId);
+
     auto cacheBlockAddr = currentAddr & (~(cacheBlockSize - 1));
+//    auto cacheBlockAddr = currentAddr & (~(cacheBlockSize - 1));
     auto &newCacheBlockBreakdown =
         this->cacheBlockBreakdownAccesses[this->cacheBlocks];
     newCacheBlockBreakdown.cacheBlockVAddr = cacheBlockAddr;

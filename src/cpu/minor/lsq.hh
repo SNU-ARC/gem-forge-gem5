@@ -141,7 +141,16 @@ class LSQ : public Named
           : DcachePort(_name, _lsq, _cpu),
             impl(&_cpu, this) {}
         bool sendTimingReqVirtual(PacketPtr pkt, bool isCore) override {
+          if (isCore == false) {
+            lsq.numAccessesInMemorySystem++;
+            lsq.decrementPSPTransfer();
+          }
           return impl.sendTimingReqVirtual(pkt, isCore);
+        }
+
+        void decrementNumAccessesInMemorySystem() {
+          lsq.numAccessesInMemorySystem--;
+          lsq.incrementPSPTransfer();
         }
       protected:
         /**
@@ -702,6 +711,7 @@ class LSQ : public Named
 
     /** Can a request be sent to the memory system */
     bool canSendToMemorySystem();
+    bool canGemForgeSendToMemorySystem();
 
     /** Snoop other threads monitors on memory system accesses */
     void threadSnoop(LSQRequestPtr request);
@@ -712,7 +722,8 @@ class LSQ : public Named
         unsigned int max_accesses_in_memory_system, unsigned int line_width,
         unsigned int requests_queue_size, unsigned int transfers_queue_size,
         unsigned int store_buffer_size,
-        unsigned int store_buffer_cycle_store_limit);
+        unsigned int store_buffer_cycle_store_limit,
+        unsigned int psp_queue_size);
 
     virtual ~LSQ();
 
@@ -728,10 +739,31 @@ class LSQ : public Named
 
     /** Is their space in the request queue to be able to push a request by
      *  issuing an isMemRef instruction */
+    int numPSPRequest;
+//    bool canRequest() { return (requests.unreservedRemainingSpace() - numPSPRequest) > 0; }
+//    int numRequest() { return transfers.unreservedRemainingSpace() - numPSPRequest; }
+
+    bool PSPflag = false;
+    int remainPSPTransfer;
+    void incrementPSPTransfer() { this->remainPSPTransfer++; }
+    void decrementPSPTransfer() { this->remainPSPTransfer--; }
+//    bool canTransfer() { return (transfers.unreservedRemainingSpace() - remainPSPTransfer) > 0; }
+//    int numTransfer() { return transfers.unreservedRemainingSpace() - remainPSPTransfer; }
     bool canRequest() { return requests.unreservedRemainingSpace() != 0; }
+    int numRequest() { return requests.unreservedRemainingSpace(); }
 
     bool canTransfer() { return transfers.unreservedRemainingSpace() != 0; }
     int numTransfer() { return transfers.unreservedRemainingSpace(); }
+
+    bool canGemForgeIssue() {
+      return canGemForgeSendToMemorySystem(); // && requests.empty(); 
+//      if (requests.empty()) {
+//        return canSendToMemorySystem(); 
+//      }
+//      else {
+//        return !(requests.front()->isComplete()) && canSendToMemorySystem();
+//      }
+    }
 
     /** Returns a response if it's at the head of the transfers queue and
      *  it's either complete or can be sent on to the store buffer.  After

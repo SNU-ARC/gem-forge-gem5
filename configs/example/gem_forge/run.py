@@ -51,6 +51,8 @@ parser.add_option("--gem-forge-psp-data-prefetch-only", action="store_true", def
                   help="""Enable PSP Frontend Cache prefetch.""")
 parser.add_option("--gem-forge-uve-proxy", action="store_true", default=False,
                   help="""Enable UVE proxy.""")
+parser.add_option("--gem-forge-psp-queue-size", action="store", type="int", default=0,
+                  help="""PSP Queue size (Similar to Load Queue).""")
 
 parser.add_option("--gem-forge-work-mark-history", action="store", type="string",
                   help="""work mark history""")
@@ -71,7 +73,7 @@ parser.add_option("--gem-forge-ideal-ruby", action="store_true",
                   help="""simulate with ideal ruby cache (see Sequencer).""",
                   default=False)
 parser.add_option("--gem-forge-cold-cache", action="store_true",
-                  help="""start simulation without warming up the cache.""", default=False)
+                  help="""start simulation without warming up the cache.""", default=True)
 parser.add_option("--llvm-standalone", action="store_true",
                   help="""replay in stand alone mode""", default=False)
 parser.add_option("--llvm-prefetch", action="store", type="int",

@@ -346,7 +346,8 @@ class MinorCPU(BaseCPU):
         "Number of committable memory references in Execute each cycle")
     executeInputBufferSize = Param.Unsigned(7,
         "Size of input buffer to Execute in cycles-worth of insts.")
-    executeMemoryWidth = Param.Unsigned(0,
+#    executeMemoryWidth = Param.Unsigned(0,
+    executeMemoryWidth = Param.Unsigned(32,
         "Width (and snap) in bytes of the data memory interface. (0 mean use"
         " the system cacheLineSize)")
     executeMaxAccessesInMemory = Param.Unsigned(2,
@@ -358,6 +359,8 @@ class MinorCPU(BaseCPU):
         "Size of LSQ requests queue (address translation queue)")
     executeLSQTransfersQueueSize = Param.Unsigned(2,
         "Size of LSQ transfers queue (memory transaction queue)")
+    PSPQueueSize = Param.Unsigned(2,
+        "Size of PSP queue (memory transaction queue)")
     executeLSQStoreBufferSize = Param.Unsigned(5,
         "Size of LSQ store buffer")
     executeBranchDelay = Param.Cycles(1,

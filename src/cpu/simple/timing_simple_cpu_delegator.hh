@@ -13,6 +13,7 @@ public:
   TimingSimpleCPUDelegator(TimingSimpleCPU *_cpu);
   ~TimingSimpleCPUDelegator() override;
 
+  int remainSendRequest() override;
   void sendRequest(PacketPtr pkt) override;
 
 };

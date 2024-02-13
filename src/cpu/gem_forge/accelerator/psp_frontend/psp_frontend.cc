@@ -20,7 +20,7 @@ void
 IndexPacketHandler::handlePacketResponse(GemForgeCPUDelegator* cpuDelegator,
                                               PacketPtr pkt) {
   if (this->additionalDelay != 0) {
-    PSP_FE_DPRINTF("PacketResposne with additional delay. Reschedule after %d cycle.\n",
+    PSP_FE_DPRINTF("PacketResponse with additional delay. Reschedule after %d cycle.\n",
         this->additionalDelay);
     auto responseEvent = new ResponseEvent(cpuDelegator, this, pkt, "handlePacketResponse");
     cpuDelegator->schedule(responseEvent, Cycles(this->additionalDelay));
@@ -66,6 +66,7 @@ PSPFrontend::PSPFrontend(Params* params)
     isUVEProxy(params->isUVEProxy),
     paQueueCapacity(params->paQueueCapacity),
     prefetchDistance(params->prefetchDistance),
+    inflightLoadTranslations(0),
     seqNum(0) {
     valCurrentSize = new uint64_t[params->totalPatternTableEntries]();
     patternTable = new PatternTable(params->totalPatternTableEntries); 
@@ -93,7 +94,7 @@ PSPFrontend::takeOverBy(GemForgeCPUDelegator *newCpuDelegator,
   GemForgeAccelerator::takeOverBy(newCpuDelegator, newManager);
   translationBuffer = new PSPTranslationBuffer<void*>(this->cpuDelegator->getDataTLB(),
       [this](PacketPtr pkt, ThreadContext* tc, void* ) -> void {
-      this->cpuDelegator->sendRequest(pkt); },
+      this->cpuDelegator->sendRequest(pkt); this->inflightLoadTranslations--;},
       [this](PacketPtr pkt, ThreadContext* tc, void* indexPacketHandler) -> void {
       ((IndexPacketHandler*)indexPacketHandler)->handleAddressTranslateResponse(this->cpuDelegator, pkt); },
       false /* AccessLastLevelTLBOnly */, true /* MustDoneInOrder */);
@@ -142,8 +143,8 @@ PSPFrontend::tick() {
   /* Issue load index  */
   uint32_t validEntryId;
   uint64_t cacheLineSize = this->cpuDelegator->cacheLineSize();
-  if (this->patternTableArbiter->getValidEntryId(&validEntryId, cacheLineSize)) {
-    PSP_FE_DPRINTF("ValidEntryId: %d\n", validEntryId);
+  if (this->patternTableArbiter->getValidEntryId(&validEntryId, cacheLineSize) &&
+      this->cpuDelegator->remainSendRequest() - this->inflightLoadTranslations > 0) {
     this->issueLoadIndex(validEntryId);
   }
 
@@ -152,9 +153,10 @@ PSPFrontend::tick() {
   // TODO: Should I check the availability of TLB? (e.g., pending translation by PTW)
   if (this->indexQueueArrayArbiter->getValidEntryId(&validIQEntryId, false)) {
     if (this->isUVEProxy) {
-      if (((this->paQueueArray->getSize(validIQEntryId) * 64 + this->pspBackend->getTotalSize(validIQEntryId)) < (this->paQueueCapacity * 64))) {
+      if (((this->paQueueArray->getSize(validIQEntryId) * cacheLineSize + this->pspBackend->getTotalSize(validIQEntryId)) < (this->paQueueCapacity * cacheLineSize)) &&
+          (this->cpuDelegator->remainSendRequest() - this->inflightLoadTranslations > 0)) {
         PSP_FE_DPRINTF("paQueueArray[%lu].size: %lu , pspBackend[%lu].size: %lu, paQueueCapacity: %lu\n",
-            validIQEntryId, this->paQueueArray->getSize(validIQEntryId) * 64, validIQEntryId, this->pspBackend->getTotalSize(validIQEntryId), this->paQueueCapacity * 64);
+            validIQEntryId, this->paQueueArray->getSize(validIQEntryId) * cacheLineSize, validIQEntryId, this->pspBackend->getTotalSize(validIQEntryId), this->paQueueCapacity * cacheLineSize);
         this->issueLoadValue(validIQEntryId);
       }
       else { // If cannot issue prefetch, pass chance to next entry
@@ -162,7 +164,7 @@ PSPFrontend::tick() {
       }
     }
     else if (this->isDataPrefetchOnly) {
-      if (this->pspBackend->getTotalSize(validIQEntryId) < this->prefetchDistance * 64) {
+      if (this->pspBackend->getTotalSize(validIQEntryId) < this->prefetchDistance * cacheLineSize) {
         this->issueTranslateValueAddress(validIQEntryId);
       }
       else { // If cannot issue prefetch, pass chance to next entry
@@ -188,7 +190,8 @@ PSPFrontend::tick() {
               this->paQueueArray->canRead(i));
           this->paQueueArray->pop(i);
           PSP_FE_DPRINTF("NEW paQueueArray[%lu].size: %lu , pspBackend[%lu].size: %lu, paQueueCapacity: %lu\n",
-              i, this->paQueueArray->getSize(i) * 64, i, this->pspBackend->getTotalSize(i), this->paQueueCapacity * 64);
+              i, this->paQueueArray->getSize(i) * 64,
+              i, this->pspBackend->getTotalSize(i), this->paQueueCapacity * 64);
         }
       }
       else {
@@ -282,6 +285,8 @@ void PSPFrontend::issueLoadIndex(uint64_t _validEntryId) {
   this->indexQueueArray->allocate(_validEntryId, currentSize, seqNum);
   PSP_FE_DPRINTF("Index Queue EntryId: %lu, AllocatedSize: %lu, Size: %lu\n", 
       _validEntryId, this->indexQueueArray->getAllocatedSize(_validEntryId), this->indexQueueArray->getSize(_validEntryId));
+
+  this->inflightLoadTranslations++;
 }
 
 void
@@ -340,15 +345,17 @@ PSPFrontend::issueLoadValue(uint64_t _validEntryId) {
   else {
     // Send the pkt to translation. (Translation consume tick)
     this->translationBuffer->addTranslation(
-        pkt, cpuDelegator->getSingleThreadContext(), (void*)indexPacketHandler, false /* isPrefetch */, false /* VA to PA only */);
+        pkt, cpuDelegator->getSingleThreadContext(), (void*)indexPacketHandler, true /* isPrefetch */, false /* VA to PA only */);
   }
   this->indexQueueArrayArbiter->setLastChosenEntryId(_validEntryId);
+
+  this->inflightLoadTranslations++;
   
   // Update PAQueueArray(num of inflight load requests)
   uint32_t paQueueId = this->paQueueArray->allocate(_validEntryId, seqNum);
   this->inflightTranslations.emplace(cacheBlockPAddr, paQueueId);
   PSP_FE_DPRINTF("%luth IndexQueue with numInflightLoadRequests: %d paQueueId: %d.\n", _validEntryId,
-      this->inflightTranslations.size(), paQueueId);
+      this->inflightLoadTranslations, paQueueId);
 }
 
 void PSPFrontend::issueTranslateValueAddress(uint64_t _validEntryId) {
@@ -436,6 +443,8 @@ void PSPFrontend::handlePacketResponse(IndexPacketHandler* indexPacketHandler,
   uint64_t seqNum = indexPacketHandler->seqNum;
   data += (vaddr - cacheBlockVAddr);
   uint64_t debug_address;
+  PSP_FE_DPRINTF("remainSendRequest: %d, inflightLoadTranslations: %d\n", 
+      this->cpuDelegator->remainSendRequest(), this->inflightLoadTranslations);
   if (indexPacketHandler->isIndex) {
     this->indexQueueArray->insert(entryId, data, inputSize, debug_address, seqNum);
     PSP_FE_DPRINTF("%luth IndexQueue filled with blockVA: %#x, VA: %#x, size: %lu, debug_address, %#x, SeqNum: %lu %lu\n", entryId,
@@ -561,7 +570,7 @@ void PSPFrontend::executeStreamInput(const StreamInputArgs &args) {
   PSP_FE_DPRINTF("executeStreamInput...Schedule next tick %lu %lu %lu %lu %lu %lu %lu\n",
       entryId, offsetBegin, offsetEnd, seqNum, this->indexQueueArray->getAllocatedSize(entryId),
       this->indexQueueArray->getSize(entryId), this->paQueueArray->getSize(entryId));
-//  this->pspBackend->printStatus();
+  this->pspBackend->printStatus();
 }
 
 bool PSPFrontend::canCommitStreamInput(const StreamInputArgs &args) {
