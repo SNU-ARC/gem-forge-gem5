@@ -35,6 +35,10 @@ public:
     tlb = _tlb;
   }
 
+  int size () {
+    return inflyTranslationQueue.size();
+  }
+
 private:
   BaseTLB *tlb;
   TranslationDoneCallback doneCallback;

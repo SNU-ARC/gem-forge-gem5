@@ -698,7 +698,7 @@ void MinorCPUDelegator::drainPendingPackets() {
       lsq.numRequest());
   DPRINTF(MinorCPUDelegator, "[BEFORE_1] transfers.unreservedRemainingSpace = %d, lsq.numAccessesInMemorySystem = %d, pendingPkts.size() = %d, lsq.remainPSPTransfer = %d.\n", 
       lsq.numTransfer(), lsq.numAccessesInMemorySystem, pendingPkts.size(), lsq.remainPSPTransfer);
-//  while (!pendingPkts.empty() && lsq.canGemForgeSendToMemorySystem()) {
+//  while (!pendingPkts.empty()) {
   while (!pendingPkts.empty() && lsq.canGemForgeIssue()) {
     auto &pkt = pendingPkts.front();
     /**

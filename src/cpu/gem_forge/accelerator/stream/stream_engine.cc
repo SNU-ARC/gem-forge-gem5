@@ -1865,28 +1865,30 @@ Stream *StreamEngine::tryGetStream(uint64_t streamId) const {
 }
 
 void StreamEngine::tick() {
-  auto unassignedBytes = this->totalRunAheadBytes;
-  auto assignedBytes = 0;
-  for (const auto &IdStream : this->streamMap) {
-    auto S = IdStream.second;
-    if (!S->isConfigured()) {
-      continue;
-    }
-    if (S->isLoadStream()) {
-      assignedBytes +=
-          S->maxSize * S->getLastDynamicStream().getBytesPerMemElement();
-    }
-  }
-  unassignedBytes -= assignedBytes;
-  SE_DPRINTF("unassignedBytes %d, assignedBytes: %d, numInflyStreamRequests: %d, numFreeFIFOEntries: %llu\n",
-      unassignedBytes, assignedBytes, this->numInflyStreamRequests, this->numFreeFIFOEntries);
-  if (unassignedBytes <= 0) {
-    this->manager->scheduleTickNextCycle();
-    return;
-  }
+//  auto unassignedBytes = this->totalRunAheadBytes;
+//  auto assignedBytes = 0;
+//  for (const auto &IdStream : this->streamMap) {
+//    auto S = IdStream.second;
+//    if (!S->isConfigured()) {
+//      continue;
+//    }
+//    if (S->isLoadStream()) {
+//      assignedBytes +=
+//          S->maxSize * S->getLastDynamicStream().getBytesPerMemElement();
+//    }
+//  }
+//  unassignedBytes -= assignedBytes;
+//  SE_DPRINTF("unassignedBytes %d, assignedBytes: %d, numInflyStreamRequests: %d, numFreeFIFOEntries: %llu\n",
+//      unassignedBytes, assignedBytes, this->numInflyStreamRequests, this->numFreeFIFOEntries);
+//  if (unassignedBytes <= 0) {
+//    this->manager->scheduleTickNextCycle();
+//    return;
+//  }
 
   this->regionController->tick();
-  this->issueElements();
+  if (this->cpuDelegator->remainSendRequest() - this->translationBuffer->size() > 0) {
+    this->issueElements();
+  }
   this->computeEngine->startComputation();
   this->computeEngine->completeComputation();
   this->floatController->processMidwayFloat();

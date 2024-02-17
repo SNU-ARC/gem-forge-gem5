@@ -562,6 +562,7 @@ void Stream::setupFuncAddrFunc(DynamicStream &dynStream,
                                const LLVM::TDG::StreamInfo &info) {
 
   const auto &addrFuncInfo = info.addr_func_info();
+  DYN_S_DPRINTF(dynStream.dynamicStreamId, "[SUNGJUN] %s\n", addrFuncInfo.name());
   assert(addrFuncInfo.name() != "" && "Missing AddrFuncInfo.");
   auto &formalParams = dynStream.addrGenFormalParams;
   auto usedInputs =
