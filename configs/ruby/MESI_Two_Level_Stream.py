@@ -102,6 +102,10 @@ def create_system(options, full_system, system, dma_ports, bootmem,
                 cross_page=False
         )
 
+        bingo_prefetcher = RubyBingoPrefetcher(
+            enabled=(options.gem_forge_prefetcher == 'bingo'),
+        )
+
         # the ruby random tester reuses num_cpus to specify the
         # number of cpu ports connected to the tester object, which
         # is stored in system.cpu. because there is only ever one
@@ -120,6 +124,7 @@ def create_system(options, full_system, system, dma_ports, bootmem,
                                       send_evictions = send_evicts(options),
                                       prefetcher = prefetcher,
                                       pspbackend = pspbackend,
+                                      bingoPrefetcher = bingo_prefetcher,
                                       ruby_system = ruby_system,
                                       clk_domain = clk_domain,
                                       transitions_per_cycle = options.l1_transitions_per_cycle,
@@ -134,6 +139,24 @@ def create_system(options, full_system, system, dma_ports, bootmem,
                                 dcache = l1d_cache, clk_domain = clk_domain,
                                 ruby_system = ruby_system)
 
+        if options.gem_forge_prefetcher == 'imp':
+            if not options.gem_forge_prefetch_on_access:
+                raise ValueError('IMP must be used with PrefetchOnAccess.')
+            cpu = system.cpu[i]
+            if not hasattr(cpu, 'dtb'):
+                raise ValueError('IMP requires TLB to work with virtual address.')
+            # IMP can be used with RubySequencer.
+            cpu_seq.prefetcher = IndirectMemoryPrefetcher(
+                use_virtual_addresses=True,
+                index_queue_size=16,
+                on_inst=False,
+                prefetch_on_access=options.gem_forge_prefetch_on_access,
+                max_prefetch_distance=options.gem_forge_prefetch_dist,
+                streaming_distance=options.gem_forge_prefetch_dist,
+                pt_table_entries='64',
+                pt_table_assoc=64,
+            )
+            cpu_seq.prefetcher.registerTLB(cpu.dtb)
 
         l1_cntrl.sequencer = cpu_seq
         exec("ruby_system.l1_cntrl%d = l1_cntrl" % i)

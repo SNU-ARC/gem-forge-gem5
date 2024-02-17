@@ -4,7 +4,7 @@ def run(options, root, system, future_cpus):
     checkpoint_dir = None
     # We only allow some number of maximum instructions in real simulation.
     if future_cpus:
-        future_cpus[0].max_insts_any_thread = 1e8
+        future_cpus[0].max_insts_any_thread = 1e9
 #        for i in range(len(future_cpus)):
 #            future_cpus[i].max_insts_all_threads = 1e6
 

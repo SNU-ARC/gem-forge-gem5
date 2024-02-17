@@ -33,6 +33,7 @@ machine(MachineType:L1Cache, "MESI Directory L1 Cache CMP", interface="AbstractS
 
    PSPBackend* pspbackend;
    RubyPrefetcher * prefetcher;
+   RubyBingoPrefetcher * bingoPrefetcher;
    int l2_select_num_bits;
    Cycles l1_request_latency := 2;
    Cycles l1_response_latency := 2;
@@ -170,6 +171,8 @@ machine(MachineType:L1Cache, "MESI Directory L1 Cache CMP", interface="AbstractS
   void unset_tbe();
   void wakeUpBuffers(Addr a);
   void profileMsgDelay(int virtualNetworkType, Cycles c);
+  bool hasPC(PacketPtr);
+  Addr getPC(PacketPtr);
 
   // inclusive cache returns L1 entries only
   Entry getCacheEntry(Addr addr), return_by_pointer="yes" {
@@ -286,6 +289,15 @@ machine(MachineType:L1Cache, "MESI Directory L1 Cache CMP", interface="AbstractS
       } else {
           error("Invalid RubyRequestType");
       }
+  }
+
+  bool hasBeenPrefetched(Addr addr) {
+    Entry entry := getCacheEntry(addr);
+    if (is_valid(entry)) {
+      return entry.isPrefetch;
+    } else {
+      return false;
+    }
   }
 
   int getPendingAcks(TBE tbe) {
@@ -908,6 +920,9 @@ machine(MachineType:L1Cache, "MESI Directory L1 Cache CMP", interface="AbstractS
     tbe.isPrefetch := false;
     tbe.Dirty := cache_entry.Dirty;
     tbe.DataBlk := cache_entry.DataBlk;
+    if (bingoPrefetcher.isEnabled()) {
+      bingoPrefetcher.incrementInflyRequests();
+    }
   }
 
   action(k_popMandatoryQueue, "k", desc="Pop mandatory queue.") {
@@ -929,6 +944,9 @@ machine(MachineType:L1Cache, "MESI Directory L1 Cache CMP", interface="AbstractS
   action(s_deallocateTBE, "s", desc="Deallocate TBE") {
     TBEs.deallocate(address);
     unset_tbe();
+    if (bingoPrefetcher.isEnabled()) {
+      bingoPrefetcher.decrementInflyRequests();
+    }
   }
 
   action(u_writeDataToL1Cache, "u", desc="Write data to cache") {
@@ -952,6 +970,10 @@ machine(MachineType:L1Cache, "MESI Directory L1 Cache CMP", interface="AbstractS
   action(ff_deallocateL1CacheBlock, "\f", desc="Deallocate L1 cache block.  Sets the cache to not present, allowing a replacement in parallel with a fetch.") {
     if (L1Dcache.isTagPresent(address)) {
       L1Dcache.deallocate(address);
+      if (bingoPrefetcher.isEnabled()) {
+        Addr evictedAddr := address;
+        bingoPrefetcher.observeEvict(evictedAddr);
+      }
     } else {
       L1Icache.deallocate(address);
     }
@@ -1015,6 +1037,10 @@ machine(MachineType:L1Cache, "MESI Directory L1 Cache CMP", interface="AbstractS
             }
             prefetcher.observePfHit(in_msg.LineAddress);
             cache_entry.isPrefetch := false;
+            if (bingoPrefetcher.isEnabled()) {
+              bingoPrefetcher.observePfHit(in_msg.LineAddress);
+              cache_entry.isPrefetch := false;
+            }
           } else {
             if (pspbackend.isEnabled()) {
               if (pspbackend.isUVEProxy()) {
@@ -1024,6 +1050,10 @@ machine(MachineType:L1Cache, "MESI Directory L1 Cache CMP", interface="AbstractS
                 pspbackend.observeHit(in_msg.LineAddress);
               }
             }
+          }
+          if (bingoPrefetcher.isEnabled() && hasPC(in_msg.pkt)) {
+            Addr pc := getPC(in_msg.pkt);
+            bingoPrefetcher.observeReq(in_msg.LineAddress, pc, true, in_msg.Type);
           }
       }
   }
@@ -1036,6 +1066,10 @@ machine(MachineType:L1Cache, "MESI Directory L1 Cache CMP", interface="AbstractS
           if (enable_prefetch) {
               prefetcher.observeMiss(in_msg.LineAddress, in_msg.Type);
           }
+          if (bingoPrefetcher.isEnabled() && hasPC(in_msg.pkt)) {
+            Addr pc := getPC(in_msg.pkt);
+            bingoPrefetcher.observeReq(in_msg.LineAddress, pc, false, in_msg.Type);
+          }
       }
   }
 
@@ -1046,11 +1080,17 @@ machine(MachineType:L1Cache, "MESI Directory L1 Cache CMP", interface="AbstractS
             if (pspbackend.observePfMiss(in_msg.LineAddress)) {}
           }
           prefetcher.observePfMiss(in_msg.LineAddress);
+          if (bingoPrefetcher.isEnabled()) {
+            bingoPrefetcher.observePfMiss(in_msg.LineAddress);
+          }
       }
   }
 
   action(pq_popPrefetchQueue, "\pq", desc="Pop the prefetch request queue") {
       optionalQueue_in.dequeue(clockEdge());
+      if (bingoPrefetcher.isEnabled()) {
+        bingoPrefetcher.decrementInqueuePfRequests();
+      }
   }
 
   action(mp_markPrefetched, "mp", desc="Set the isPrefetch flag") {

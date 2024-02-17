@@ -51,7 +51,7 @@ parser.add_option("--gem-forge-psp-data-prefetch-only", action="store_true", def
                   help="""Enable PSP Frontend Cache prefetch.""")
 parser.add_option("--gem-forge-uve-proxy", action="store_true", default=False,
                   help="""Enable UVE proxy.""")
-parser.add_option("--gem-forge-psp-queue-size", action="store", type="int", default=0,
+parser.add_option("--gem-forge-psp-queue-size", action="store", type="int", default=8,
                   help="""PSP Queue size (Similar to Load Queue).""")
 
 parser.add_option("--gem-forge-work-mark-history", action="store", type="string",

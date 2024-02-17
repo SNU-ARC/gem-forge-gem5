@@ -21,7 +21,7 @@ def initializeMinorCPU(options, minor_cpu):
     minor_cpu.PSPQueueSize = options.gem_forge_psp_queue_size
     minor_cpu.executeMaxAccessesInMemory = scale * 20
     minor_cpu.executeLSQRequestsQueueSize = scale * 1
-    minor_cpu.executeLSQTransfersQueueSize = scale * 1
+    minor_cpu.executeLSQTransfersQueueSize = scale * 2
 #    minor_cpu.executeMaxAccessesInMemory = scale * 2
 #    minor_cpu.executeLSQRequestsQueueSize = scale * 1
 #    minor_cpu.executeLSQTransfersQueueSize = scale * 2
