@@ -85,6 +85,7 @@ machine(MachineType:L1Cache, "MESI Directory L1 Cache CMP", interface="AbstractS
 
     // Transient States
     IS, AccessPermission:Busy, desc="L1 idle, issued GETS, have not seen response yet";
+    IU, AccessPermission:Busy, desc="L1 idle, issued GETU, have not seen response yet";
     IM, AccessPermission:Busy, desc="L1 idle, issued GETX, have not seen response yet";
     SM, AccessPermission:Read_Only, desc="L1 idle, issued GETX, have not seen response yet";
     IS_I, AccessPermission:Busy, desc="L1 idle, issued GETS, saw Inv before data because directory doesn't block on GETS hit";
@@ -103,6 +104,9 @@ machine(MachineType:L1Cache, "MESI Directory L1 Cache CMP", interface="AbstractS
   enumeration(Event, desc="Cache events") {
     // L1 events
     Load,            desc="Load request from the home processor";
+    LoadUncache,              desc="Load request that will not be cached";
+    LoadHitAndForward,        desc="Load request hit, but still forward to L1";
+    LoadHitICacheAndForward,  desc="Load request hit in ICache, but still forward to L1";
     Ifetch,          desc="I-fetch request from the home processor";
     Store,           desc="Store request from the home processor";
 
@@ -130,6 +134,13 @@ machine(MachineType:L1Cache, "MESI Directory L1 Cache CMP", interface="AbstractS
     PF_Load,    desc="load request from prefetcher";
     PF_Ifetch,  desc="instruction fetch request from prefetcher";
     PF_Store,   desc="exclusive load request from prefetcher";
+
+    // ! StreamAwareCache events
+    StreamConfig,  desc="Stream configuration";
+    StreamEnd,     desc="Stream End";
+    StreamToMLC,   desc="This stream request must be served by MLC";
+    StreamFromMLC, desc="Response of StreamToMLC event";
+    StreamNDC,     desc="Stream NDC Packet";
   }
 
   // TYPES
@@ -161,6 +172,21 @@ machine(MachineType:L1Cache, "MESI Directory L1 Cache CMP", interface="AbstractS
 
   TBETable TBEs, template="<L1Cache_TBE>", constructor="m_number_of_TBEs";
 
+  /**
+   * ! Sean: StreamAwareCache
+   */
+  structure(L0StreamEngine, external="yes", desc="Stream Engine at L0") {
+    void receiveStreamConfigure(PacketPtr);
+    void receiveStreamEnd(PacketPtr);
+    bool isStreamAccess(PacketPtr);
+    bool shouldCache(PacketPtr);
+    bool shouldForward(PacketPtr);
+    bool mustServedByMLCSE(PacketPtr);
+    DynamicStreamSliceId getSliceId(PacketPtr);
+  }
+
+  L0StreamEngine se, constructor="this";
+
   int l2_select_low_bit, default="RubySystem::getBlockSizeBits()";
 
   Tick clockEdge();
@@ -171,6 +197,9 @@ machine(MachineType:L1Cache, "MESI Directory L1 Cache CMP", interface="AbstractS
   void unset_tbe();
   void wakeUpBuffers(Addr a);
   void profileMsgDelay(int virtualNetworkType, Cycles c);
+  void setHitCacheLevel(RequestStatisticPtr, int);
+  RequestStatisticPtr getRequestStatistic(PacketPtr);
+  void recordLLCReqQueueStats(RequestStatisticPtr, DynamicStreamSliceIdVec, bool);
   bool hasPC(PacketPtr);
   Addr getPC(PacketPtr);
 
@@ -523,11 +552,92 @@ machine(MachineType:L1Cache, "MESI Directory L1 Cache CMP", interface="AbstractS
                       TBEs[L1Icache.cacheProbe(in_msg.LineAddress)]);
             }
           }
+        
+        // ! Sean: StreamAwareCache
+        } else if (in_msg.Type == RubyRequestType:StreamConfig) {
+          Entry L1Dcache_entry := getL1DCacheEntry(in_msg.LineAddress);
+          TBE tbe := TBEs[in_msg.LineAddress];
+          se.receiveStreamConfigure(in_msg.pkt);
+          trigger(Event:StreamConfig, in_msg.LineAddress,
+                  L1Dcache_entry, tbe); 
+        } else if (in_msg.Type == RubyRequestType:StreamEnd) {
+          Entry L1Dcache_entry := getL1DCacheEntry(in_msg.LineAddress);
+          TBE tbe := TBEs[in_msg.LineAddress];
+          se.receiveStreamEnd(in_msg.pkt);
+          trigger(Event:StreamEnd, in_msg.LineAddress, L1Dcache_entry, tbe); 
+        } else if (in_msg.Type == RubyRequestType:StreamNDC) {
+          Entry L1Dcache_entry := getL1DCacheEntry(in_msg.LineAddress);
+          TBE tbe := TBEs[in_msg.LineAddress];
+          trigger(Event:StreamNDC, in_msg.LineAddress, L1Dcache_entry, tbe); 
         } else {
 
           // *** DATA ACCESS ***
           Entry L1Dcache_entry := getL1DCacheEntry(in_msg.LineAddress);
+          Entry L1Icache_entry := getL1ICacheEntry(in_msg.LineAddress);
+
+          /*************************************************************
+           * ! Sean: StreamAwareCache.
+           *************************************************************/
+          if (se.isStreamAccess(in_msg.pkt)) {
+            // Stream access.
+            if (se.mustServedByMLCSE(in_msg.pkt)) {
+              // This message must be forwarded to MLC SE, no matter what.
+              trigger(Event:StreamToMLC, in_msg.LineAddress,
+                      L1Dcache_entry, TBEs[in_msg.LineAddress]);
+            }
+            Event event := mandatory_request_type_to_event(in_msg.Type);
+            assert(event == Event:Load);
+            if (is_valid(L1Dcache_entry)) {
+              // Hit.
+              setHitCacheLevel(getRequestStatistic(in_msg.pkt), 1);
+              if (se.shouldForward(in_msg.pkt)) {
+                // We should forward the request to lower cache level
+                // while serving this request.
+                trigger(Event:LoadHitAndForward, in_msg.LineAddress, 
+                        L1Dcache_entry, TBEs[in_msg.LineAddress]);
+              } else {
+                // No need to forward it, simply serve the request.
+                trigger(Event:Load, in_msg.LineAddress,
+                        L1Dcache_entry, TBEs[in_msg.LineAddress]);
+              }
+
+            } else if (is_valid(L1Icache_entry)) {
+              // Hit in ICache.
+              setHitCacheLevel(getRequestStatistic(in_msg.pkt), 1);
+              if (se.shouldForward(in_msg.pkt)) {
+                // We should forward the request to lower cache level
+                // while serving this request.
+                trigger(Event:LoadHitICacheAndForward, in_msg.LineAddress, 
+                        L1Icache_entry, TBEs[in_msg.LineAddress]);
+              } else {
+                // No need to forward it, simply serve the request.
+                trigger(Event:Load, in_msg.LineAddress,
+                        L1Icache_entry, TBEs[in_msg.LineAddress]);
+              }
+            } else {
+              // Miss.
+              // Do we want to cache it?
+              if (se.shouldCache(in_msg.pkt)) {
+                // Check if we have space for this line.
+                if (L1Dcache.cacheAvail(in_msg.LineAddress)) {
+                  trigger(Event:Load, in_msg.LineAddress,
+                          L1Dcache_entry, TBEs[in_msg.LineAddress]);
+                } else {
+                  // Evict some line.
+                  trigger(Event:L1_Replacement, L1Dcache.cacheProbe(in_msg.LineAddress),
+                          getL1DCacheEntry(L1Dcache.cacheProbe(in_msg.LineAddress)),
+                          TBEs[L1Dcache.cacheProbe(in_msg.LineAddress)]);
+                }
+              } else {
+                // Not cache it. Send the request.
+                trigger(Event:LoadUncache, in_msg.LineAddress,
+                        L1Dcache_entry, TBEs[in_msg.LineAddress]);
+              }
+            }
+          }
+
           if (is_valid(L1Dcache_entry)) {
+            setHitCacheLevel(getRequestStatistic(in_msg.pkt), 1);
             // The tag matches for the L1, so the L1 ask the L2 for it
             trigger(mandatory_request_type_to_event(in_msg.Type), in_msg.LineAddress,
                     L1Dcache_entry, TBEs[in_msg.LineAddress]);
@@ -587,6 +697,7 @@ machine(MachineType:L1Cache, "MESI Directory L1 Cache CMP", interface="AbstractS
                 address, out_msg.Destination);
         out_msg.MessageSize := MessageSizeType:Control;
         out_msg.Prefetch := in_msg.Prefetch;
+        out_msg.requestStatistic := getRequestStatistic(in_msg.pkt);
         out_msg.AccessMode := in_msg.AccessMode;
       }
     }
@@ -605,6 +716,24 @@ machine(MachineType:L1Cache, "MESI Directory L1 Cache CMP", interface="AbstractS
         out_msg.MessageSize := MessageSizeType:Control;
         out_msg.Prefetch := in_msg.Prefetch;
         out_msg.AccessMode := in_msg.AccessMode;
+      }
+    }
+  }
+
+  action(au_issueGETU, "au", desc="Issue GETU") {
+    peek(mandatoryQueue_in, RubyRequest) {
+      enqueue(requestL1Network_out, RequestMsg, l1_request_latency) {
+        out_msg.addr := address;
+        out_msg.Type := CoherenceRequestType:GETU;
+        out_msg.Requestors.add(machineID);
+        out_msg.Destination.add(mapAddressToRange(address, MachineType:L2Cache,
+                          l2_select_low_bit, l2_select_num_bits, clusterID));
+        DPRINTF(RubySlicc, "address: %#x, destination: %s\n",
+                address, out_msg.Destination);
+        out_msg.MessageSize := MessageSizeType:Control;
+        out_msg.AccessMode := in_msg.AccessMode;
+        // Remember to copy the statistic hook.
+        out_msg.requestStatistic := getRequestStatistic(in_msg.pkt);
       }
     }
   }
@@ -660,6 +789,7 @@ machine(MachineType:L1Cache, "MESI Directory L1 Cache CMP", interface="AbstractS
         out_msg.MessageSize := MessageSizeType:Control;
         out_msg.Prefetch := in_msg.Prefetch;
         out_msg.AccessMode := in_msg.AccessMode;
+        out_msg.requestStatistic := getRequestStatistic(in_msg.pkt);
       }
     }
   }
@@ -697,6 +827,7 @@ machine(MachineType:L1Cache, "MESI Directory L1 Cache CMP", interface="AbstractS
         out_msg.MessageSize := MessageSizeType:Control;
         out_msg.Prefetch := in_msg.Prefetch;
         out_msg.AccessMode := in_msg.AccessMode;
+        out_msg.requestStatistic := getRequestStatistic(in_msg.pkt);
       }
     }
   }
@@ -925,8 +1056,27 @@ machine(MachineType:L1Cache, "MESI Directory L1 Cache CMP", interface="AbstractS
     }
   }
 
+  action(iu_allocateTBENoCacheBlock, "iu", desc="Allocate TBE (number of invalidates=0) without CacheBlock") {
+    check_allocate(TBEs);
+    TBEs.allocate(address);
+    set_tbe(TBEs[address]);
+    tbe.Dirty := false;
+    if (bingoPrefetcher.isEnabled()) {
+      bingoPrefetcher.incrementInflyRequests();
+    }
+  }
+
   action(k_popMandatoryQueue, "k", desc="Pop mandatory queue.") {
     mandatoryQueue_in.dequeue(clockEdge());
+  }
+
+  action(ur_profileDataReq, "\ur", desc="Profile the data request") {
+    peek(mandatoryQueue_in, RubyRequest) { 
+      DynamicStreamSliceIdVec sliceIdVec;
+      RequestStatisticPtr reqStats := getRequestStatistic(in_msg.pkt);
+      bool isLoad := in_msg.Type == RubyRequestType:LD;
+      recordLLCReqQueueStats(reqStats, sliceIdVec, isLoad);
+    }
   }
 
   action(l_popRequestQueue, "l",
@@ -1035,8 +1185,10 @@ machine(MachineType:L1Cache, "MESI Directory L1 Cache CMP", interface="AbstractS
                 cache_entry.isPrefetch := false;
               }
             }
-            prefetcher.observePfHit(in_msg.LineAddress);
-            cache_entry.isPrefetch := false;
+            if (enable_prefetch) {
+              prefetcher.observePfHit(in_msg.LineAddress);
+              cache_entry.isPrefetch := false;
+            }
             if (bingoPrefetcher.isEnabled()) {
               bingoPrefetcher.observePfHit(in_msg.LineAddress);
               cache_entry.isPrefetch := false;
@@ -1079,7 +1231,9 @@ machine(MachineType:L1Cache, "MESI Directory L1 Cache CMP", interface="AbstractS
           if (pspbackend.isEnabled()) {
             if (pspbackend.observePfMiss(in_msg.LineAddress)) {}
           }
-          prefetcher.observePfMiss(in_msg.LineAddress);
+          if (enable_prefetch) {
+            prefetcher.observePfMiss(in_msg.LineAddress);
+          }
           if (bingoPrefetcher.isEnabled()) {
             bingoPrefetcher.observePfMiss(in_msg.LineAddress);
           }
@@ -1158,6 +1312,14 @@ machine(MachineType:L1Cache, "MESI Directory L1 Cache CMP", interface="AbstractS
     k_popMandatoryQueue;
   }
 
+  transition(I, LoadUncache, IU) {
+    iu_allocateTBENoCacheBlock;
+    au_issueGETU;
+    uu_profileDataMiss;
+    ur_profileDataReq;
+    k_popMandatoryQueue;
+  }
+
   transition(PF_IS_I, Load, IS_I) {
     uu_profileDataMiss;
     ppm_observePfMiss;
@@ -1222,7 +1384,7 @@ machine(MachineType:L1Cache, "MESI Directory L1 Cache CMP", interface="AbstractS
     k_popMandatoryQueue;
   }
 
-  transition({NP, I}, Inv) {
+  transition({NP, I, IU}, Inv) {
     fi_sendInvAck;
     l_popRequestQueue;
   }
@@ -1232,6 +1394,22 @@ machine(MachineType:L1Cache, "MESI Directory L1 Cache CMP", interface="AbstractS
     h_load_hit;
     uu_profileDataHit;
     po_observeHit;
+    k_popMandatoryQueue;
+  }
+
+  transition({S, E, M}, LoadHitAndForward) {
+    ur_profileDataReq;
+    h_load_hit;
+//    fsa_forwardStreamAccess;
+    uu_profileDataHit;
+    k_popMandatoryQueue;
+  }
+
+  transition({S, E, M}, LoadHitICacheAndForward) {
+    ur_profileDataReq;
+    h_ifetch_hit;
+//    fsa_forwardStreamAccess;
+    uu_profileDataHit;
     k_popMandatoryQueue;
   }
 

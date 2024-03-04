@@ -34,6 +34,7 @@ enumeration(CoherenceRequestType, desc="...") {
   UPGRADE,   desc="UPGRADE to exclusive";
   GETS,      desc="Get Shared";
   GETU,      desc="Get Uncached";
+  STREAM_L0, desc="Stream request served by L0 cache";
   GETH,      desc="Get Here, no response";
   GET_INSTR, desc="Get Instruction";
   INV,       desc="INValidate";
