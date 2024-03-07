@@ -33,10 +33,11 @@ void SEPageWalker::clearReadyStates(Cycles curCycle) {
   }
 }
 
-Cycles SEPageWalker::walk(Addr pageVAddr, Cycles curCycle) {
+Cycles SEPageWalker::walk(Addr pageVAddr, Cycles curCycle, bool isPrefetch) {
   this->clearReadyStates(curCycle);
 
-  this->accesses++;
+  if (!isPrefetch)
+    this->accesses++;
   DPRINTF(TLB, "Walk PageTable %#x.\n", pageVAddr);
 
   // Check if we have a parallel miss to the same page.
@@ -45,8 +46,10 @@ Cycles SEPageWalker::walk(Addr pageVAddr, Cycles curCycle) {
     /**
      * Cycle latency for parallel miss.
      */
-    this->hits++;
-    iter->second->numAccess++;
+    if (!isPrefetch) {
+      this->hits++;
+      iter->second->numAccess++;
+    }
     DPRINTF(TLB, "Hit %#x, Latency %s.\n", pageVAddr,
             iter->second->readyCycle - curCycle + Cycles(iter->second->numAccess));
     return iter->second->readyCycle - curCycle + Cycles(iter->second->numAccess);
@@ -61,20 +64,23 @@ Cycles SEPageWalker::walk(Addr pageVAddr, Cycles curCycle) {
   Cycles allocateCycle = curCycle;
   if (this->numContext <= this->inflyState.size()) {
     // We have to wait until previous translations are done
-    this->waits++;
+    if (!isPrefetch) this->waits++;
     prevContextIter = this->inflyState.rbegin();
     for (uint32_t i = 0; i < this->numContext - 1; i++)
       prevContextIter++;
     allocateCycle = prevContextIter->readyCycle;
 
-    this->ptwCycles += (this->latency + allocateCycle - this->inflyState.rbegin()->readyCycle);
+    if (!isPrefetch)
+      this->ptwCycles += (this->latency + allocateCycle - this->inflyState.rbegin()->readyCycle);
   }
   else if (this->inflyState.size() == 0 || 
       this->inflyState.rbegin()->readyCycle < allocateCycle) {
-    this->ptwCycles += this->latency;
+    if (!isPrefetch)
+      this->ptwCycles += this->latency;
   }
   else {
-    this->ptwCycles += (this->latency + allocateCycle - this->inflyState.rbegin()->readyCycle);
+    if (!isPrefetch)
+      this->ptwCycles += (this->latency + allocateCycle - this->inflyState.rbegin()->readyCycle);
   }
 
   // Allocate it.
@@ -86,17 +92,19 @@ Cycles SEPageWalker::walk(Addr pageVAddr, Cycles curCycle) {
   return readyCycle - curCycle;
 }
 
-Cycles SEPageWalker::lookup(Addr pageVAddr, Cycles curCycle) {
+Cycles SEPageWalker::lookup(Addr pageVAddr, Cycles curCycle, bool isPrefetch) {
   this->clearReadyStates(curCycle);
 
   // Check if we have a parallel miss to the same page.
   auto iter = this->pageVAddrToStateMap.find(pageVAddr);
   if (iter != this->pageVAddrToStateMap.end()) {
-    this->accesses++;
-    this->hits++;
-    iter->second->numAccess++;
-    if (curCycle + this->latency < iter->second->readyCycle) {
-      this->waits++;
+    if (!isPrefetch) {
+      this->accesses++;
+      this->hits++;
+      iter->second->numAccess++;
+      if (curCycle + this->latency < iter->second->readyCycle) {
+        this->waits++;
+      }
     }
 
     DPRINTF(TLB, "Hit %#x, Latency %s.\n", pageVAddr,

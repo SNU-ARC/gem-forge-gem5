@@ -31,9 +31,9 @@ public:
    * Start a walk.
    * @return The difference between curCycle and readyCycle.
    */
-  Cycles walk(Addr pageVAddr, Cycles curCycle);
+  Cycles walk(Addr pageVAddr, Cycles curCycle, bool isPrefetch = false);
 
-  Cycles lookup(Addr pageVAddr, Cycles curCycle);
+  Cycles lookup(Addr pageVAddr, Cycles curCycle, bool isPrefetch = false);
 
   Stats::Scalar accesses;
   Stats::Scalar hits;

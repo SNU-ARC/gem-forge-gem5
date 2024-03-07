@@ -487,13 +487,13 @@ TLB::translate(const RequestPtr &req,
                     delayedResponse = true;
                     // This access goes to page walker.
                     delayedResponseCycles = this->sePageWalker->walk(
-                        pageVAddr, this->walker->curCycle());
+                        pageVAddr, this->walker->curCycle(), isPrefetch);
                     break;
                 case 1:
                     delayedResponse = true;
                     assert(this->l2tlb && "Missing L2TLB.");
                     delayedResponseCycles = this->sePageWalker->lookup(
-                        pageVAddr, this->walker->curCycle());
+                        pageVAddr, this->walker->curCycle(), isPrefetch);
                     if (delayedResponseCycles > this->l2HitLatency) {
                       // This is not L2TLB hit, it is page table walking
                       if (!isPrefetch) {
@@ -505,7 +505,7 @@ TLB::translate(const RequestPtr &req,
                     break;
                 case 0:
                     delayedResponseCycles = this->sePageWalker->lookup(
-                        pageVAddr, this->walker->curCycle());
+                        pageVAddr, this->walker->curCycle(), isPrefetch);
                     delayedResponse = delayedResponseCycles > 0;
                     if (delayedResponseCycles > 0) {
                       // This is not L1TLB hit, it is page table walking
