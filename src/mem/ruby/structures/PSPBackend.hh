@@ -117,6 +117,8 @@ class StreamEntry {
     int numQueueEntry;
     int prefetchDistance;
 
+    AbstractController *mController;
+
   public : 
     StreamEntry(int _numQueueEntry, int _prefetchDistance);
 
@@ -133,6 +135,7 @@ class StreamEntry {
     int getTotalSize();
     void setRequested(Addr _addr);
     bool isRequested(Addr _addr);
+    void setController(AbstractController *_ctrl) { mController = _ctrl; }
 };
 
 class PSPBackend : public SimObject {
@@ -154,7 +157,12 @@ class PSPBackend : public SimObject {
     typedef PSPBackendParams Params;
     PSPBackend(const Params *p);
     void regStats();
-    void setController(AbstractController *_ctrl) { mController = _ctrl; }
+    void setController(AbstractController *_ctrl) { 
+      mController = _ctrl; 
+      for (int i = 0; i < streamTable.size(); i++) {
+        streamTable[i].setController(_ctrl);
+      }
+    }
 
     StreamEntry* getEntry(Addr _addr);
     bool canInsertEntry(uint64_t _entryId);
