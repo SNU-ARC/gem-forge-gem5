@@ -1155,24 +1155,38 @@ machine(MachineType:L1Cache, "MESI Directory L1 Cache CMP", interface="AbstractS
   }
 
   action(uu_profileInstMiss, "\uim", desc="Profile the demand miss") {
-      ++L1Icache.demand_misses;
+    peek(mandatoryQueue_in, RubyRequest) {
+      if (!se.isStreamAccess(in_msg.pkt)) {
+        ++L1Icache.demand_misses;
+      }
+    }
   }
 
   action(uu_profileInstHit, "\uih", desc="Profile the demand hit") {
-      ++L1Icache.demand_hits;
+    peek(mandatoryQueue_in, RubyRequest) {
+      if (!se.isStreamAccess(in_msg.pkt)) {
+        ++L1Icache.demand_hits;
+      }
+    }
   }
 
   action(uu_profileDataMiss, "\udm", desc="Profile the demand miss") {
-      ++L1Dcache.demand_misses;
+    peek(mandatoryQueue_in, RubyRequest) {
+      if (!se.isStreamAccess(in_msg.pkt)) {
+        ++L1Dcache.demand_misses;
+      }
+    }
   }
 
   action(uu_profileDataHit, "\udh", desc="Profile the demand hit") {
-      ++L1Dcache.demand_hits;
       peek(mandatoryQueue_in, RubyRequest) {
-        Addr req_address := in_msg.LineAddress;
-        RubyRequestType type := in_msg.Type;
-        if (cache_entry.isPrefetch) {
-          ++L1Dcache.demand_hits_prefetched;
+        if (!se.isStreamAccess(in_msg.pkt)) {
+          ++L1Dcache.demand_hits;
+          Addr req_address := in_msg.LineAddress;
+          RubyRequestType type := in_msg.Type;
+          if (cache_entry.isPrefetch) {
+            ++L1Dcache.demand_hits_prefetched;
+          }
         }
       }
   }
