@@ -62,7 +62,7 @@ private:
                                             translation->tc, translation, mode);
     } else {
       this->tlb->translateTiming(translation->pkt->req, translation->tc,
-                                 translation, mode);
+                                 translation, mode, true);
     }
   }
   void finishTranslation(StreamTranslation *translation) {
