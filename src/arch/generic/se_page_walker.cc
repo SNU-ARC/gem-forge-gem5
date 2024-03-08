@@ -107,6 +107,9 @@ Cycles SEPageWalker::lookup(Addr pageVAddr, Cycles curCycle, bool isPrefetch) {
       }
     }
 
+    if (!isPrefetch) {
+      this->ptwCycles += iter->second->readyCycle - curCycle + Cycles(iter->second->numAccess);
+    }
     DPRINTF(TLB, "Hit %#x, Latency %s.\n", pageVAddr,
             iter->second->readyCycle - curCycle + Cycles(iter->second->numAccess));
     return iter->second->readyCycle - curCycle + Cycles(iter->second->numAccess);
