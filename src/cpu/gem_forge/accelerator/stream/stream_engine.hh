@@ -223,6 +223,13 @@ public:
   int totalRunAheadLength;
   int totalRunAheadBytes;
 
+  std::vector<std::pair<Cycles, Cycles> > waitRegion;
+  bool compare1(const std::pair<Cycles, Cycles> &a, const std::pair<Cycles, Cycles> &b) {
+    if (a.first == b.first) return a.second < b.second;
+    return a.first < b.first;
+  }
+  Cycles lastStallCycle = Cycles(0);
+
   /**
    * Stats
    */
@@ -243,7 +250,9 @@ public:
   mutable Stats::Scalar numLoadElementsStepped;
   mutable Stats::Scalar numLoadElementsUsed;
   mutable Stats::Scalar numLoadElementWaitCycles;
+  mutable Stats::Scalar numLoadElementStallCycles;
   mutable Stats::Scalar numLoadWaitElements;
+  mutable Stats::Scalar numLoadStallElements;
   mutable Stats::Scalar numLoadCacheLineFetched;
   mutable Stats::Scalar numLoadCacheLineUsed;
   /**

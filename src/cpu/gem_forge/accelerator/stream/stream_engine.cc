@@ -164,8 +164,12 @@ void StreamEngine::regStats() {
   scalar(numLoadElementsUsed, "Number of load stream elements used.");
   scalar(numLoadElementWaitCycles,
          "Number of cycles from first check to ready for load element.");
+  scalar(numLoadElementStallCycles,
+         "Number of stalled cycles for load element.");
   scalar(numLoadWaitElements,
          "Number of load stream elements not ready from first check.");
+  scalar(numLoadStallElements,
+         "Number of stalled load stream elements.");
   scalar(numLoadCacheLineUsed, "Number of cache line used.");
   scalar(numLoadCacheLineFetched, "Number of cache line fetched.");
   scalar(streamUserNotDispatchedByLoadQueue,
@@ -684,8 +688,46 @@ void StreamEngine::commitStreamStep(const StreamStepArgs &args) {
     } else {
       dynS = &(S->getDynamicStreamByInstance(args.dynInstanceId));
     }
+
     this->releaseElementStepped(dynS, false /* isEnd */, true /* doThrottle */);
   }
+
+  std::vector<std::pair<Cycles, Cycles> > tempRegion;
+  SE_DPRINTF("waitRegion.size = %d\n", waitRegion.size());
+  if (this->waitRegion.size () != 0 ) {
+    sort(this->waitRegion.begin(), this->waitRegion.end(), 
+        [](const std::pair<Cycles, Cycles> &a, const std::pair<Cycles, Cycles> &b) {
+        if (a.first == b.first) return a.second < b.second;
+        return a.first < b.first;
+        }
+        );
+    for (std::vector<std::pair<Cycles, Cycles> >::iterator it = this->waitRegion.begin();
+        it != this->waitRegion.end(); it++) {
+      if (tempRegion.size() == 0) {
+        tempRegion.emplace_back(*it);
+      }
+      else if (it->first < tempRegion.rbegin()->second) {
+        tempRegion.begin()->second = it->second;
+        //      this->waitRegion.erase(it);
+      }
+      else {
+//        this->numLoadElementStallCycles += 
+//          (this->waitRegion.begin()->second - this->waitRegion.begin()->first);
+        tempRegion.emplace_back(*it);
+//        if (it == this->waitRegion.end() - 1) {
+//          this->numLoadElementStallCycles += (it->second - it->first);
+//        }
+      }
+    }
+  }
+  SE_DPRINTF("tempRegion.size = %d\n", tempRegion.size());
+  for (int i = 0; i < tempRegion.size(); i++) {
+    this->numLoadElementStallCycles += 
+      (tempRegion[i].second - tempRegion[i].first);
+    SE_DPRINTF("tempRegion[%d] = (%d, %d)\n", i, tempRegion[i].first, tempRegion[i].second);
+  }
+  this->waitRegion.clear();
+  tempRegion.clear();
 
   // ! Do not allocate here.
   // ! StreamRegionController::allocateElements() will handle it.
@@ -2120,12 +2162,31 @@ void StreamEngine::releaseElementStepped(DynamicStream *dynS, bool isEnd,
       // Update waited cycle information.
       auto waitedCycles = 0;
       if (releaseElement->valueReadyCycle >
-          releaseElement->firstValueCheckCycle) {
+          releaseElement->firstValueCheckByCoreCycle) {
+//          releaseElement->firstValueCheckCycle) {
         waitedCycles = releaseElement->valueReadyCycle -
-                       releaseElement->firstValueCheckCycle;
+                       releaseElement->firstValueCheckByCoreCycle;
+//                       releaseElement->firstValueCheckCycle;
         this->numLoadWaitElements++;
+        this->waitRegion.push_back(std::make_pair(releaseElement->firstValueCheckCycle,
+              releaseElement->valueReadyCycle));
       }
       this->numLoadElementWaitCycles += waitedCycles;
+
+//      auto stalledCycles = 0;
+//      if (this->lastStallCycle < releaseElement->firstValueCheckCycle) {
+//        this->lastStallCycle = releaseElement->firstValueCheckCycle;
+//      }
+////      if (releaseElement->valueReadyCycle > this->lastStallCycle + Cycles(1)) {
+////        this->numLoadStallElements++;
+////      }
+//      if (releaseElement->valueReadyCycle > this->lastStallCycle) {
+//        stalledCycles = releaseElement->valueReadyCycle -
+//          this->lastStallCycle;
+//        this->lastStallCycle = releaseElement->valueReadyCycle;
+//        this->numLoadStallElements++;
+//      }
+//      this->numLoadElementStallCycles += stalledCycles;
     }
   } else if (S->isStoreStream()) {
     this->numStoreElementsStepped++;
