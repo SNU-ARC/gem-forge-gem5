@@ -219,23 +219,54 @@ StreamEntry::incrementTagAddr(Addr _snoopAddr) {
   this->totalSize -= this->incrementAccumSize;
 }
 
-void
+bool
 StreamEntry::incrementNextPrefetchAddr(Addr _snoopAddr) {
   int tmpIdx = this->prefetchEntryIdx;
   int cnt = 0;
+  Addr targetPrefetchAddr; 
+  this->prefetchEnabled = false;
   while (cnt < this->count) {
     if (this->prefetchDistance < this->accumulatedSize[tmpIdx]) {
       this->prefetchEnabled = true;
-      this->prefetchEntryIdx = tmpIdx;
-      this->nextPrefetchAddr =
+      targetPrefetchAddr =
         this->prefetchQueue[tmpIdx].getBaseAddr() + this->prefetchDistance -  (this->accumulatedSize[tmpIdx] - this->prefetchQueue[tmpIdx].getSize());
-      this->nextPrefetchSize = this->accumulatedSize[tmpIdx] - this->prefetchDistance;
-      return;
+      break;
     }
     tmpIdx = (tmpIdx + 1) % this->numQueueEntry;
     cnt++;
   }
-  this->prefetchEnabled = false;
+  DPRINTF(PSPBackend, "## Target Prefetch Address %#x Next Prefetch Address %#x.\n", 
+      targetPrefetchAddr, this->nextPrefetchAddr);
+
+  if (this->nextPrefetchAddr == targetPrefetchAddr || !this->prefetchEnabled) {
+    return false;
+  }
+  else if (this->nextPrefetchSize > 0) {
+    this->nextPrefetchAddr += RubySystem::getBlockSizeBytes();
+    this->nextPrefetchSize -= RubySystem::getBlockSizeBytes(); 
+    return true;
+  }
+  else {
+    this->prefetchEntryIdx = (this->prefetchEntryIdx + 1) % this->numQueueEntry;
+    this->nextPrefetchAddr = this->prefetchQueue[this->prefetchEntryIdx].getBaseAddr();
+    this->nextPrefetchSize = this->prefetchQueue[this->prefetchEntryIdx].getSize();
+    return true;
+  }
+  return false;
+
+//  while (cnt < this->count) {
+//    if (this->prefetchDistance < this->accumulatedSize[tmpIdx]) {
+//      this->prefetchEnabled = true;
+//      this->prefetchEntryIdx = tmpIdx;
+//      this->nextPrefetchAddr =
+//        this->prefetchQueue[tmpIdx].getBaseAddr() + this->prefetchDistance -  (this->accumulatedSize[tmpIdx] - this->prefetchQueue[tmpIdx].getSize());
+//      this->nextPrefetchSize = this->accumulatedSize[tmpIdx] - this->prefetchDistance;
+//      return;
+//    }
+//    tmpIdx = (tmpIdx + 1) % this->numQueueEntry;
+//    cnt++;
+//  }
+//  this->prefetchEnabled = false;
 
 //  if (this->prefetchDistance <= this->prefetchQueue[this->headEntryIdx].getSize()) {
 //    this->prefetchEnabled = true;
@@ -359,12 +390,17 @@ PSPBackend::insertEntry(uint64_t _entryId, Addr _pAddr, uint64_t _size) {
 
 void
 PSPBackend::issuePrefetch(StreamEntry *se, Addr _address) {
-  se->incrementNextPrefetchAddr(_address);
-  Addr cur_addr = se->getPrefetchAddr();
-  if (se->isPrefetchEnabled()) {
+  while (se->incrementNextPrefetchAddr(_address)) {
+    Addr cur_addr = se->getPrefetchAddr();
     mController->enqueuePrefetch(cur_addr, RubyRequestType_LD);
     DPRINTF(PSPBackend, "## Enqueue prefetch request for address %#x done.\n", cur_addr);
   }
+//  se->incrementNextPrefetchAddr(_address);
+//  Addr cur_addr = se->getPrefetchAddr();
+//  if (se->isPrefetchEnabled()) {
+//    mController->enqueuePrefetch(cur_addr, RubyRequestType_LD);
+//    DPRINTF(PSPBackend, "## Enqueue prefetch request for address %#x done.\n", cur_addr);
+//  }
 }
 
 bool

@@ -130,7 +130,7 @@ class StreamEntry {
     bool isPrefetchEnabled() { return this->prefetchEnabled; }
     Addr getPrefetchAddr() { return this->nextPrefetchAddr; }
     void incrementTagAddr(Addr _snoopAddr);
-    void incrementNextPrefetchAddr(Addr _snoopAddr);
+    bool incrementNextPrefetchAddr(Addr _snoopAddr);
     void printStatus();
     int getTotalSize();
     void setRequested(Addr _addr);
