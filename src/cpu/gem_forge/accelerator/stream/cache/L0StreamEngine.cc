@@ -97,18 +97,23 @@ bool L0StreamEngine::isStreamAccess(PacketPtr pkt) const {
   }
   // If this is reissue access, ignore it.
   if (streamMemAccess->isReissue) {
+    L0SE_DPRINTF("SJ debug_0.\n");
     return false;
   }
+  // [SJ] This is hack. I'm not considering Offloading
+  return true;
   // So far let's only consider offloaded stream.
   const auto &dynamicId = streamMemAccess->getDynamicStreamId();
   auto streamIter = this->offloadedStreams.find(dynamicId);
   if (streamIter == this->offloadedStreams.end()) {
     // Failed to find the offloaded stream.
+    L0SE_DPRINTF("SJ debug_1.\n");
     return false;
   }
   auto stream = streamIter->second;
   // If this is a PseudoOffload stream, we still treat it as normal request.
   if (stream->getIsPseudoOffload()) {
+    L0SE_DPRINTF("SJ debug_2.\n");
     return false;
   }
   // Check if this is an indirect stream one iteration behind.
@@ -124,6 +129,7 @@ bool L0StreamEngine::isStreamAccess(PacketPtr pkt) const {
     L0_SLICE_DPRINTF(
         sliceId, "Not stream access. FirstElemIdx %llu. IsOneIterBehind %d.\n",
         firstFloatElemIdx, stream->getIsOneIterationBehind());
+    L0SE_DPRINTF("SJ debug_2.\n");
     return false;
   } else {
     L0_SLICE_DPRINTF(sliceId, "Is stream access.\n");

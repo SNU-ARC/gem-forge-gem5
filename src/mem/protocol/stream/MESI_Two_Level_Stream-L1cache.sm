@@ -1159,6 +1159,9 @@ machine(MachineType:L1Cache, "MESI Directory L1 Cache CMP", interface="AbstractS
       if (!se.isStreamAccess(in_msg.pkt)) {
         ++L1Icache.demand_misses;
       }
+      else {
+        ++L1Icache.stream_misses;
+      }
     }
   }
 
@@ -1167,6 +1170,9 @@ machine(MachineType:L1Cache, "MESI Directory L1 Cache CMP", interface="AbstractS
       if (!se.isStreamAccess(in_msg.pkt)) {
         ++L1Icache.demand_hits;
       }
+      else {
+        ++L1Icache.stream_hits;
+      }
     }
   }
 
@@ -1174,6 +1180,9 @@ machine(MachineType:L1Cache, "MESI Directory L1 Cache CMP", interface="AbstractS
     peek(mandatoryQueue_in, RubyRequest) {
       if (!se.isStreamAccess(in_msg.pkt)) {
         ++L1Dcache.demand_misses;
+      }
+      else {
+        ++L1Dcache.stream_misses;
       }
     }
   }
@@ -1187,6 +1196,9 @@ machine(MachineType:L1Cache, "MESI Directory L1 Cache CMP", interface="AbstractS
           if (cache_entry.isPrefetch) {
             ++L1Dcache.demand_hits_prefetched;
           }
+        }
+        else {
+          ++L1Dcache.stream_hits;
         }
       }
   }

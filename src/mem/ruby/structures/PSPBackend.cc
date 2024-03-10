@@ -235,8 +235,8 @@ StreamEntry::incrementNextPrefetchAddr(Addr _snoopAddr) {
     tmpIdx = (tmpIdx + 1) % this->numQueueEntry;
     cnt++;
   }
-  DPRINTF(PSPBackend, "## Target Prefetch Address %#x Next Prefetch Address %#x.\n", 
-      targetPrefetchAddr, this->nextPrefetchAddr);
+  DPRINTF(PSPBackend, "## Prefetch Enabled %d Target Prefetch Address %#x Next Prefetch Address %#x.\n", 
+      this->prefetchEnabled, targetPrefetchAddr, this->nextPrefetchAddr);
 
   if (this->nextPrefetchAddr == targetPrefetchAddr || !this->prefetchEnabled) {
     return false;
@@ -380,6 +380,8 @@ PSPBackend::getEntry(Addr _addr) {
 bool
 PSPBackend::canInsertEntry(uint64_t _entryId) {
   assert(_entryId < this->streamTable.size());
+  if (this->streamTable[_entryId].canInsertEntry())
+    DPRINTF(PSPBackend, "canInsert Count %d.\n", this->streamTable[_entryId].getCount());
   return this->streamTable[_entryId].canInsertEntry();
 }
 

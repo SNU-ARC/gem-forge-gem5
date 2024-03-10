@@ -125,6 +125,7 @@ class StreamEntry {
     bool isValid() { return this->prefetchQueue[headEntryIdx].isValid(); }
     bool hasEntry(Addr _addr);
     bool canInsertEntry() { return this->count < this->numQueueEntry; }
+    int getCount() { return this->count; }
     void insertEntry(Addr _addr, int _size);
     void popEntry(int _entryIdx);
     bool isPrefetchEnabled() { return this->prefetchEnabled; }

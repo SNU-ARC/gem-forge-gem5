@@ -611,6 +611,23 @@ CacheMemory::regStats()
 
     m_demand_accesses = m_demand_hits + m_demand_misses;
 
+    m_stream_hits
+        .name(name() + ".stream_hits")
+        .desc("Number of stream demand hits")
+        ;
+
+    m_stream_misses
+        .name(name() + ".stream_misses")
+        .desc("Number of stream demand misses")
+        ;
+
+    m_stream_accesses
+        .name(name() + ".stream_accesses")
+        .desc("Number of stream demand accesses")
+        ;
+
+    m_stream_accesses = m_stream_hits + m_stream_misses;
+
     m_deallocated
         .name(name() + ".deallocated")
         .desc("Number of cache line deallocated");
