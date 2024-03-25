@@ -164,7 +164,8 @@ PSPFrontend::tick() {
       }
     }
     else if (this->isDataPrefetchOnly) {
-      if (this->pspBackend->getTotalSize(validIQEntryId) < this->prefetchDistance * cacheLineSize) {
+      if (this->pspBackend->getTotalSize(validIQEntryId) == 0 && this->paQueueArray->getSize(validIQEntryId) == 0 && this->inflightTranslations.size() == 0) {
+//      if (this->pspBackend->getTotalSize(validIQEntryId) < this->prefetchDistance * cacheLineSize) {
         this->issueTranslateValueAddress(validIQEntryId);
       }
       else { // If cannot issue prefetch, pass chance to next entry
