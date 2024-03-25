@@ -282,9 +282,10 @@ void PSPFrontend::issueLoadIndex(uint64_t _validEntryId) {
   this->patternTableArbiter->setLastChosenEntryId(_validEntryId);
 
   // Update IndexQueueArray
-  this->indexQueueArray->allocate(_validEntryId, currentSize, seqNum);
-  PSP_FE_DPRINTF("Index Queue EntryId: %lu, AllocatedSize: %lu, Size: %lu\n", 
-      _validEntryId, this->indexQueueArray->getAllocatedSize(_validEntryId), this->indexQueueArray->getSize(_validEntryId));
+  uint32_t indexBufferId = this->indexQueueArray->allocate(_validEntryId, currentSize, seqNum);
+  this->inflightLoadIndices.emplace(cacheBlockPAddr, indexBufferId);
+  PSP_FE_DPRINTF("Index Queue EntryId: %lu, Size: %lu\n", 
+      _validEntryId, this->indexQueueArray->getSize(_validEntryId));
 
   this->inflightLoadTranslations++;
 }
@@ -410,8 +411,8 @@ void PSPFrontend::issueTranslateValueAddress(uint64_t _validEntryId) {
       cacheBlockPAddr, cacheBlockSize, indexPacketHandler, nullptr /* Data */,
       cpuDelegator->dataMasterId(), 0 /* ContextId */, 0 /* PC */, flags);
   pkt->req->setVirt(cacheBlockVAddr);
-  PSP_FE_DPRINTF("Address translation for %luth entryId (size: %lu). VA: %#x, BlockVA: %#x PA: %#x Size: %d, PageSize: %lu.\n", _validEntryId,
-      this->indexQueueArray->getSize(_validEntryId), currentVAddrBegin, cacheBlockVAddr, pkt->getAddr(), pkt->getSize(), pageSize);
+  PSP_FE_DPRINTF("Address translation for %luth entryId (size: %lu). VA: %#x, BlockVA: %#x PA: %#x Size: %d, currentSize: %lu, PageRemain: %lu.\n", _validEntryId,
+      this->indexQueueArray->getSize(_validEntryId), currentVAddrBegin, cacheBlockVAddr, pkt->getAddr(), pkt->getSize(), currentSize, pageRemain);
  
   if (cpuDelegator->cpuType == GemForgeCPUDelegator::ATOMIC_SIMPLE) {
     // No requests sent to memory for atomic cpu.
@@ -446,13 +447,14 @@ void PSPFrontend::handlePacketResponse(IndexPacketHandler* indexPacketHandler,
   PSP_FE_DPRINTF("remainSendRequest: %d, inflightLoadTranslations: %d\n", 
       this->cpuDelegator->remainSendRequest(), this->inflightLoadTranslations);
   if (indexPacketHandler->isIndex) {
-    this->indexQueueArray->insert(entryId, data, inputSize, debug_address, seqNum);
+    uint32_t indexBufferId = this->inflightLoadIndices.find(pAddr)->second;
+    this->indexQueueArray->insert(entryId, indexBufferId, data, inputSize, debug_address, seqNum);
+    this->inflightLoadIndices.erase(this->inflightLoadIndices.find(pAddr));
     PSP_FE_DPRINTF("%luth IndexQueue filled with blockVA: %#x, VA: %#x, size: %lu, debug_address, %#x, SeqNum: %lu %lu\n", entryId,
         cacheBlockVAddr, vaddr, inputSize, debug_address, seqNum, this->seqNum);
     for (int i = 0; i < inputSize / 8; i++) {
       PSP_FE_DPRINTF("data[%d]: %lu\n", i, ((uint64_t*)data)[i]);
     }
-    PSP_FE_DPRINTF("\n");
   }
   else if (this->isUVEProxy) {
     uint32_t paQueueId = this->inflightTranslations.find(pAddr)->second;
@@ -567,8 +569,8 @@ void PSPFrontend::executeStreamInput(const StreamInputArgs &args) {
 
   this->patternTable->pushInputInfo(entryId, offsetBegin, offsetEnd, seqNum);
   this->manager->scheduleTickNextCycle();
-  PSP_FE_DPRINTF("executeStreamInput...Schedule next tick %lu %lu %lu %lu %lu %lu %lu\n",
-      entryId, offsetBegin, offsetEnd, seqNum, this->indexQueueArray->getAllocatedSize(entryId),
+  PSP_FE_DPRINTF("executeStreamInput...Schedule next tick %lu %lu %lu %lu %lu %lu\n",
+      entryId, offsetBegin, offsetEnd, seqNum, /*this->indexQueueArray->getAllocatedSize(entryId),*/
       this->indexQueueArray->getSize(entryId), this->paQueueArray->getSize(entryId));
   this->pspBackend->printStatus();
 }

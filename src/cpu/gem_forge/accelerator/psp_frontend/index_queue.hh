@@ -18,28 +18,37 @@ class IndexQueue {
     IndexQueue(uint32_t _capacity);
     ~IndexQueue();
 
+    struct IndexArgs {
+      bool valid;
+      uint64_t data;
+      uint64_t seqNum;
+
+      IndexArgs(bool _valid = false, uint64_t _data = 0, uint64_t _seqNum = 0)
+        : valid(_valid), data(_data), seqNum(_seqNum) {};
+    };
+
     void setConfigured(bool _isConfigured);
     bool getConfigured();
-    uint32_t getAllocatedSize();
+//    uint32_t getAllocatedSize();
     uint32_t getSize();
     void setAccessGranularity(uint64_t _accessGranularity);
     uint64_t getAccessGranularity();
-    void read(void* _buffer, uint64_t* _seqNum);
+    bool canRead();
+    void read(uint64_t* _buffer, uint64_t* _seqNum);
     void pop();
-    bool canInsert(uint64_t _cacheLineSize, uint64_t _seqNum);
-    void allocate(uint64_t _size, uint64_t _seqNum);
-    void insert(void* _buffer, uint64_t _size, uint64_t _data_address, uint64_t _seqNum);
+    bool canInsert(uint64_t _size, uint64_t _seqNum);
+    uint32_t allocate(uint64_t _size, uint64_t _seqNum);
+    void insert(uint32_t _id, void* _buffer, uint64_t _size, uint64_t _seqNum);
     void reset(uint64_t _seqNum);
 
   private:
-    std::vector<void*> data;
+    std::vector<IndexArgs> data;
     bool isConfigured;
-    uint32_t capacity;
-    uint32_t front;
-    uint32_t allocatedSize;
+    uint32_t head;
+    uint32_t tail;
     uint32_t size;
+    uint32_t capacity;
     uint64_t accessGranularity;
-    uint64_t seqNum;
 };
 
 class IndexQueueArray {
@@ -49,7 +58,7 @@ class IndexQueueArray {
 
     void setConfigured(const uint64_t _entryId, bool _isConfigured);
     bool getConfigured(const uint64_t _entryId);
-    uint32_t getAllocatedSize(const uint64_t _entryId);
+//    uint32_t getAllocatedSize(const uint64_t _entryId);
     uint32_t getSize(const uint64_t _entryId);
     void setAccessGranularity(const uint64_t _entryId, uint64_t _accessGranularity);
     uint64_t getAccessGranularity(const uint64_t _entryId);
@@ -57,8 +66,8 @@ class IndexQueueArray {
     void read(const uint64_t _entryId, void* _buffer, uint64_t* _seqNum);
     void pop(const uint64_t _entryId);
     bool canInsert(const uint64_t _entryId, const uint64_t _cacheLineSize, const uint64_t _seqNum);
-    void allocate(const uint64_t _entryId, const uint64_t _size, const uint64_t _seqNum);
-    void insert(const uint64_t _entryId, void* _buffer, uint64_t _size, uint64_t _data_address, uint64_t _seqNum);
+    uint32_t allocate(const uint64_t _entryId, const uint64_t _size, const uint64_t _seqNum);
+    void insert(const uint64_t _entryId, const uint32_t _id, void* _buffer, uint64_t _size, uint64_t _data_address, uint64_t _seqNum);
     void reset(const uint64_t _entryId, const uint64_t _seqNum);
     
   private:
