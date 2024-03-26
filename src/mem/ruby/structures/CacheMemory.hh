@@ -173,7 +173,7 @@ class CacheMemory : public SimObject
     Stats::Scalar numTagArrayStalls;
     Stats::Scalar numDataArrayStalls;
 
-    int getCacheSize() const { return m_cache_size; }
+    uint64_t getCacheSize() const { return m_cache_size; }
     int getCacheAssoc() const { return m_cache_assoc; }
     int getNumBlocks() const { return m_cache_num_sets * m_cache_assoc; }
     Addr getAddressAtIdx(int idx) const;
@@ -209,7 +209,7 @@ class CacheMemory : public SimObject
     BankedArray dataArray;
     BankedArray tagArray;
 
-    int m_cache_size;
+    uint64_t m_cache_size;
     int m_cache_num_sets;
     int m_cache_num_set_bits;
     int m_cache_assoc;
