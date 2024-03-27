@@ -148,6 +148,8 @@ PSPFrontend::tick() {
     this->issueLoadIndex(validEntryId);
   }
 
+  uint64_t idxBaseAddr, idxAccessGranularity, valBaseAddr, valAccessGranularity;
+  this->patternTable->getConfigInfo(_validEntryId, &idxBaseAddr, &idxAccessGranularity,
   /* Issue feature vector address translation */
   uint32_t validIQEntryId;
   // TODO: Should I check the availability of TLB? (e.g., pending translation by PTW)
@@ -164,7 +166,8 @@ PSPFrontend::tick() {
       }
     }
     else if (this->isDataPrefetchOnly) {
-      if (this->pspBackend->getTotalSize(validIQEntryId) == 0 && this->paQueueArray->getSize(validIQEntryId) == 0 && this->inflightTranslations.size() == 0) {
+      if (this->pspBackend->getTotalSize(validIQEntryId) == 0 && this->paQueueArray->getSize(validIQEntryId) == 0 && this->inflightTranslations.size() == 0 ||
+          this->valCurrentSize[_validEntryId] < valAccessGranularity) {
 //      if (this->pspBackend->getTotalSize(validIQEntryId) < this->prefetchDistance * cacheLineSize) {
         this->issueTranslateValueAddress(validIQEntryId);
       }
@@ -295,7 +298,6 @@ void
 PSPFrontend::issueLoadValue(uint64_t _validEntryId) {
   uint64_t index, seqNum;
   this->indexQueueArray->read(_validEntryId, &index, &seqNum);
-  PSP_FE_DPRINTF("EntryId: %lu, Index: %lu, SeqNum: %lu %lu\n", _validEntryId, index, seqNum, this->indexQueueArray->getSize(_validEntryId));
 
   // TODO: Implement function to get value infos (e.g., baseAddr, accessGranularity)
   uint64_t idxBaseAddr, idxAccessGranularity, valBaseAddr, valAccessGranularity;
@@ -310,6 +312,9 @@ PSPFrontend::issueLoadValue(uint64_t _validEntryId) {
 
   uint64_t cacheBlockVAddr = currentVAddrBegin & (~(cacheLineSize - 1));
   uint64_t cacheBlockSize;
+
+  PSP_FE_DPRINTF("EntryId: %lu, Index: %lu, SeqNum: %lu, valBaseAddr: %#x, valAccessGranularity: %lu, valCurrentSize: %lu, cacheBlockVAddr: %#x\n",
+      _validEntryId, index, seqNum, this->indexQueueArray->getSize(_validEntryId), valBaseAddr, valAccessGranularity, this->valCurrentSize[_validEntryId], cacheBlockVAddr);
 
   // Address translation (Does not consume tick)
   Addr cacheBlockPAddr;
@@ -384,6 +389,9 @@ void PSPFrontend::issueTranslateValueAddress(uint64_t _validEntryId) {
 //    currentSize += (cacheLineSize - currentSize % cacheLineSize);
 
   uint64_t cacheBlockSize;// = currentSize; 
+
+  PSP_FE_DPRINTF("EntryId: %lu, Index: %lu, SeqNum: %lu, valBaseAddr: %#x, valAccessGranularity: %lu, valCurrentSize: %lu, cacheBlockVAddr: %#x\n",
+      _validEntryId, index, seqNum, this->indexQueueArray->getSize(_validEntryId), valBaseAddr, valAccessGranularity, this->valCurrentSize[_validEntryId], cacheBlockVAddr);
 
   // Address translation (Does not consume tick)
   Addr cacheBlockPAddr;
