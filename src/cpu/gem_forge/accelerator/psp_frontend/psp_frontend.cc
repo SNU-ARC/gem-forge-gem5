@@ -167,6 +167,8 @@ PSPFrontend::tick() {
       }
     }
     else if (this->isDataPrefetchOnly) {
+//      PSP_FE_DPRINTF("backend_totalSize: %lu, paQueue_size: %lu, inflightTrans: %lu, valCurrentSize: %lu\n",
+//          this->pspBackend->getTotalSize(validIQEntryId), this->paQueueArray->getSize(validIQEntryId), this->inflightTranslations.size(), this->valCurrentSize[validIQEntryId]);
       if (this->pspBackend->getTotalSize(validIQEntryId) == 0 && this->paQueueArray->getSize(validIQEntryId) == 0 && this->inflightTranslations.size() == 0 ||
           this->valCurrentSize[validIQEntryId] < valAccessGranularity) {
 //      if (this->pspBackend->getTotalSize(validIQEntryId) < this->prefetchDistance * cacheLineSize) {
@@ -205,7 +207,7 @@ PSPFrontend::tick() {
       }
     }
   }
-//  this->pspBackend->printStatus();
+  this->pspBackend->printStatus();
 }
 
 void PSPFrontend::issueLoadIndex(uint64_t _validEntryId) {
@@ -314,7 +316,7 @@ PSPFrontend::issueLoadValue(uint64_t _validEntryId) {
   uint64_t cacheBlockVAddr = currentVAddrBegin & (~(cacheLineSize - 1));
   uint64_t cacheBlockSize;
 
-  PSP_FE_DPRINTF("EntryId: %lu, Index: %lu, SeqNum: %lu, valBaseAddr: %#x, valAccessGranularity: %lu, valCurrentSize: %lu, cacheBlockVAddr: %#x\n",
+  PSP_FE_DPRINTF("EntryId: %lu, Index: %lu, SeqNum: %lu %lu, valBaseAddr: %#x, valAccessGranularity: %lu, valCurrentSize: %lu, cacheBlockVAddr: %#x\n",
       _validEntryId, index, seqNum, this->indexQueueArray->getSize(_validEntryId), valBaseAddr, valAccessGranularity, this->valCurrentSize[_validEntryId], cacheBlockVAddr);
 
   // Address translation (Does not consume tick)
@@ -380,19 +382,20 @@ void PSPFrontend::issueTranslateValueAddress(uint64_t _validEntryId) {
   uint64_t cacheLineSize = this->cpuDelegator->cacheLineSize();
   uint64_t currentVAddrBegin = valBaseAddr + (index + 1) * valAccessGranularity - this->valCurrentSize[_validEntryId];
   uint64_t currentVAddrEnd = valBaseAddr + (index + 1) * valAccessGranularity;
-  uint64_t currentSize = (this->valCurrentSize[_validEntryId] + (cacheLineSize - 1)) & (~(cacheLineSize - 1));
+  uint64_t currentSize = this->valCurrentSize[_validEntryId];
+//  uint64_t currentSize = (this->valCurrentSize[_validEntryId] + (cacheLineSize - 1)) & (~(cacheLineSize - 1));
   uint64_t pageSize = TheISA::PageBytes;
 
   uint64_t cacheBlockVAddr = currentVAddrBegin & (~(cacheLineSize - 1));
-//  currentSize += (currentVAddrBegin - cacheBlockVAddr);
+  currentSize += (currentVAddrBegin - cacheBlockVAddr);
 //  // This is hack for cacheline granularity size
 //  if (currentSize % cacheLineSize > 0)
 //    currentSize += (cacheLineSize - currentSize % cacheLineSize);
 
   uint64_t cacheBlockSize;// = currentSize; 
 
-  PSP_FE_DPRINTF("EntryId: %lu, Index: %lu, SeqNum: %lu, valBaseAddr: %#x, valAccessGranularity: %lu, valCurrentSize: %lu, cacheBlockVAddr: %#x\n",
-      _validEntryId, index, seqNum, this->indexQueueArray->getSize(_validEntryId), valBaseAddr, valAccessGranularity, this->valCurrentSize[_validEntryId], cacheBlockVAddr);
+  PSP_FE_DPRINTF("EntryId: %lu, Index: %lu, SeqNum: %lu %lu, valBaseAddr: %#x, valAccessGranularity: %lu, currentSize: %lu, cacheBlockVAddr: %#x\n",
+      _validEntryId, index, seqNum, this->indexQueueArray->getSize(_validEntryId), valBaseAddr, valAccessGranularity, currentSize, cacheBlockVAddr);
 
   // Address translation (Does not consume tick)
   Addr cacheBlockPAddr;
@@ -404,7 +407,7 @@ void PSPFrontend::issueTranslateValueAddress(uint64_t _validEntryId) {
     // Proceed to next index
     this->indexQueueArray->pop(_validEntryId);
     this->valCurrentSize[_validEntryId] = valAccessGranularity;
-    cacheBlockSize = currentSize;
+    cacheBlockSize = (currentSize + cacheLineSize - 1) & (~(cacheLineSize - 1));
   }
   else {
     // If current value is cross-page, split address translate
@@ -421,8 +424,8 @@ void PSPFrontend::issueTranslateValueAddress(uint64_t _validEntryId) {
       cacheBlockPAddr, cacheBlockSize, indexPacketHandler, nullptr /* Data */,
       cpuDelegator->dataMasterId(), 0 /* ContextId */, 0 /* PC */, flags);
   pkt->req->setVirt(cacheBlockVAddr);
-  PSP_FE_DPRINTF("Address translation for %luth entryId (size: %lu). VA: %#x, BlockVA: %#x PA: %#x Size: %d, currentSize: %lu, PageRemain: %lu.\n", _validEntryId,
-      this->indexQueueArray->getSize(_validEntryId), currentVAddrBegin, cacheBlockVAddr, pkt->getAddr(), pkt->getSize(), currentSize, pageRemain);
+  PSP_FE_DPRINTF("Address translation for %luth entryId (size: %lu). VA_BEGIN: %#x, VA_END: %#x, BlockVA: %#x PA: %#x Size: %d, currentSize: %lu, PageRemain: %lu.\n", _validEntryId,
+      this->indexQueueArray->getSize(_validEntryId), currentVAddrBegin, currentVAddrEnd, cacheBlockVAddr, pkt->getAddr(), pkt->getSize(), currentSize, pageRemain);
  
   if (cpuDelegator->cpuType == GemForgeCPUDelegator::ATOMIC_SIMPLE) {
     // No requests sent to memory for atomic cpu.
