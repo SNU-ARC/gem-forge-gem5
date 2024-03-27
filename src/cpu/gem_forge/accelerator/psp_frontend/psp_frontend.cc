@@ -148,13 +148,13 @@ PSPFrontend::tick() {
     this->issueLoadIndex(validEntryId);
   }
 
-  uint64_t idxBaseAddr, idxAccessGranularity, valBaseAddr, valAccessGranularity;
-  this->patternTable->getConfigInfo(_validEntryId, &idxBaseAddr, &idxAccessGranularity,
-                                    &valBaseAddr, &valAccessGranularity);
   /* Issue feature vector address translation */
   uint32_t validIQEntryId;
   // TODO: Should I check the availability of TLB? (e.g., pending translation by PTW)
   if (this->indexQueueArrayArbiter->getValidEntryId(&validIQEntryId, false)) {
+    uint64_t idxBaseAddr, idxAccessGranularity, valBaseAddr, valAccessGranularity;
+    this->patternTable->getConfigInfo(validIQEntryId, &idxBaseAddr, &idxAccessGranularity,
+                                      &valBaseAddr, &valAccessGranularity);
     if (this->isUVEProxy) {
       if (((this->paQueueArray->getSize(validIQEntryId) * cacheLineSize + this->pspBackend->getTotalSize(validIQEntryId)) < (this->paQueueCapacity * cacheLineSize)) &&
           (this->cpuDelegator->remainSendRequest() - this->inflightLoadTranslations > 0)) {
@@ -168,7 +168,7 @@ PSPFrontend::tick() {
     }
     else if (this->isDataPrefetchOnly) {
       if (this->pspBackend->getTotalSize(validIQEntryId) == 0 && this->paQueueArray->getSize(validIQEntryId) == 0 && this->inflightTranslations.size() == 0 ||
-          this->valCurrentSize[_validEntryId] < valAccessGranularity) {
+          this->valCurrentSize[validIQEntryId] < valAccessGranularity) {
 //      if (this->pspBackend->getTotalSize(validIQEntryId) < this->prefetchDistance * cacheLineSize) {
         this->issueTranslateValueAddress(validIQEntryId);
       }
