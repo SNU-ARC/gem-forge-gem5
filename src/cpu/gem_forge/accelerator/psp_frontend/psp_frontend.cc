@@ -150,6 +150,7 @@ PSPFrontend::tick() {
 
   uint64_t idxBaseAddr, idxAccessGranularity, valBaseAddr, valAccessGranularity;
   this->patternTable->getConfigInfo(_validEntryId, &idxBaseAddr, &idxAccessGranularity,
+                                    &valBaseAddr, &valAccessGranularity);
   /* Issue feature vector address translation */
   uint32_t validIQEntryId;
   // TODO: Should I check the availability of TLB? (e.g., pending translation by PTW)
