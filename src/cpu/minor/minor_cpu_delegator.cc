@@ -23,7 +23,7 @@ public:
       : cpu(_cpu), cpuDelegator(_cpuDelegator),
         drainPendingPacketsEvent(
             [this]() -> void { this->cpuDelegator->drainPendingPackets(); },
-            _cpu->name()),
+            _cpu->name(), false, EventBase::Minimum_Pri),
         dumpInflyInstsEvent(
             [this]() -> void {
               if (!Debug::MinorCPUDelegatorDump) {
@@ -33,7 +33,7 @@ public:
               this->cpuDelegator->schedule(&this->dumpInflyInstsEvent,
                                            Cycles(100000));
             },
-            _cpu->name()) {}
+            _cpu->name(), false, EventBase::Minimum_Pri) {}
 
   MinorCPU *cpu;
   MinorCPUDelegator *cpuDelegator;
