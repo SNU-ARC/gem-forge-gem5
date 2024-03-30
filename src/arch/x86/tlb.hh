@@ -133,6 +133,10 @@ namespace X86ISA
         Stats::Scalar l1Misses;
         Stats::Scalar l2Accesses;
         Stats::Scalar l2Misses;
+        Stats::Scalar l1PrefetchAccesses;
+        Stats::Scalar l1PrefetchMisses;
+        Stats::Scalar l2PrefetchAccesses;
+        Stats::Scalar l2PrefetchMisses;
 
         Fault translateInt(bool read, RequestPtr req, ThreadContext *tc);
 

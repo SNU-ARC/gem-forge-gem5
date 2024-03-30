@@ -129,9 +129,13 @@ TLB::lookupL1(Addr va, bool isLastLevel, bool updateStats,
     } else {
         entry = this->tlbCache.lookup(va, updateLRU);
     }
-    if (updateStats && !isPrefetch) {
+    if (updateStats) {
         this->l1Accesses++;
         if (!entry) this->l1Misses++;
+        if (isPrefetch) {
+          this->l1PrefetchAccesses++;
+          if (!entry) this->l1PrefetchMisses++;
+        }
     }
     return entry;
 }
@@ -142,9 +146,13 @@ TLB::lookupL2(Addr va, bool isLastLevel, bool updateStats,
     TlbEntry *entry = nullptr;
     if (this->l2tlb) {
         entry = this->l1tlb->lookup(va, updateLRU);
-        if (updateStats && !isPrefetch) {
+        if (updateStats) {
             this->l2Accesses++;
             if (!entry) this->l2Misses++;
+            if (isPrefetch) {
+              this->l2PrefetchAccesses++;
+              if (!entry) this->l2PrefetchMisses++;
+            }
         }
     }
     return entry;
@@ -436,14 +444,14 @@ TLB::translate(const RequestPtr &req,
             int hitLevel = 0;
             TlbEntry *entry = lookup(vaddr, isLastLevel,
                 updateStats, true /* UpdateLRU */, hitLevel, isPrefetch);
-            if (updateStats && !isPrefetch) {
+            if (updateStats) {
                 if (mode == Read) rdAccesses++;
                 else wrAccesses++;
             }
             if (!entry) {
                 DPRINTF(TLB, "Handling a TLB miss for address %#x at pc %#x.\n",
                         vaddr, tc->instAddr());
-                if (updateStats && !isPrefetch) {
+                if (updateStats) {
                     if (mode == Read) rdMisses++;
                     else wrMisses++;
                 }
@@ -496,9 +504,12 @@ TLB::translate(const RequestPtr &req,
                         pageVAddr, this->walker->curCycle(), isPrefetch);
                     if (delayedResponseCycles > this->l2HitLatency) {
                       // This is not L2TLB hit, it is page table walking
+                      if (mode == Read && updateStats && entry) rdMisses++;
                       if (!isPrefetch) {
-                        if (mode == Read && updateStats && entry) rdMisses++;
                         this->l2Misses++;
+                      }
+                      else {
+                        this->l2PrefetchMisses++;
                       }
                     }
                     delayedResponseCycles += this->l2HitLatency;
@@ -509,11 +520,16 @@ TLB::translate(const RequestPtr &req,
                     delayedResponse = delayedResponseCycles > 0;
                     if (delayedResponseCycles > 0) {
                       // This is not L1TLB hit, it is page table walking
+                      if (mode == Read && updateStats && entry) rdMisses++;
                       if (!isPrefetch) {
-                        if (mode == Read && updateStats && entry) rdMisses++;
                         this->l1Misses++;
                         this->l2Accesses++;
                         this->l2Misses++;
+                      }
+                      else {
+                        this->l1PrefetchMisses++;
+                        this->l2PrefetchAccesses++;
+                        this->l2PrefetchMisses++;
                       }
                     }
                     break;
@@ -673,6 +689,19 @@ TLB::regStats()
         .desc("L2 TLB accesses");
     l2Misses
         .name(name() + ".l2Misses")
+        .desc("L2 TLB misses");
+
+    l1PrefetchAccesses
+        .name(name() + ".l1PrefetchAccesses")
+        .desc("L1 TLB accesses");
+    l1PrefetchMisses
+        .name(name() + ".l1PrefetchMisses")
+        .desc("L1 TLB misses");
+    l2PrefetchAccesses
+        .name(name() + ".l2PrefetchAccesses")
+        .desc("L2 TLB accesses");
+    l2PrefetchMisses
+        .name(name() + ".l2PrefetchMisses")
         .desc("L2 TLB misses");
 
     if (this->sePageWalker) {

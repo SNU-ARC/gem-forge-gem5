@@ -40,6 +40,11 @@ public:
   Stats::Scalar waits;
   Stats::Scalar ptwCycles;
 
+  Stats::Scalar prefetch_accesses;
+  Stats::Scalar prefetch_hits;
+  Stats::Scalar prefetch_waits;
+  Stats::Scalar prefetch_ptwCycles;
+
 private:
   std::string myName;
   std::string name() { return this->myName; }
