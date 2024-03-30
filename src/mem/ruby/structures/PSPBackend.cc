@@ -239,6 +239,15 @@ StreamEntry::incrementNextPrefetchAddr(Addr _snoopAddr) {
       this->prefetchEnabled, targetPrefetchAddr, this->nextPrefetchAddr);
 
   if (this->nextPrefetchAddr == targetPrefetchAddr || !this->prefetchEnabled) {
+    if (this->nextPrefetchSize > 0) {
+      this->nextPrefetchAddr += RubySystem::getBlockSizeBytes();
+      this->nextPrefetchSize -= RubySystem::getBlockSizeBytes(); 
+    }
+    else {
+      this->prefetchEntryIdx = (this->prefetchEntryIdx + 1) % this->numQueueEntry;
+      this->nextPrefetchAddr = this->prefetchQueue[this->prefetchEntryIdx].getBaseAddr();
+      this->nextPrefetchSize = this->prefetchQueue[this->prefetchEntryIdx].getSize();
+    }
     return false;
   }
   else if (this->nextPrefetchSize > 0) {
@@ -392,10 +401,13 @@ PSPBackend::insertEntry(uint64_t _entryId, Addr _pAddr, uint64_t _size) {
 
 void
 PSPBackend::issuePrefetch(StreamEntry *se, Addr _address) {
-  while (se->incrementNextPrefetchAddr(_address)) {
+  while (se->isPrefetchEnabled()) {
+//  while (se->incrementNextPrefetchAddr(_address)) {
     Addr cur_addr = se->getPrefetchAddr();
     mController->enqueuePrefetch(cur_addr, RubyRequestType_LD);
     DPRINTF(PSPBackend, "## Enqueue prefetch request for address %#x done.\n", cur_addr);
+    if (se->incrementNextPrefetchAddr(_address) == false)
+      break;
   }
 //  se->incrementNextPrefetchAddr(_address);
 //  Addr cur_addr = se->getPrefetchAddr();
@@ -409,6 +421,7 @@ bool
 PSPBackend::observeHit(Addr address) {
   StreamEntry * se = getEntry(address);
   if (se != NULL) {
+    this->printStatus();
     // This is for freeEntry only
     numHits++;
     DPRINTF(PSPBackend, "** Observed hit for %#x\n", address);
@@ -427,6 +440,7 @@ PSPBackend::observeMiss(Addr address)
 {
   StreamEntry * se = getEntry(address);
   if (se != NULL) {
+    this->printStatus();
     if (this->UVEProxy) {
       // For Stream Engine proxy, Pf Miss
       se->setRequested(address);
@@ -453,6 +467,7 @@ PSPBackend::observePfInCache(Addr address)
 {
   StreamEntry * se = getEntry(address);
   if (se != NULL) {
+    this->printStatus();
     // Prefetch later than demand load or data reused.
     // Prefetch further
     numPrefetchHits++;
@@ -472,6 +487,7 @@ PSPBackend::observePfHit(Addr address)
 {
   StreamEntry * se = getEntry(address);
   if (se != NULL) {
+    this->printStatus();
     numPrefetchHits++;
     DPRINTF(PSPBackend, "** Observed PSP prefetcher hit for %#x\n", address);
     se->incrementTagAddr(address);
@@ -490,6 +506,7 @@ PSPBackend::observePfMiss(Addr address)
 {
   StreamEntry * se = getEntry(address);
   if (se != NULL) {
+    this->printStatus();
     // This is miss for cache, but hit by MSHR
     numPrefetchMisses++;
     DPRINTF(PSPBackend, "** Observed PSP prefetcher partial miss for %#x\n", address);
