@@ -156,8 +156,8 @@ PSPFrontend::tick() {
     this->patternTable->getConfigInfo(validIQEntryId, &idxBaseAddr, &idxAccessGranularity,
                                       &valBaseAddr, &valAccessGranularity);
     if (this->isUVEProxy) {
-      if (((this->paQueueArray->getSize(validIQEntryId) * cacheLineSize + this->pspBackend->getTotalSize(validIQEntryId)) < (this->paQueueCapacity * cacheLineSize)) /*&&
-          (this->cpuDelegator->remainSendRequest() - this->inflightLoadTranslations > 0)*/) {
+      if (((this->paQueueArray->getSize(validIQEntryId) * cacheLineSize + this->pspBackend->getTotalSize(validIQEntryId)) < (this->paQueueCapacity * cacheLineSize)) &&
+          (this->cpuDelegator->remainSendRequest() - this->inflightLoadTranslations > 0)) {
         PSP_FE_DPRINTF("paQueueArray[%lu].size: %lu , pspBackend[%lu].size: %lu, paQueueCapacity: %lu\n",
             validIQEntryId, this->paQueueArray->getSize(validIQEntryId) * cacheLineSize, validIQEntryId, this->pspBackend->getTotalSize(validIQEntryId), this->paQueueCapacity * cacheLineSize);
         this->issueLoadValue(validIQEntryId);
@@ -169,8 +169,8 @@ PSPFrontend::tick() {
     else if (this->isDataPrefetchOnly) {
 //      PSP_FE_DPRINTF("backend_totalSize: %lu, paQueue_size: %lu, inflightTrans: %lu, valCurrentSize: %lu\n",
 //          this->pspBackend->getTotalSize(validIQEntryId), this->paQueueArray->getSize(validIQEntryId), this->inflightTranslations.size(), this->valCurrentSize[validIQEntryId]);
-      if (this->pspBackend->getTotalSize(validIQEntryId) == 0 && this->paQueueArray->getSize(validIQEntryId) == 0 && this->inflightTranslations.size() == 0 ||
-          this->valCurrentSize[validIQEntryId] < valAccessGranularity) {
+      if (this->pspBackend->getTotalSize(validIQEntryId) == 0 && this->paQueueArray->getSize(validIQEntryId) == 0 && this->inflightTranslations.size() == 0 /*||
+          this->valCurrentSize[validIQEntryId] < valAccessGranularity*/) {
 //      if (this->pspBackend->getTotalSize(validIQEntryId) < this->prefetchDistance * cacheLineSize) {
         this->issueTranslateValueAddress(validIQEntryId);
       }
