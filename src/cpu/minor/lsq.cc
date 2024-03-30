@@ -1390,7 +1390,7 @@ LSQ::canGemForgeSendToMemorySystem()
 {
     return state == MemoryRunning &&
         remainPSPTransfer > 0 &&
-        numAccessesInMemorySystem + transfers.unreservedRemainingSpace() < inMemorySystemLimit;
+        numAccessesInMemorySystem + requests.reservedSpace() < inMemorySystemLimit;
 }
 
 bool
@@ -1560,10 +1560,10 @@ LSQ::LSQ(std::string name_, std::string dcache_port_name_,
     }
     
     numPSPRequest = 0;
-    if (remainPSPTransfer > in_memory_system_limit - transfers_queue_size) {
-        fatal("%s: PSPQueueSize must be"
-            " <= in_memory_system_limit - transfers_queue_size (%d)\n", name_, in_memory_system_limit - transfers_queue_size);
-    }
+//    if (remainPSPTransfer > in_memory_system_limit - transfers_queue_size) {
+//        fatal("%s: PSPQueueSize must be"
+//            " <= in_memory_system_limit - transfers_queue_size (%d)\n", name_, in_memory_system_limit - transfers_queue_size);
+//    }
 }
 
 LSQ::~LSQ()

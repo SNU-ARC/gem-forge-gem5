@@ -25,7 +25,7 @@ void GemForgeAccelerator::takeOverBy(GemForgeCPUDelegator *newCpuDelegator,
 GemForgeAcceleratorManager::GemForgeAcceleratorManager(
     GemForgeAcceleratorManagerParams *params)
     : SimObject(params), accelerators(params->accelerators),
-      cpuDelegator(nullptr), tickEvent([this] { this->tick(); }, name()) {}
+      cpuDelegator(nullptr), tickEvent([this] { this->tick(); }, name(), false, EventBase::Minimum_Pri) {}
 
 GemForgeAcceleratorManager::~GemForgeAcceleratorManager() {}
 

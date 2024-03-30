@@ -156,8 +156,8 @@ PSPFrontend::tick() {
     this->patternTable->getConfigInfo(validIQEntryId, &idxBaseAddr, &idxAccessGranularity,
                                       &valBaseAddr, &valAccessGranularity);
     if (this->isUVEProxy) {
-      if (((this->paQueueArray->getSize(validIQEntryId) * cacheLineSize + this->pspBackend->getTotalSize(validIQEntryId)) < (this->paQueueCapacity * cacheLineSize)) &&
-          (this->cpuDelegator->remainSendRequest() - this->inflightLoadTranslations > 0)) {
+      if (((this->paQueueArray->getSize(validIQEntryId) * cacheLineSize + this->pspBackend->getTotalSize(validIQEntryId)) < (this->paQueueCapacity * cacheLineSize)) /*&&
+          (this->cpuDelegator->remainSendRequest() - this->inflightLoadTranslations > 0)*/) {
         PSP_FE_DPRINTF("paQueueArray[%lu].size: %lu , pspBackend[%lu].size: %lu, paQueueCapacity: %lu\n",
             validIQEntryId, this->paQueueArray->getSize(validIQEntryId) * cacheLineSize, validIQEntryId, this->pspBackend->getTotalSize(validIQEntryId), this->paQueueCapacity * cacheLineSize);
         this->issueLoadValue(validIQEntryId);

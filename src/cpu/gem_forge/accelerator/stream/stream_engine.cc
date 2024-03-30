@@ -2168,7 +2168,7 @@ void StreamEngine::releaseElementStepped(DynamicStream *dynS, bool isEnd,
                        releaseElement->firstValueCheckByCoreCycle;
 //                       releaseElement->firstValueCheckCycle;
         this->numLoadWaitElements++;
-        this->waitRegion.push_back(std::make_pair(releaseElement->firstValueCheckCycle,
+        this->waitRegion.push_back(std::make_pair(releaseElement->firstValueCheckByCoreCycle,
               releaseElement->valueReadyCycle));
       }
       this->numLoadElementWaitCycles += waitedCycles;
