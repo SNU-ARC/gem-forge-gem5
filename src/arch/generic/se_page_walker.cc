@@ -65,32 +65,59 @@ Cycles SEPageWalker::walk(Addr pageVAddr, Cycles curCycle, bool isPrefetch) {
    * Try to allocate a new state for this miss.
    * First we have to get the available context.
    */
-  auto prevContextIter = this->inflyState.rbegin();
-  auto prevContextEnd = this->inflyState.rend();
+  auto it = this->inflyState.rbegin();
+  uint32_t numInflyRequests = 0;
+  for (; it != this->inflyState.rend(); it++) {
+    numInflyRequests += (it->numAccess + 1);
+    if (this->numContext <= numInflyRequests) {
+//      it++;
+      break;
+    }
+  }
+
   Cycles allocateCycle = curCycle;
-  if (this->numContext <= this->inflyState.size()) {
+  if (this->numContext <= numInflyRequests) {
     // We have to wait until previous translations are done
     this->waits++;
     if (isPrefetch) this->prefetch_waits++;
-    prevContextIter = this->inflyState.rbegin();
-    for (uint32_t i = 0; i < this->numContext - 1; i++)
-      prevContextIter++;
-    allocateCycle = prevContextIter->readyCycle;
+    allocateCycle = it->readyCycle;
 
     this->ptwCycles += (this->latency + allocateCycle - this->inflyState.rbegin()->readyCycle);
     if (isPrefetch)
       this->prefetch_ptwCycles += (this->latency + allocateCycle - this->inflyState.rbegin()->readyCycle);
-  }
-  else if (this->inflyState.size() == 0 || 
-      this->inflyState.rbegin()->readyCycle < allocateCycle) {
-    this->ptwCycles += this->latency;
-    if (isPrefetch) this->prefetch_ptwCycles += this->latency;
   }
   else {
     this->ptwCycles += (this->latency + allocateCycle - this->inflyState.rbegin()->readyCycle);
     if (isPrefetch)
       this->prefetch_ptwCycles += (this->latency + allocateCycle - this->inflyState.rbegin()->readyCycle);
   }
+
+//  auto prevContextIter = this->inflyState.rbegin();
+//  auto prevContextEnd = this->inflyState.rend();
+//  Cycles allocateCycle = curCycle;
+//  if (this->numContext <= this->inflyState.size()) {
+//    // We have to wait until previous translations are done
+//    this->waits++;
+//    if (isPrefetch) this->prefetch_waits++;
+//    prevContextIter = this->inflyState.rbegin();
+//    for (uint32_t i = 0; i < this->numContext - 1; i++)
+//      prevContextIter++;
+//    allocateCycle = prevContextIter->readyCycle;
+//
+//    this->ptwCycles += (this->latency + allocateCycle - this->inflyState.rbegin()->readyCycle);
+//    if (isPrefetch)
+//      this->prefetch_ptwCycles += (this->latency + allocateCycle - this->inflyState.rbegin()->readyCycle);
+//  }
+//  else if (this->inflyState.size() == 0 || 
+//      this->inflyState.rbegin()->readyCycle < allocateCycle) {
+//    this->ptwCycles += this->latency;
+//    if (isPrefetch) this->prefetch_ptwCycles += this->latency;
+//  }
+//  else {
+//    this->ptwCycles += (this->latency + allocateCycle - this->inflyState.rbegin()->readyCycle);
+//    if (isPrefetch)
+//      this->prefetch_ptwCycles += (this->latency + allocateCycle - this->inflyState.rbegin()->readyCycle);
+//  }
 
   // Allocate it.
   auto readyCycle = allocateCycle + this->latency;
