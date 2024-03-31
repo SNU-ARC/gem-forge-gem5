@@ -502,36 +502,36 @@ TLB::translate(const RequestPtr &req,
                     assert(this->l2tlb && "Missing L2TLB.");
                     delayedResponseCycles = this->sePageWalker->lookup(
                         pageVAddr, this->walker->curCycle(), isPrefetch);
-                    if (delayedResponseCycles > this->l2HitLatency) {
-                      // This is not L2TLB hit, it is page table walking
-                      if (mode == Read && updateStats && entry) rdMisses++;
-                      if (!isPrefetch) {
-                        this->l2Misses++;
-                      }
-                      else {
-                        this->l2PrefetchMisses++;
-                      }
-                    }
+//                    if (delayedResponseCycles > this->l2HitLatency) {
+//                      // This is not L2TLB hit, it is page table walking
+//                      if (mode == Read && updateStats && entry) rdMisses++;
+//                      if (!isPrefetch) {
+//                        this->l2Misses++;
+//                      }
+//                      else {
+//                        this->l2PrefetchMisses++;
+//                      }
+//                    }
                     delayedResponseCycles += this->l2HitLatency;
                     break;
                 case 0:
                     delayedResponseCycles = this->sePageWalker->lookup(
                         pageVAddr, this->walker->curCycle(), isPrefetch);
                     delayedResponse = delayedResponseCycles > 0;
-                    if (delayedResponseCycles > 0) {
-                      // This is not L1TLB hit, it is page table walking
-                      if (mode == Read && updateStats && entry) rdMisses++;
-                      if (!isPrefetch) {
-                        this->l1Misses++;
-                        this->l2Accesses++;
-                        this->l2Misses++;
-                      }
-                      else {
-                        this->l1PrefetchMisses++;
-                        this->l2PrefetchAccesses++;
-                        this->l2PrefetchMisses++;
-                      }
-                    }
+//                    if (delayedResponseCycles > 0) {
+//                      // This is not L1TLB hit, it is page table walking
+//                      if (mode == Read && updateStats && entry) rdMisses++;
+//                      if (!isPrefetch) {
+//                        this->l1Misses++;
+//                        this->l2Accesses++;
+//                        this->l2Misses++;
+//                      }
+//                      else {
+//                        this->l1PrefetchMisses++;
+//                        this->l2PrefetchAccesses++;
+//                        this->l2PrefetchMisses++;
+//                      }
+//                    }
                     break;
                 default: panic("Illegal TLB HitLevel %d.\n", hitLevel);
                 }

@@ -1928,7 +1928,8 @@ void StreamEngine::tick() {
 //  }
 
   this->regionController->tick();
-  if (this->cpuDelegator->remainSendRequest() - this->translationBuffer->size() > 0) {
+  if (this->cpuDelegator->remainSendRequest() - this->translationBuffer->size() > 0 &&
+      this->translationBuffer->size() < 3) {
     this->issueElements();
   }
   this->computeEngine->startComputation();

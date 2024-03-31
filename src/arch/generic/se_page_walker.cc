@@ -56,7 +56,7 @@ Cycles SEPageWalker::walk(Addr pageVAddr, Cycles curCycle, bool isPrefetch) {
     this->hits++;
     if (isPrefetch) this->prefetch_hits++;
     iter->second->numAccess++;
-    DPRINTF(TLB, "Hit %#x, Latency %s.\n", pageVAddr,
+    DPRINTF(TLB, "[PTW_walk] Hit %#x, Latency %s.\n", pageVAddr,
             iter->second->readyCycle - curCycle + Cycles(iter->second->numAccess));
     return iter->second->readyCycle - curCycle + Cycles(iter->second->numAccess);
   }
@@ -69,6 +69,8 @@ Cycles SEPageWalker::walk(Addr pageVAddr, Cycles curCycle, bool isPrefetch) {
   uint32_t numInflyRequests = 0;
   for (; it != this->inflyState.rend(); it++) {
     numInflyRequests += (it->numAccess + 1);
+    DPRINTF(TLB, "inflyState.size %lu, numInflyRequest %u.\n", 
+        this->inflyState.size(), numInflyRequests);
     if (this->numContext <= numInflyRequests) {
 //      it++;
       break;
@@ -80,11 +82,16 @@ Cycles SEPageWalker::walk(Addr pageVAddr, Cycles curCycle, bool isPrefetch) {
     // We have to wait until previous translations are done
     this->waits++;
     if (isPrefetch) this->prefetch_waits++;
-    allocateCycle = it->readyCycle;
+    allocateCycle = it->readyCycle + Cycles(it->numAccess);
 
     this->ptwCycles += (this->latency + allocateCycle - this->inflyState.rbegin()->readyCycle);
     if (isPrefetch)
       this->prefetch_ptwCycles += (this->latency + allocateCycle - this->inflyState.rbegin()->readyCycle);
+  }
+  else if (this->inflyState.size() == 0 || 
+      this->inflyState.rbegin()->readyCycle < allocateCycle) {
+    this->ptwCycles += this->latency;
+    if (isPrefetch) this->prefetch_ptwCycles += this->latency;
   }
   else {
     this->ptwCycles += (this->latency + allocateCycle - this->inflyState.rbegin()->readyCycle);
@@ -150,12 +157,28 @@ Cycles SEPageWalker::lookup(Addr pageVAddr, Cycles curCycle, bool isPrefetch) {
       }
       this->prefetch_ptwCycles += iter->second->readyCycle - curCycle + Cycles(iter->second->numAccess);
     }
-    DPRINTF(TLB, "Hit %#x, Latency %s.\n", pageVAddr,
+    DPRINTF(TLB, "[PTW_lookup] Hit %#x, Latency %s.\n", pageVAddr,
             iter->second->readyCycle - curCycle + Cycles(iter->second->numAccess));
     return iter->second->readyCycle - curCycle + Cycles(iter->second->numAccess);
   }
   // If no match, it is L1 hit
-  return Cycles(0);
+  auto it = this->inflyState.begin();
+  uint32_t numInflyRequests = 0;
+  for (; it != this->inflyState.end(); it++) {
+    if (it->readyCycle - this->latency <= curCycle &&
+        curCycle < it->readyCycle) {
+      numInflyRequests += (it->numAccess + 1);
+    }
+    else {
+      break;
+    }
+  }
+  if (numInflyRequests < this->numContext) {
+    return Cycles(0);
+  }
+  else {
+    return it->readyCycle;
+  }
 }
 
 } // namespace X86ISA

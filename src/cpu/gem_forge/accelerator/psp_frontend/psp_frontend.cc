@@ -207,7 +207,7 @@ PSPFrontend::tick() {
       }
     }
   }
-  this->pspBackend->printStatus();
+//  this->pspBackend->printStatus();
 }
 
 void PSPFrontend::issueLoadIndex(uint64_t _validEntryId) {
