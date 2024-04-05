@@ -145,6 +145,7 @@ PSPFrontend::tick() {
   uint64_t cacheLineSize = this->cpuDelegator->cacheLineSize();
   if (this->patternTableArbiter->getValidEntryId(&validEntryId, cacheLineSize) /*&&
       this->cpuDelegator->remainSendRequest() - this->inflightLoadTranslations > 0*/) {
+    PSP_FE_DPRINTF("indexQueueArray[%lu].size: %lu\n", validEntryId, this->indexQueueArray->getSize(validEntryId));
     this->issueLoadIndex(validEntryId);
   }
 
