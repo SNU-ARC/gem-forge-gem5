@@ -740,6 +740,7 @@ class LSQ : public Named
     /** Is their space in the request queue to be able to push a request by
      *  issuing an isMemRef instruction */
     int numPSPRequest;
+    int transferQueueSize;
 //    bool canRequest() { return (requests.unreservedRemainingSpace() - numPSPRequest) > 0; }
 //    int numRequest() { return transfers.unreservedRemainingSpace() - numPSPRequest; }
 

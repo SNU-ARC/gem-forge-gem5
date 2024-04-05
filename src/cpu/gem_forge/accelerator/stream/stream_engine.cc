@@ -1928,10 +1928,10 @@ void StreamEngine::tick() {
 //  }
 
   this->regionController->tick();
-  if (this->cpuDelegator->remainSendRequest() - this->translationBuffer->size() > 0 &&
-      this->translationBuffer->size() < 3) {
+//  if (this->cpuDelegator->remainSendRequest() - this->translationBuffer->size() > 0 &&
+//      this->translationBuffer->size() < 3) {
     this->issueElements();
-  }
+//  }
   this->computeEngine->startComputation();
   this->computeEngine->completeComputation();
   this->floatController->processMidwayFloat();
@@ -2571,7 +2571,7 @@ void StreamEngine::issueElements() {
       }
       // Issue the element.
       this->issueElement(element);
-      break;
+//      break;
     }
   }
 }

@@ -79,6 +79,11 @@ bool PatternTable::getInputInfo(const uint64_t _entryId, uint64_t* _offsetBegin,
   return patternTable[_entryId].getInputInfo(_offsetBegin, _offsetEnd, _seqNum);
 }
 
+void
+PatternTable::commitInputInfo(const uint64_t _entryId, const uint64_t _seqNum) {
+  this->patternTable[_entryId].commitInputInfo(_seqNum);
+}
+
 void PatternTable::resetConfig(uint64_t _entryId) {
   patternTable[_entryId].resetConfig();
 }

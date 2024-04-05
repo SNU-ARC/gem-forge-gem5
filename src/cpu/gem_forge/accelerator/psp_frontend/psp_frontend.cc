@@ -143,8 +143,8 @@ PSPFrontend::tick() {
   /* Issue load index  */
   uint32_t validEntryId;
   uint64_t cacheLineSize = this->cpuDelegator->cacheLineSize();
-  if (this->patternTableArbiter->getValidEntryId(&validEntryId, cacheLineSize) &&
-      this->cpuDelegator->remainSendRequest() - this->inflightLoadTranslations > 0) {
+  if (this->patternTableArbiter->getValidEntryId(&validEntryId, cacheLineSize) /*&&
+      this->cpuDelegator->remainSendRequest() - this->inflightLoadTranslations > 0*/) {
     this->issueLoadIndex(validEntryId);
   }
 
@@ -169,8 +169,8 @@ PSPFrontend::tick() {
     else if (this->isDataPrefetchOnly) {
 //      PSP_FE_DPRINTF("backend_totalSize: %lu, paQueue_size: %lu, inflightTrans: %lu, valCurrentSize: %lu\n",
 //          this->pspBackend->getTotalSize(validIQEntryId), this->paQueueArray->getSize(validIQEntryId), this->inflightTranslations.size(), this->valCurrentSize[validIQEntryId]);
-      if (this->pspBackend->getTotalSize(validIQEntryId) == 0 && this->paQueueArray->getSize(validIQEntryId) == 0 && this->inflightTranslations.size() == 0 /*||
-          this->valCurrentSize[validIQEntryId] < valAccessGranularity*/) {
+      if (this->pspBackend->getTotalSize(validIQEntryId) == 0 && this->paQueueArray->getSize(validIQEntryId) == 0 && this->inflightTranslations.size() == 0 ||
+          this->valCurrentSize[validIQEntryId] < valAccessGranularity) {
 //      if (this->pspBackend->getTotalSize(validIQEntryId) < this->prefetchDistance * cacheLineSize) {
         this->issueTranslateValueAddress(validIQEntryId);
       }
@@ -207,7 +207,7 @@ PSPFrontend::tick() {
       }
     }
   }
-//  this->pspBackend->printStatus();
+  this->pspBackend->printStatus();
 }
 
 void PSPFrontend::issueLoadIndex(uint64_t _validEntryId) {
@@ -594,7 +594,8 @@ bool PSPFrontend::canCommitStreamInput(const StreamInputArgs &args) {
 
 void PSPFrontend::commitStreamInput(const StreamInputArgs &args) {
   this->seqNum = this->seqNum < args.seqNum ? args.seqNum : this->seqNum;
-  PSP_FE_DPRINTF("commitStreamInput\n");
+  this->patternTable->commitInputInfo(args.entryId, args.seqNum);
+  PSP_FE_DPRINTF("commitStreamInput, %lu\n", args.seqNum);
 }
 
 void PSPFrontend::rewindStreamInput(const StreamInputArgs &args) {

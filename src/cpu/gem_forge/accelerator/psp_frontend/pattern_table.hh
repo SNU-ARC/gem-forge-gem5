@@ -66,6 +66,9 @@ struct TableInputEntry {
     *_seqNum = this->seqNum;
     return this->valid;
   }
+  void commitInputInfo(const uint64_t _seqNum) {
+    this->seqNum = _seqNum;
+  }
   void reset() {
     this->valid = false;
   }
@@ -107,6 +110,9 @@ struct PatternTableEntry {
   }
   bool getInputInfo(uint64_t* _offsetBegin, uint64_t* _offsetEnd, uint64_t* _seqNum) {
     return tableInputEntry.front().getInputInfo(_offsetBegin, _offsetEnd, _seqNum);
+  }
+  void commitInputInfo(const uint64_t _seqNum) {
+    this->tableInputEntry.front().commitInputInfo(_seqNum);
   }
   void resetConfig() {
     this->tableConfigEntry.reset();
@@ -157,6 +163,7 @@ class PatternTable {
     void setInputInfo(const uint64_t _entryId, 
                       const uint64_t _offsetBegin, const uint64_t _offsetEnd);
     bool getInputInfo(const uint64_t _entryId, uint64_t* _offsetBegin, uint64_t* _offsetEnd, uint64_t* _seqNum);
+    void commitInputInfo(const uint64_t _entryId, const uint64_t _seqNum);
     void resetConfig(uint64_t entryId);
     void resetConfigUndo(uint64_t entryId);
     void popInput(uint64_t entryId);

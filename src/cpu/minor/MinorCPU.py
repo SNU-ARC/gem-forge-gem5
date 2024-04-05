@@ -359,7 +359,7 @@ class MinorCPU(BaseCPU):
         "Size of LSQ requests queue (address translation queue)")
     executeLSQTransfersQueueSize = Param.Unsigned(2,
         "Size of LSQ transfers queue (memory transaction queue)")
-    PSPQueueSize = Param.Unsigned(2,
+    PSPQueueSize = Param.Unsigned(20,
         "Size of PSP queue (memory transaction queue)")
     executeLSQStoreBufferSize = Param.Unsigned(5,
         "Size of LSQ store buffer")

@@ -101,7 +101,7 @@ bool L0StreamEngine::isStreamAccess(PacketPtr pkt) const {
     return false;
   }
   // [SJ] This is hack. I'm not considering Offloading
-  return true;
+//  return true;
   // So far let's only consider offloaded stream.
   const auto &dynamicId = streamMemAccess->getDynamicStreamId();
   auto streamIter = this->offloadedStreams.find(dynamicId);
