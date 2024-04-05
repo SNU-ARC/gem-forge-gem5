@@ -77,27 +77,27 @@ Cycles SEPageWalker::walk(Addr pageVAddr, Cycles curCycle, bool isPrefetch) {
     }
   }
 
-  Cycles allocateCycle = curCycle;
-  if (this->numContext <= numInflyRequests) {
-    // We have to wait until previous translations are done
-    this->waits++;
-    if (isPrefetch) this->prefetch_waits++;
-    allocateCycle = it->readyCycle + Cycles(it->numAccess);
-
-    this->ptwCycles += (this->latency + allocateCycle - this->inflyState.rbegin()->readyCycle);
-    if (isPrefetch)
-      this->prefetch_ptwCycles += (this->latency + allocateCycle - this->inflyState.rbegin()->readyCycle);
-  }
-  else if (this->inflyState.size() == 0 || 
-      this->inflyState.rbegin()->readyCycle < allocateCycle) {
-    this->ptwCycles += this->latency;
-    if (isPrefetch) this->prefetch_ptwCycles += this->latency;
-  }
-  else {
-    this->ptwCycles += (this->latency + allocateCycle - this->inflyState.rbegin()->readyCycle);
-    if (isPrefetch)
-      this->prefetch_ptwCycles += (this->latency + allocateCycle - this->inflyState.rbegin()->readyCycle);
-  }
+//  Cycles allocateCycle = curCycle;
+//  if (this->numContext <= numInflyRequests) {
+//    // We have to wait until previous translations are done
+//    this->waits++;
+//    if (isPrefetch) this->prefetch_waits++;
+//    allocateCycle = it->readyCycle + Cycles(it->numAccess);
+//
+//    this->ptwCycles += (this->latency + allocateCycle - this->inflyState.rbegin()->readyCycle);
+//    if (isPrefetch)
+//      this->prefetch_ptwCycles += (this->latency + allocateCycle - this->inflyState.rbegin()->readyCycle);
+//  }
+//  else if (this->inflyState.size() == 0 || 
+//      this->inflyState.rbegin()->readyCycle < allocateCycle) {
+//    this->ptwCycles += this->latency;
+//    if (isPrefetch) this->prefetch_ptwCycles += this->latency;
+//  }
+//  else {
+//    this->ptwCycles += (this->latency + allocateCycle - this->inflyState.rbegin()->readyCycle);
+//    if (isPrefetch)
+//      this->prefetch_ptwCycles += (this->latency + allocateCycle - this->inflyState.rbegin()->readyCycle);
+//  }
 
 //  auto prevContextIter = this->inflyState.rbegin();
 //  auto prevContextEnd = this->inflyState.rend();
@@ -126,6 +126,18 @@ Cycles SEPageWalker::walk(Addr pageVAddr, Cycles curCycle, bool isPrefetch) {
 //      this->prefetch_ptwCycles += (this->latency + allocateCycle - this->inflyState.rbegin()->readyCycle);
 //  }
 
+  auto prevContextIter = this->inflyState.rbegin();
+  auto prevContextEnd = this->inflyState.rend();
+  int i = 0;
+  while (i < this->numContext && prevContextIter != prevContextEnd) {
+    prevContextIter++;
+  }
+  Cycles allocateCycle = curCycle;
+  if (prevContextIter != prevContextEnd) {
+    allocateCycle = prevContextIter->readyCycle;
+    this->waits++;
+  }
+
   // Allocate it.
   auto readyCycle = allocateCycle + this->latency;
   this->inflyState.emplace_back(pageVAddr, readyCycle);
@@ -141,22 +153,22 @@ Cycles SEPageWalker::lookup(Addr pageVAddr, Cycles curCycle, bool isPrefetch) {
   // Check if we have a parallel miss to the same page.
   auto iter = this->pageVAddrToStateMap.find(pageVAddr);
   if (iter != this->pageVAddrToStateMap.end()) {
-    this->accesses++;
-    this->hits++;
-    if (curCycle + this->latency < iter->second->readyCycle) {
-      this->waits++;
-    }
-    this->ptwCycles += iter->second->readyCycle - curCycle + Cycles(iter->second->numAccess);
+//    this->accesses++;
+//    this->hits++;
+//    if (curCycle + this->latency < iter->second->readyCycle) {
+//      this->waits++;
+//    }
+//    this->ptwCycles += iter->second->readyCycle - curCycle + Cycles(iter->second->numAccess);
     iter->second->numAccess++;
 
-    if (isPrefetch) {
-      this->prefetch_accesses++;
-      this->prefetch_hits++;
-      if (curCycle + this->latency < iter->second->readyCycle) {
-        this->prefetch_waits++;
-      }
-      this->prefetch_ptwCycles += iter->second->readyCycle - curCycle + Cycles(iter->second->numAccess);
-    }
+//    if (isPrefetch) {
+//      this->prefetch_accesses++;
+//      this->prefetch_hits++;
+//      if (curCycle + this->latency < iter->second->readyCycle) {
+//        this->prefetch_waits++;
+//      }
+//      this->prefetch_ptwCycles += iter->second->readyCycle - curCycle + Cycles(iter->second->numAccess);
+//    }
     DPRINTF(TLB, "[PTW_lookup] Hit %#x, Latency %s.\n", pageVAddr,
             iter->second->readyCycle - curCycle + Cycles(iter->second->numAccess));
     return iter->second->readyCycle - curCycle + Cycles(iter->second->numAccess);
