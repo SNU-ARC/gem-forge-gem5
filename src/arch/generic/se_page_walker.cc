@@ -17,6 +17,8 @@ void SEPageWalker::regStats() {
       .desc("PageWalker waits on available context");
   this->ptwCycles.name(this->name() + ".ptwCycles")
       .desc("PageWalker spent cycles");
+  this->ptwActiveCycles.name(this->name() + ".ptwActiveCycles")
+      .desc("PageWalker active cycles");
   this->prefetch_accesses.name(this->name() + ".prefetch_accesses").desc("PageWalker prefetch_accesses");
   this->prefetch_hits.name(this->name() + ".prefetch_hits")
       .desc("PageWalker prefetch_hits on infly walks");
@@ -52,6 +54,7 @@ Cycles SEPageWalker::walk(Addr pageVAddr, Cycles curCycle, bool isPrefetch) {
   if (iter != this->pageVAddrToStateMap.end()) {
     /**
      * Cycle latency for parallel miss.
+     * y
      */
     this->hits++;
     if (isPrefetch) this->prefetch_hits++;
@@ -66,18 +69,27 @@ Cycles SEPageWalker::walk(Addr pageVAddr, Cycles curCycle, bool isPrefetch) {
    * First we have to get the available context.
    */
   auto it = this->inflyState.rbegin();
+  Cycles tempCycle = it != this->inflyState.rend() && curCycle < (it->readyCycle - this->latency + Cycles(1)) ?
+    it->readyCycle - this->latency + Cycles(1) : curCycle;
   uint32_t numInflyRequests = 0;
   for (; it != this->inflyState.rend(); it++) {
-    numInflyRequests += (it->numAccess + 1);
-    DPRINTF(TLB, "inflyState.size %lu, numInflyRequest %u.\n", 
-        this->inflyState.size(), numInflyRequests);
-    if (this->numContext <= numInflyRequests) {
-//      it++;
-      break;
+    DPRINTF(TLB, "%lu %lu %lu\n", 
+        it->readyCycle - this->latency + Cycles(1), curCycle, it->readyCycle);
+    if (it->readyCycle - this->latency < tempCycle &&
+        tempCycle < it->readyCycle) {
+      numInflyRequests++;
     }
+    else break;
+//    numInflyRequests += (it->numAccess + 1);
+//    if (this->numContext <= numInflyRequests) {
+////      it++;
+//      break;
+//    }
   }
+  DPRINTF(TLB, "inflyState.size %lu, numInflyRequest %u.\n", 
+      this->inflyState.size(), numInflyRequests);
 
-//  Cycles allocateCycle = curCycle;
+  Cycles allocateCycle = tempCycle;//curCycle;
 //  if (this->numContext <= numInflyRequests) {
 //    // We have to wait until previous translations are done
 //    this->waits++;
@@ -99,44 +111,46 @@ Cycles SEPageWalker::walk(Addr pageVAddr, Cycles curCycle, bool isPrefetch) {
 //      this->prefetch_ptwCycles += (this->latency + allocateCycle - this->inflyState.rbegin()->readyCycle);
 //  }
 
-//  auto prevContextIter = this->inflyState.rbegin();
-//  auto prevContextEnd = this->inflyState.rend();
-//  Cycles allocateCycle = curCycle;
-//  if (this->numContext <= this->inflyState.size()) {
-//    // We have to wait until previous translations are done
-//    this->waits++;
-//    if (isPrefetch) this->prefetch_waits++;
-//    prevContextIter = this->inflyState.rbegin();
-//    for (uint32_t i = 0; i < this->numContext - 1; i++)
-//      prevContextIter++;
-//    allocateCycle = prevContextIter->readyCycle;
-//
-//    this->ptwCycles += (this->latency + allocateCycle - this->inflyState.rbegin()->readyCycle);
-//    if (isPrefetch)
-//      this->prefetch_ptwCycles += (this->latency + allocateCycle - this->inflyState.rbegin()->readyCycle);
-//  }
-//  else if (this->inflyState.size() == 0 || 
-//      this->inflyState.rbegin()->readyCycle < allocateCycle) {
-//    this->ptwCycles += this->latency;
-//    if (isPrefetch) this->prefetch_ptwCycles += this->latency;
-//  }
-//  else {
-//    this->ptwCycles += (this->latency + allocateCycle - this->inflyState.rbegin()->readyCycle);
-//    if (isPrefetch)
-//      this->prefetch_ptwCycles += (this->latency + allocateCycle - this->inflyState.rbegin()->readyCycle);
-//  }
-
   auto prevContextIter = this->inflyState.rbegin();
   auto prevContextEnd = this->inflyState.rend();
-  int i = 0;
-  while (i < this->numContext && prevContextIter != prevContextEnd) {
-    prevContextIter++;
-  }
-  Cycles allocateCycle = curCycle;
-  if (prevContextIter != prevContextEnd) {
-    allocateCycle = prevContextIter->readyCycle;
+  if (this->numContext <= numInflyRequests) {
+    // We have to wait until previous translations are done
     this->waits++;
+    if (isPrefetch) this->prefetch_waits++;
+    prevContextIter = this->inflyState.rbegin();
+    for (uint32_t i = 0; i < this->numContext - 1; i++)
+      prevContextIter++;
+    allocateCycle = prevContextIter->readyCycle;
+
+    this->ptwCycles += this->latency;
+    this->ptwActiveCycles += (this->latency + allocateCycle - this->inflyState.rbegin()->readyCycle);
+    if (isPrefetch) {
+      this->prefetch_ptwCycles += (this->latency + allocateCycle - this->inflyState.rbegin()->readyCycle);
+    }
   }
+  else if (this->inflyState.size() == 0 || 
+      this->inflyState.rbegin()->readyCycle < allocateCycle) {
+    this->ptwCycles += this->latency;
+    this->ptwActiveCycles += this->latency;
+    if (isPrefetch) this->prefetch_ptwCycles += this->latency;
+  }
+  else {
+    this->ptwCycles += this->latency;
+    this->ptwActiveCycles += (this->latency + allocateCycle - this->inflyState.rbegin()->readyCycle);
+    if (isPrefetch)
+      this->prefetch_ptwCycles += (this->latency + allocateCycle - this->inflyState.rbegin()->readyCycle);
+  }
+
+//  auto prevContextIter = this->inflyState.rbegin();
+//  auto prevContextEnd = this->inflyState.rend();
+//  int i = 0;
+//  while (i < this->numContext && prevContextIter != prevContextEnd) {
+//    prevContextIter++;
+//  }
+//  if (prevContextIter != prevContextEnd) {
+//    allocateCycle = prevContextIter->readyCycle;
+//    this->waits++;
+//  }
 
   // Allocate it.
   auto readyCycle = allocateCycle + this->latency;
@@ -153,11 +167,11 @@ Cycles SEPageWalker::lookup(Addr pageVAddr, Cycles curCycle, bool isPrefetch) {
   // Check if we have a parallel miss to the same page.
   auto iter = this->pageVAddrToStateMap.find(pageVAddr);
   if (iter != this->pageVAddrToStateMap.end()) {
-//    this->accesses++;
-//    this->hits++;
-//    if (curCycle + this->latency < iter->second->readyCycle) {
-//      this->waits++;
-//    }
+    this->accesses++;
+    this->hits++;
+    if (curCycle + this->latency < iter->second->readyCycle) {
+      this->waits++;
+    }
 //    this->ptwCycles += iter->second->readyCycle - curCycle + Cycles(iter->second->numAccess);
     iter->second->numAccess++;
 
@@ -173,24 +187,25 @@ Cycles SEPageWalker::lookup(Addr pageVAddr, Cycles curCycle, bool isPrefetch) {
             iter->second->readyCycle - curCycle + Cycles(iter->second->numAccess));
     return iter->second->readyCycle - curCycle + Cycles(iter->second->numAccess);
   }
-  // If no match, it is L1 hit
-  auto it = this->inflyState.begin();
-  uint32_t numInflyRequests = 0;
-  for (; it != this->inflyState.end(); it++) {
-    if (it->readyCycle - this->latency <= curCycle &&
-        curCycle < it->readyCycle) {
-      numInflyRequests += (it->numAccess + 1);
-    }
-    else {
-      break;
-    }
-  }
-  if (numInflyRequests < this->numContext) {
-    return Cycles(0);
-  }
-  else {
-    return it->readyCycle;
-  }
+//  // If no match, it is L1 hit
+//  auto it = this->inflyState.begin();
+//  uint32_t numInflyRequests = 0;
+//  for (; it != this->inflyState.end(); it++) {
+//    if (it->readyCycle - this->latency <= curCycle &&
+//        curCycle < it->readyCycle) {
+//      numInflyRequests += (it->numAccess + 1);
+//    }
+//    else {
+//      break;
+//    }
+//  }
+//  if (numInflyRequests < this->numContext) {
+//    return Cycles(0);
+//  }
+//  else {
+//    return it->readyCycle;
+//  }
+  return Cycles(0);
 }
 
 } // namespace X86ISA

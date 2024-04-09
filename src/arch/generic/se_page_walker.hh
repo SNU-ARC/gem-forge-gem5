@@ -39,6 +39,7 @@ public:
   Stats::Scalar hits;
   Stats::Scalar waits;
   Stats::Scalar ptwCycles;
+  Stats::Scalar ptwActiveCycles;
 
   Stats::Scalar prefetch_accesses;
   Stats::Scalar prefetch_hits;
