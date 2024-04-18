@@ -67,9 +67,9 @@ PhysicalAddressQueue::insert(uint32_t _id, PhysicalAddressArgs _pkt) {
   if (this->pkt[_id].seqNum == _pkt.seqNum) {
     this->pkt[_id] = _pkt;
   }
-  else {
-    this->size--;
-  }
+//  else {
+//    this->size--;
+//  }
 }
 
 PAQueueArray::PAQueueArray(uint32_t _totalPAQueueEntries, uint32_t _capacity) 

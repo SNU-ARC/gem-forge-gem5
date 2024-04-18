@@ -503,7 +503,7 @@ void PSPFrontend::handleAddressTranslateResponse(IndexPacketHandler* _indexPacke
   
   PSP_FE_DPRINTF("Address translation for %luth entryId done. PA: %#x, Size: %lu, numInflightTranslations: %lu, SeqNum: %lu %lu.\n",
       entryId, pAddr, size, this->inflightTranslations.size(), seqNum, this->seqNum);
-  PSP_FE_DPRINTF("PAQeueuArray_canRead(%lu): %d, PSPBackend_canInsertEntry(%lu): %d\n", entryId, this->paQueueArray->canRead(entryId), entryId, this->pspBackend->canInsertEntry(entryId));
+  PSP_FE_DPRINTF("PAQueueArray_canRead(%lu): %d %lu, PSPBackend_canInsertEntry(%lu): %d\n", entryId, this->paQueueArray->canRead(entryId), this->paQueueArray->getSize(entryId), entryId, this->pspBackend->canInsertEntry(entryId));
 
 //  if (this->isDataPrefetchOnly) {
 //    this->cpuDelegator->sendRequest(_pkt);
@@ -606,9 +606,12 @@ void PSPFrontend::rewindStreamInput(const StreamInputArgs &args) {
   if (seqNum == args.seqNum) {
     this->patternTable->resetInput(entryId);
   }
+  PSP_FE_DPRINTF("[Before] rewindStreamInput %lu %lu %lu\n", 
+      this->patternTable->getInputSize(entryId), this->indexQueueArray->getSize(entryId),
+      this->paQueueArray->getSize(entryId));
   this->indexQueueArray->reset(entryId, seqNum);
   this->paQueueArray->reset(entryId, seqNum);
-  PSP_FE_DPRINTF("rewindStreamInput %lu %lu %lu\n", 
+  PSP_FE_DPRINTF("[After] rewindStreamInput %lu %lu %lu\n", 
       this->patternTable->getInputSize(entryId), this->indexQueueArray->getSize(entryId),
       this->paQueueArray->getSize(entryId));
 }

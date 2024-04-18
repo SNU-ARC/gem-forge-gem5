@@ -83,9 +83,9 @@ void IndexQueue::insert(uint32_t _id, void* _buffer, uint64_t _size, uint64_t _s
       this->data[ptr].data = 0;
       memcpy(&(this->data[ptr].data), _buffer + i * this->accessGranularity, this->accessGranularity);
     }
-    else {
-      this->size -= this->accessGranularity;
-    }
+//    else {
+//      this->size -= this->accessGranularity;
+//    }
     ptr = (ptr + 1) % (this->capacity / this->accessGranularity);
   }
 }
