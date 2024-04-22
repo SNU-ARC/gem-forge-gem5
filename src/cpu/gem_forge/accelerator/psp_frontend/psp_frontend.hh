@@ -173,8 +173,8 @@ private:
   IndexQueueArrayRRArbiter* indexQueueArrayArbiter;
   PAQueueArray* paQueueArray;
   PSPBackend* pspBackend;
-  std::multimap<uint64_t, uint32_t> inflightLoadIndices;
-  std::multimap<uint64_t, uint32_t> inflightTranslations;
+  std::multimap<uint64_t, std::pair<uint32_t, uint64_t> > inflightLoadIndices;
+  std::multimap<uint64_t, std::pair<uint32_t, uint64_t> > inflightTranslations;
   uint64_t seqNum;
   uint64_t paQueueCapacity;
   uint64_t prefetchDistance;

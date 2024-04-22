@@ -152,6 +152,8 @@ PSPFrontend::tick() {
   /* Issue feature vector address translation */
   uint32_t validIQEntryId;
   // TODO: Should I check the availability of TLB? (e.g., pending translation by PTW)
+//  PSP_FE_DPRINTF("indexQueueArray[0].getConfigured: %lu, canRead: %lu, paQueueArray[0].canInsert: %lu\n",
+//      this->indexQueueArray->getConfigured(0), this->indexQueueArray->canRead(0), this->paQueueArray->canInsert(0));
   if (this->indexQueueArrayArbiter->getValidEntryId(&validIQEntryId, false)) {
     uint64_t idxBaseAddr, idxAccessGranularity, valBaseAddr, valAccessGranularity;
     this->patternTable->getConfigInfo(validIQEntryId, &idxBaseAddr, &idxAccessGranularity,
@@ -291,9 +293,9 @@ void PSPFrontend::issueLoadIndex(uint64_t _validEntryId) {
 
   // Update IndexQueueArray
   uint32_t indexBufferId = this->indexQueueArray->allocate(_validEntryId, currentSize, seqNum);
-  this->inflightLoadIndices.emplace(cacheBlockPAddr, indexBufferId);
-  PSP_FE_DPRINTF("Index Queue EntryId: %lu, Size: %lu\n", 
-      _validEntryId, this->indexQueueArray->getSize(_validEntryId));
+  this->inflightLoadIndices.emplace(cacheBlockPAddr, std::make_pair(indexBufferId, seqNum));
+  PSP_FE_DPRINTF("Index Queue EntryId: %lu, Size: %lu, BufferId: %lu\n", 
+      _validEntryId, this->indexQueueArray->getSize(_validEntryId), indexBufferId);
 
   this->inflightLoadTranslations++;
 }
@@ -364,7 +366,7 @@ PSPFrontend::issueLoadValue(uint64_t _validEntryId) {
   
   // Update PAQueueArray(num of inflight load requests)
   uint32_t paQueueId = this->paQueueArray->allocate(_validEntryId, seqNum);
-  this->inflightTranslations.emplace(cacheBlockPAddr, paQueueId);
+  this->inflightTranslations.emplace(cacheBlockPAddr, std::make_pair(paQueueId, seqNum));
   PSP_FE_DPRINTF("%luth IndexQueue with numInflightLoadRequests: %d paQueueId: %d.\n", _validEntryId,
       this->inflightLoadTranslations, paQueueId);
 }
@@ -441,7 +443,7 @@ void PSPFrontend::issueTranslateValueAddress(uint64_t _validEntryId) {
   
   // Update PAQueueArray(num of inflight load requests)
   uint32_t paQueueId = this->paQueueArray->allocate(_validEntryId, seqNum);
-  this->inflightTranslations.emplace(cacheBlockPAddr, paQueueId);
+  this->inflightTranslations.emplace(cacheBlockPAddr, std::make_pair(paQueueId, seqNum));
   PSP_FE_DPRINTF("%luth IndexQueue with numInflightTranslations: %d paQueueId: %d.\n", _validEntryId,
       this->inflightTranslations.size(), paQueueId);
 }
@@ -455,23 +457,32 @@ void PSPFrontend::handlePacketResponse(IndexPacketHandler* indexPacketHandler,
   void* data = pkt->getPtr<void>();
   uint64_t packetSize = pkt->getSize();
   uint64_t inputSize = indexPacketHandler->size;
-  uint64_t seqNum = indexPacketHandler->seqNum;
+  uint64_t seqNum = this->inflightLoadIndices.find(pAddr)->second.second;
+//  uint64_t seqNum = indexPacketHandler->seqNum;
   data += (vaddr - cacheBlockVAddr);
   uint64_t debug_address;
   PSP_FE_DPRINTF("remainSendRequest: %d, inflightLoadTranslations: %d\n", 
       this->cpuDelegator->remainSendRequest(), this->inflightLoadTranslations);
-  if (indexPacketHandler->isIndex) {
-    uint32_t indexBufferId = this->inflightLoadIndices.find(pAddr)->second;
+  if (indexPacketHandler->isIndex && 
+      this->inflightLoadIndices.find(pAddr) != this->inflightLoadIndices.end()) {
+    uint32_t indexBufferId = this->inflightLoadIndices.find(pAddr)->second.first;
     this->indexQueueArray->insert(entryId, indexBufferId, data, inputSize, debug_address, seqNum);
     this->inflightLoadIndices.erase(this->inflightLoadIndices.find(pAddr));
-    PSP_FE_DPRINTF("%luth IndexQueue filled with blockVA: %#x, VA: %#x, size: %lu, debug_address, %#x, SeqNum: %lu %lu\n", entryId,
-        cacheBlockVAddr, vaddr, inputSize, debug_address, seqNum, this->seqNum);
+    PSP_FE_DPRINTF("%luth IndexQueue filled with blockVA: %#x, VA: %#x, size: %lu, canRead: %d, SeqNum: %lu %lu\n", entryId,
+        cacheBlockVAddr, vaddr, inputSize, this->indexQueueArray->canRead(entryId), seqNum, this->seqNum);
+
+    /* [ARC-SJ] for debug */
+    uint64_t tmp_data, tmp_seqNum;
+    this->indexQueueArray->read(entryId, &tmp_data, &tmp_seqNum);
+    PSP_FE_DPRINTF("indexQueueArray[%lu].data = %lu, size = %lu, seqNum = %lu\n", entryId, tmp_data, this->indexQueueArray->getSize(entryId), tmp_seqNum);
+
     for (int i = 0; i < inputSize / 8; i++) {
       PSP_FE_DPRINTF("data[%d]: %lu\n", i, ((uint64_t*)data)[i]);
     }
   }
-  else if (this->isUVEProxy) {
-    uint32_t paQueueId = this->inflightTranslations.find(pAddr)->second;
+  else if (this->isUVEProxy &&
+      this->inflightTranslations.find(pAddr) != this->inflightTranslations.end()) {
+    uint32_t paQueueId = this->inflightTranslations.find(pAddr)->second.first;
     PhysicalAddressQueue::PhysicalAddressArgs args(true, entryId, pAddr, packetSize, seqNum);
     this->paQueueArray->insert(entryId, paQueueId, args);
     this->inflightTranslations.erase(this->inflightTranslations.find(pAddr));
@@ -494,7 +505,7 @@ void PSPFrontend::handleAddressTranslateResponse(IndexPacketHandler* _indexPacke
   Addr pAddr = _pkt->getAddr();
   uint64_t size = _pkt->getSize();
   uint64_t seqNum = _indexPacketHandler->seqNum;
-  uint32_t paQueueId = this->inflightTranslations.find(pAddr)->second;
+  uint32_t paQueueId = this->inflightTranslations.find(pAddr)->second.first;
 
   PhysicalAddressQueue::PhysicalAddressArgs args(true, entryId, pAddr, size, seqNum);
   this->paQueueArray->insert(entryId, paQueueId, args);
@@ -606,14 +617,40 @@ void PSPFrontend::rewindStreamInput(const StreamInputArgs &args) {
   if (seqNum == args.seqNum) {
     this->patternTable->resetInput(entryId);
   }
-  PSP_FE_DPRINTF("[Before] rewindStreamInput %lu %lu %lu\n", 
+  PSP_FE_DPRINTF("[Before] rewindStreamInput %lu %lu %lu, seqNum %lu\n", 
       this->patternTable->getInputSize(entryId), this->indexQueueArray->getSize(entryId),
-      this->paQueueArray->getSize(entryId));
+      this->paQueueArray->getSize(entryId), seqNum);
   this->indexQueueArray->reset(entryId, seqNum);
   this->paQueueArray->reset(entryId, seqNum);
-  PSP_FE_DPRINTF("[After] rewindStreamInput %lu %lu %lu\n", 
+  auto it_0 = this->inflightLoadIndices.begin();
+  while (it_0 != this->inflightLoadIndices.end()) {
+    PSP_FE_DPRINTF("%llu %lu %llu\n", it_0->first, it_0->second.first, it_0->second.second);
+    it_0++;
+  }
+  it_0 = this->inflightLoadIndices.begin();
+  while (it_0 != this->inflightLoadIndices.end()) {
+    if (it_0->second.second >= seqNum) {
+      PSP_FE_DPRINTF("Erase %llu %lu %llu\n", it_0->first, it_0->second.first, it_0->second.second);
+      this->inflightLoadIndices.erase(it_0++);
+//      it_0 = this->inflightLoadIndices.begin();
+    }
+    else {
+      it_0++;
+    }
+  }
+  auto it_1 = this->inflightLoadIndices.begin();
+  while (it_1 != this->inflightLoadIndices.end()) {
+    if (it_1->second.second >= seqNum) {
+      this->inflightLoadIndices.erase(it_1++);
+//      it_1 = this->inflightLoadIndices.begin();
+    }
+    else {
+      it_1++;
+    }
+  }
+  PSP_FE_DPRINTF("[After] rewindStreamInput %lu %lu %lu, seqNum %lu\n", 
       this->patternTable->getInputSize(entryId), this->indexQueueArray->getSize(entryId),
-      this->paQueueArray->getSize(entryId));
+      this->paQueueArray->getSize(entryId), seqNum);
 }
 
 /********************************************************************************

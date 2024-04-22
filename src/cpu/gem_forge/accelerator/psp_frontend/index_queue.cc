@@ -82,11 +82,11 @@ void IndexQueue::insert(uint32_t _id, void* _buffer, uint64_t _size, uint64_t _s
       this->data[ptr].valid = true;
       this->data[ptr].data = 0;
       memcpy(&(this->data[ptr].data), _buffer + i * this->accessGranularity, this->accessGranularity);
+      ptr = (ptr + 1) % (this->capacity / this->accessGranularity);
     }
 //    else {
 //      this->size -= this->accessGranularity;
 //    }
-    ptr = (ptr + 1) % (this->capacity / this->accessGranularity);
   }
 }
 
@@ -94,13 +94,20 @@ void
 IndexQueue::reset(uint64_t _seqNum) {
   uint32_t idx = this->head;
   uint32_t oldSize = this->size;
+  bool headCheck = true;
   for (uint32_t i = 0; i < oldSize; i++) {
-    idx = (idx + 1) % (this->capacity / this->accessGranularity);
     if (this->data[idx].seqNum >= _seqNum) {
       this->data[idx].valid = false;
       this->data[idx].seqNum = 0;
       this->size -= this->accessGranularity;
     }
+    else { 
+      if (headCheck) {
+        this->head = idx % (this->capacity / this->accessGranularity);
+      }
+      headCheck = false;
+    }
+    idx = (idx + 1) % (this->capacity / this->accessGranularity);
   }
   this->tail = (this->head + (this->size / this->accessGranularity)) % (this->capacity / this->accessGranularity);
 }

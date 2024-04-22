@@ -35,7 +35,7 @@ PhysicalAddressQueue::pop() {
 
 bool
 PhysicalAddressQueue::canInsert() {
-  return (this->size + 1 < this->capacity) && (this->pkt[this->tail].seqNum == 0);
+  return (this->size + 1 < this->capacity) && (this->pkt[this->tail].valid == false);
 }
 
 uint32_t
@@ -52,12 +52,12 @@ PhysicalAddressQueue::reset(uint64_t _seqNum) {
   uint32_t idx = this->head;
   uint32_t oldSize = this->size;
   for (uint32_t i = 0; i < oldSize; i++) {
-    idx = (idx + 1) % this->capacity;
     if (this->pkt[idx].seqNum >= _seqNum) {
       this->pkt[idx].valid = false;
       this->pkt[idx].seqNum = 0;
       this->size--;
     }
+    idx = (idx + 1) % this->capacity;
   }
   this->tail = (this->head + this->size) % this->capacity;
 }
